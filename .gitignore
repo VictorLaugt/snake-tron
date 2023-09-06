@@ -1,0 +1,8 @@
+# python
+__pycache__
+
+# editeurs
+.spyproject
+.vscode
+.idea
+
