@@ -64,7 +64,10 @@ class NaiveSnakeAi(SnakeAi):
     """
     def __init__(self, world):
         self.world = world
-        self.graph = a_star.GridGraph(self.world.world_width, self.world.world_height)
+        if isinstance(world, snake_back.PeriodicSnakeWorld):
+            self.graph = a_star.PeriodicGridGraph(self.world.world_width, self.world.world_height)
+        else:
+            self.graph = a_star.GridGraph(self.world.world_width, self.world.world_height)
         self.reset()
 
     def reset(self):
@@ -83,7 +86,7 @@ class NaiveSnakeAi(SnakeAi):
         self.snake_position = self.world.snake.copy()
         for x, y in self.snake_position:
             self.graph.obstruct_position(x, y)
-        
+
         min_length = INF
         shortest_path = None
         for food in self.world.food_locations:

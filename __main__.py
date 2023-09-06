@@ -7,7 +7,7 @@ import path_finding_ai
 # world = snake_back.SnakeWorld(
 world = snake_back.PeriodicSnakeWorld(
     world_width=20, world_height=20,
-    food_number = 3,
+    food_number = 4,
     # initial_snake = ((10, 10), (10, 11), (10, 12), (10, 13), (10, 14)),
     initial_snake = ((0, 0), (0, 1), (0, 2), (0, 3), (0, 4)),
     initial_dir = snake_back.UP

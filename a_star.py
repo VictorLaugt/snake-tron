@@ -57,7 +57,35 @@ class GridGraph:
         """Iterates over each neighbor of `position`."""
         x, y = position
 
-        y_up, x_up= (y-1) % self.height, x
+        y_up, x_up = y-1, x
+        y_down, x_down = y+1, x
+        y_left, x_left = y, x-1
+        y_right, x_right = y, x+1
+
+        if y_up >= 0 and self.vertices[y_up, x_up]:
+            yield x_up, y_up
+        if y_down < self.height and self.vertices[y_down, x_down]:
+            yield x_down, y_down
+        if x_left >= 0 and self.vertices[y_left, x_left]:
+            yield x_left, y_left
+        if x_right < self.width and self.vertices[y_right, x_right]:
+            yield x_right, y_right
+
+    def shortest_path(self, src: Position, dst: Position) -> Path:
+        """Returns the shortest path from the position `src` to the position
+        `dst`.
+        """
+        return _shortest_path(self, src, dst, self._build_heuristic(*dst))
+
+
+class PeriodicGridGraph(GridGraph):
+    # def _build_heuristic(self, x_dst, y_dst):
+    #     ...
+
+    def iter_neighbors(self, position):
+        x, y = position
+
+        y_up, x_up = (y-1) % self.height, x
         y_down, x_down = (y+1) % self.height, x
         y_left, x_left = y, (x-1) % self.width
         y_right, x_right = y, (x+1) % self.width
@@ -70,12 +98,7 @@ class GridGraph:
             yield x_left, y_left
         if self.vertices[y_right, x_right]:
             yield x_right, y_right
-    
-    def shortest_path(self, src: Position, dst: Position) -> Path:
-        """Returns the shortest path from the position `src` to the position
-        `dst`.
-        """
-        return _shortest_path(self, src, dst, self._build_heuristic(*dst))
+
 
 
 def _get_path(src, dst, parents):
@@ -133,7 +156,7 @@ def _shortest_path(graph, src, dst, heuristic):
 
         opened_positions.remove(current)
         closed_positions.add(current)
-        
+
         next_position = _minimizing_cost_position(opened_positions, dist_from_src, heuristic)
         if next_position == NO_PATH_FOUND:
             break
