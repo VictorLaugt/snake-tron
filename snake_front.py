@@ -7,6 +7,9 @@ TAG_GAME = 'game'
 TAG_INSPECT = 'inspect'
 
 class SnakeGameWindow(tk.Tk):
+    """Implements a frontend for a snake game. The user can control the snake
+    with the arrow keys.
+    """
     def __init__(self, snake_world, speed, ui_size_coeff):
         super().__init__()
         # backend interface
@@ -34,11 +37,7 @@ class SnakeGameWindow(tk.Tk):
         self.bind_all('<space>', lambda _: self.pause())
         self.bind_all('<Escape>', lambda _: self.destroy())
         self.bind_all('<KeyPress-q>', lambda _: self.destroy())
-
-        self.world_grid.bind_all('<Up>', lambda _: self.user_input(snake_back.UP))
-        self.world_grid.bind_all('<Down>', lambda _: self.user_input(snake_back.DOWN))
-        self.world_grid.bind_all('<Left>', lambda _: self.user_input(snake_back.LEFT))
-        self.world_grid.bind_all('<Right>', lambda _: self.user_input(snake_back.RIGHT))
+        self.bind_user_control()
 
         # widget positions
         tk.Label(self, text='Score: ').grid(row=0, column=0, columnspan=1)
@@ -47,40 +46,47 @@ class SnakeGameWindow(tk.Tk):
 
         self.next_step = self.after_idle(self.game_step)
 
-    def _get_coordinates(self, square):
-        """Returns the coordinates on the graphic ui canvas of a square."""
-        return square[0] * self.square_side_size, square[1] * self.square_side_size
+    def bind_user_control(self):
+        self.world_grid.bind_all('<Up>', lambda _: self.direction_input(snake_back.UP))
+        self.world_grid.bind_all('<Down>', lambda _: self.direction_input(snake_back.DOWN))
+        self.world_grid.bind_all('<Left>', lambda _: self.direction_input(snake_back.LEFT))
+        self.world_grid.bind_all('<Right>', lambda _: self.direction_input(snake_back.RIGHT))
+        
 
     # ---- draw functions
-    def _draw_square(self, x, y, color, tag):
+    def get_coordinates(self, square):
+        """Returns the coordinates of a square on the graphic ui canvas."""
+        return square[0] * self.square_side_size, square[1] * self.square_side_size
+
+    def draw_square(self, x, y, color, tag):
         shift = self.square_side_size
         return self.world_grid.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
 
-    def draw_game(self, head_color, tail_color, food_color):
-        """Draws the snake and the food."""
+    def _draw_game(self, head_color, tail_color, food_color):
         self.world_grid.delete(TAG_GAME)
 
         # draws the snake
         head, *tail = self.world.snake
-        head_x, head_y = self._get_coordinates(head)
-        self.snake_square_ids[0] = self._draw_square(head_x, head_y, head_color, TAG_GAME)
+        head_x, head_y = self.get_coordinates(head)
+        self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_GAME)
         for i, square in enumerate(tail, start=1):
-            x, y = self._get_coordinates(square)
-            self.snake_square_ids[i] = self._draw_square(x, y, tail_color, TAG_GAME)
+            x, y = self.get_coordinates(square)
+            self.snake_square_ids[i] = self.draw_square(x, y, tail_color, TAG_GAME)
 
         # draws the food
         for food in self.world.food_locations:
-            x, y = self._get_coordinates(food)
-            self._draw_square(x, y, food_color, TAG_GAME)
+            x, y = self.get_coordinates(food)
+            self.draw_square(x, y, food_color, TAG_GAME)
 
     def draw(self):
-        self.draw_game('dark green', 'green', 'red')
+        """Draws the entire game."""
+        self._draw_game('dark green', 'green', 'red')
 
-    def refresh_score(self):
+    def _refresh_score(self):
         """Displays the current score."""
         self.score_text.set(self.world.score)
 
-    def schedule_death_animation(self):
+    def _schedule_death_animation(self):
         """Displays the death animation of the snake."""
         def colorize_red_function(square_id):
             return lambda: self.world_grid.itemconfig(square_id, fill='dark red')
@@ -88,7 +94,9 @@ class SnakeGameWindow(tk.Tk):
         for i in range(1, len(self.world.snake)):
             self.after(i * self.speed, colorize_red_function(self.snake_square_ids[i]))
 
-    def move(self):
+
+    # ---- gameloop managers
+    def _move(self):
         """Moves the snake and returns False if the snake hits something,
         True otherwise.
         """
@@ -96,18 +104,16 @@ class SnakeGameWindow(tk.Tk):
         self.draw()
         return continue_game
 
-
-    # ---- gameloop managers
     def end_game(self):
         """Ends the current game."""
-        self.schedule_death_animation()
+        self._schedule_death_animation()
         self.next_step = self.after(self.speed * (len(self.world.snake)+1), self.game_step)
         self.world.reset()
 
     def game_step(self):
         """Executes one step of the game loop."""
-        self.refresh_score()
-        if self.move():
+        self._refresh_score()
+        if self._move():
             # the game continues
             self.next_step = self.after(self.speed, self.game_step)
         else:
@@ -115,7 +121,7 @@ class SnakeGameWindow(tk.Tk):
             self.end_game()
 
     def pause(self):
-        """Pause or resume the game."""
+        """Pauses or resumes the game."""
         self.game_paused = not self.game_paused
         if self.game_paused:
             self.score_text.set('Game paused')
@@ -131,34 +137,35 @@ class SnakeGameWindow(tk.Tk):
         if direction is not None:
             self.world.add_request(direction)
 
-    def user_input(self, direction):
-        self.direction_input(direction)
-
 
 class AutomaticSnakeGameWindow(SnakeGameWindow):
+    """Implements a frontend for a snake game. An algorithm is used to control
+    the snake, the user cannot interfere with it.
+    """
     def __init__(self, snake_world, speed, ui_size_coeff, ai):
         super().__init__(snake_world, speed, ui_size_coeff)
         self.ai = ai
 
-    def draw_ai_inspection(self, color):
+    def bind_user_control(self):
+        pass # the user cannot interfere with the ai so we don't bind any control keys.
+
+
+    # ---- draw functions
+    def _draw_ai_inspection(self, color):
         self.world_grid.delete(TAG_INSPECT)
 
         for i, square in enumerate(self.ai.inspect()):
-            x, y = self._get_coordinates(square)
-            self._draw_square(x, y, color, TAG_INSPECT)
+            x, y = self.get_coordinates(square)
+            self.draw_square(x, y, color, TAG_INSPECT)
 
     def draw(self):
-        self.draw_ai_inspection('yellow')
+        self._draw_ai_inspection('yellow')
         super().draw()
 
-    def ai_input(self, direction):
-        self.direction_input(direction)
 
-    def user_input(self, direction):
-        self.direction_input(direction)
-
+    # ---- gameloop managers
     def game_step(self):
-        self.ai_input(self.ai.get_input())
+        self.direction_input(self.ai.get_input())
         super().game_step()
 
     def end_game(self):

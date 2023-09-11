@@ -24,7 +24,7 @@ class AbstractSnakeWorld(ABC):
     Usage
     ---------------------------------------------------------------------------
     A class which inherits from AbstractSnakeWorld implements a snake game
-    backend is it implements the following features:
+    backend is it implements the following methods:
     - get_new_food_position
     - moved_square
     - obstacle_hit
@@ -36,7 +36,6 @@ class AbstractSnakeWorld(ABC):
     first game)
     - add_request: Adds a new requested direction in which the snake must move
     - move_snake: Advances the game one step
-
 
 
     Attributes
