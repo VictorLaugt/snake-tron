@@ -88,15 +88,17 @@ class NaiveSnakeAi(SnakeAi):
             self.graph.obstruct_position(x, y)
 
         min_length = INF
-        shortest_path = None
+        shortest_path_x = None
         for food in self.world.food_locations:
-            path = self.graph.shortest_path(self.world.snake[0], food)
-            length = len(path[0])
-            if length < min_length:
+            path_x, path_y = self.graph.shortest_path(self.world.snake[0], food)
+            length = len(path_x)
+            if 0 < length < min_length and (path_x[0], path_y[0]) in self.world.food_locations:
                 min_length = length
-                shortest_path = path
-        if shortest_path is not None:
-            self.path_x, self.path_y = shortest_path
+                shortest_path_x = path_x
+                shortest_path_y = path_y
+        if shortest_path_x is not None:
+            self.path_x = shortest_path_x
+            self.path_y = shortest_path_y
 
     def _get_next_direction(self):
         if self._reached_target():
