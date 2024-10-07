@@ -144,7 +144,7 @@ def _shortest_path(graph, src, dst, heuristic):
 
     while current != dst:
         for neighbor in graph.iter_neighbors(current):
-            if current in closed_positions:
+            if neighbor in closed_positions:
                 continue
 
             d = dist_from_src[current]
