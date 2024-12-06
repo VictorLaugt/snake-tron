@@ -24,7 +24,7 @@ class GridGraph:
         # array which represents the state of each (x, y) positions.
         # True: free
         # False: obstacle
-        self.vertices = np.ones((self.height, self.width), dtype=np.bool8)
+        self.vertices = np.ones((self.height, self.width), dtype=bool)
 
     def __repr__(self):
         return str(self.vertices)
