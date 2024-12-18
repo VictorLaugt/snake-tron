@@ -159,7 +159,7 @@ class SnakeGameWindow(tk.Tk):
         square = self.coordinates_to_square(x, y)
         if square in self.world.obstacle_locations:
             self.world.discard_obstacle(square)
-        elif square not in self.world.snake:
+        elif square not in self.world.snake and square not in self.world.food_locations:
             self.world.add_obstacle(square)
         self._draw_obstacles('black')
 
