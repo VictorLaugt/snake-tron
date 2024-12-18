@@ -3,7 +3,8 @@ import snake_back
 import tkinter as tk
 
 
-TAG_GAME = 'game'
+TAG_WORLD = 'game'
+TAG_OBSTACLE = 'obstacle'
 TAG_INSPECT = 'inspect'
 
 class SnakeGameWindow(tk.Tk):
@@ -16,7 +17,7 @@ class SnakeGameWindow(tk.Tk):
         self.world = snake_world
         self.world.reset()
 
-        # graphic characteristics
+        # graphical characteristics
         self.speed = speed
         self.square_side_size = ui_size_coeff
 
@@ -37,7 +38,8 @@ class SnakeGameWindow(tk.Tk):
         self.bind_all('<space>', lambda _: self.pause())
         self.bind_all('<Escape>', lambda _: self.destroy())
         self.bind_all('<KeyPress-q>', lambda _: self.destroy())
-        self.bind_user_control()
+        self.bind_all('<Button-1>', lambda event: self.obstacle_input(event.x, event.y))
+        self.bind_snake_control()
 
         # widget positions
         tk.Label(self, text='Score: ').grid(row=0, column=0, columnspan=1)
@@ -46,41 +48,56 @@ class SnakeGameWindow(tk.Tk):
 
         self.next_step = self.after_idle(self.game_step)
 
-    def bind_user_control(self):
+    def bind_snake_control(self):
         self.world_grid.bind_all('<Up>', lambda _: self.direction_input(snake_back.UP))
         self.world_grid.bind_all('<Down>', lambda _: self.direction_input(snake_back.DOWN))
         self.world_grid.bind_all('<Left>', lambda _: self.direction_input(snake_back.LEFT))
         self.world_grid.bind_all('<Right>', lambda _: self.direction_input(snake_back.RIGHT))
-        
+
 
     # ---- draw functions
-    def get_coordinates(self, square):
-        """Returns the coordinates of a square on the graphic ui canvas."""
+    def square_to_coordinates(self, square):
+        """Returns the coordinates of a square on the graphical ui canvas."""
         return square[0] * self.square_side_size, square[1] * self.square_side_size
+
+    def coordinates_to_square(self, x, y):
+        """Returns the square of the snake world which corresponds to the `(x, y)`
+        coordinates on the graphical ui canvas.
+        """
+        return int(x / self.square_side_size), int(y / self.square_side_size)
 
     def draw_square(self, x, y, color, tag):
         shift = self.square_side_size
         return self.world_grid.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
 
-    def _draw_game(self, head_color, tail_color, food_color):
-        self.world_grid.delete(TAG_GAME)
+    def _draw_world(self, head_color, tail_color, food_color):
+        self.world_grid.delete(TAG_WORLD)
 
         # draws the snake
         head, *tail = self.world.snake
-        head_x, head_y = self.get_coordinates(head)
-        self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_GAME)
+        head_x, head_y = self.square_to_coordinates(head)
+        self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_WORLD)
         for i, square in enumerate(tail, start=1):
-            x, y = self.get_coordinates(square)
-            self.snake_square_ids[i] = self.draw_square(x, y, tail_color, TAG_GAME)
+            x, y = self.square_to_coordinates(square)
+            self.snake_square_ids[i] = self.draw_square(x, y, tail_color, TAG_WORLD)
 
         # draws the food
         for food in self.world.food_locations:
-            x, y = self.get_coordinates(food)
-            self.draw_square(x, y, food_color, TAG_GAME)
+            x, y = self.square_to_coordinates(food)
+            self.draw_square(x, y, food_color, TAG_WORLD)
+
+    def _draw_obstacles(self, obstacle_color):
+        self.world_grid.delete(TAG_OBSTACLE)
+
+        # draws the obstacles
+        for obstacle in self.world.obstacle_locations:
+            x, y = self.square_to_coordinates(obstacle)
+            self.draw_square(x, y, obstacle_color, TAG_WORLD)
 
     def draw(self):
         """Draws the entire game."""
-        self._draw_game('dark green', 'green', 'red')
+        self._draw_world('dark green', 'green', 'red')
+        self._draw_obstacles('black')
 
     def _refresh_score(self):
         """Displays the current score."""
@@ -90,7 +107,7 @@ class SnakeGameWindow(tk.Tk):
         """Displays the death animation of the snake."""
         def colorize_red_function(square_id):
             return lambda: self.world_grid.itemconfig(square_id, fill='dark red')
-        self.world_grid.itemconfig(self.snake_square_ids[0], fill='black')
+        self.world_grid.itemconfig(self.snake_square_ids[0], fill='dark red')
         for i in range(1, len(self.world.snake)):
             self.after(i * self.speed, colorize_red_function(self.snake_square_ids[i]))
 
@@ -137,6 +154,15 @@ class SnakeGameWindow(tk.Tk):
         if direction is not None:
             self.world.add_request(direction)
 
+    def obstacle_input(self, x, y):
+        """Calls the backend to add or remove an obstacle."""
+        square = self.coordinates_to_square(x, y)
+        if square in self.world.obstacle_locations:
+            self.world.discard_obstacle(square)
+        elif square not in self.world.snake:
+            self.world.add_obstacle(square)
+        self._draw_obstacles('black')
+
 
 class AutomaticSnakeGameWindow(SnakeGameWindow):
     """Implements a frontend for a snake game. An algorithm is used to control
@@ -146,8 +172,8 @@ class AutomaticSnakeGameWindow(SnakeGameWindow):
         super().__init__(snake_world, speed, ui_size_coeff)
         self.ai = ai
 
-    def bind_user_control(self):
-        pass # the user cannot interfere with the ai so we don't bind any control keys.
+    def bind_snake_control(self):
+        pass # only the ai is allowed to control the snake.
 
 
     # ---- draw functions
@@ -155,7 +181,7 @@ class AutomaticSnakeGameWindow(SnakeGameWindow):
         self.world_grid.delete(TAG_INSPECT)
 
         for i, square in enumerate(self.ai.inspect()):
-            x, y = self.get_coordinates(square)
+            x, y = self.square_to_coordinates(square)
             self.draw_square(x, y, color, TAG_INSPECT)
 
     def draw(self):

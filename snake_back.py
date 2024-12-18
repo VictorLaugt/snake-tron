@@ -34,6 +34,9 @@ class AbstractSnakeWorld(ABC):
     food_locations: list[tuple[int, int]]
         Positions of the foods.
 
+    obstacle_locations: set[tuple[int, int]]
+        Positions of the obstacles.
+
     direction: tuple[int, int]
         Direction in which the snake is currently moving.
 
@@ -54,6 +57,7 @@ class AbstractSnakeWorld(ABC):
         # game variables
         self.snake: list[Position] = []
         self.food_locations: list[Position] = []
+        self.obstacle_locations: set[Position] = set()
         self.requests: deque[Direction] = deque((), maxlen=5)
         self.direction = None
         self.score = 0
@@ -67,6 +71,8 @@ class AbstractSnakeWorld(ABC):
         self.food_locations.clear()
         for _ in range(self.food_number):
             self.food_locations.append(self.get_new_food_position())
+
+        self.obstacle_locations.clear()
 
         self.direction = self.initial_direction
         self.requests.clear()
@@ -93,9 +99,9 @@ class AbstractSnakeWorld(ABC):
             self.direction = self.requests.popleft()
 
         # computes the head next position and detects a possible collision with
-        # a wall
+        # an obstacle or a wall
         head = self.moved_square(self.snake[0], self.direction)
-        if self.obstacle_hit(head):
+        if head in self.obstacle_locations or self.wall_hit(head):
             return False
 
         # moves the snake tail and detects a possible collision between its head
@@ -118,13 +124,13 @@ class AbstractSnakeWorld(ABC):
 
         return True
 
-    @abstractmethod
     def add_obstacle(self, square: Position) -> None:
         """Put an obstacle in the world at the position `square`."""
+        self.obstacle_locations.add(square)
 
-    @abstractmethod
     def discard_obstacle(self, square: Position) -> None:
         """If the position `square` contains an obstacle, remove this obstacle."""
+        self.obstacle_locations.discard(square)
 
     @abstractmethod
     def win(self) -> bool:
@@ -140,10 +146,8 @@ class AbstractSnakeWorld(ABC):
         """Returns the position of `square` moved in `direction`."""
 
     @abstractmethod
-    def obstacle_hit(self, square: Position) -> bool:
-        """Returns True if `square` touches an obstacle (other than the snake's
-        tail), False otherwise.
-        """
+    def wall_hit(self, square: Position) -> bool:
+        """Returns True if `square` touches a wall, False otherwise."""
 
 
 class SnakeWorld(AbstractSnakeWorld):
@@ -171,7 +175,6 @@ class SnakeWorld(AbstractSnakeWorld):
         self.world_width = world_width   # x-axis length
         self.world_height = world_height # y-axis length
         self.world_size = world_width * world_height
-        self.obstacle_locations: set[Position] = set()
 
     def __repr__(self) -> str:
         array = [[None]*self.world_width for y in range(self.world_height)]
@@ -192,16 +195,6 @@ class SnakeWorld(AbstractSnakeWorld):
         return '\n'.join(''.join(row) for row in array)
 
     # ---- public methods
-    def reset(self) -> None:
-        super().reset()
-        self.obstacle_locations.clear()
-
-    def add_obstacle(self, square: Position) -> None:
-        self.obstacle_locations.add(square)
-
-    def discard_obstacle(self, square) -> None:
-        self.obstacle_locations.discard(square)
-
     def win(self) -> bool:
         return self.count_free_squares() <= 0
 
@@ -222,12 +215,9 @@ class SnakeWorld(AbstractSnakeWorld):
     def moved_square(self, square: Position, direction: Direction) -> Position:
         return (square[0] + direction[0], square[1] + direction[1])
 
-    def border_hit(self, square: Position) -> bool:
+    def wall_hit(self, square: Position) -> bool:
         return not (0 <= square[0] < self.world_width and
                     0 <= square[1] <= self.world_height)
-
-    def obstacle_hit(self, square: Position) -> bool:
-        return square in self.obstacle_locations or self.border_hit(square)
 
 
 class PeriodicSnakeWorld(SnakeWorld):
@@ -245,5 +235,5 @@ class PeriodicSnakeWorld(SnakeWorld):
             (square[1] + direction[1]) % self.world_height
         )
 
-    def border_hit(self, square: Position) -> bool:
+    def wall_hit(self, square: Position) -> bool:
         return False
