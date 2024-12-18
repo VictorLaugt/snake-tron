@@ -170,7 +170,7 @@ class SnakeWorld(AbstractSnakeWorld):
         super().__init__(food_number, initial_snake, initial_dir)
         self.world_width = world_width   # x-axis length
         self.world_height = world_height # y-axis length
-        self.max_snake_size = (world_height * world_width) - food_number
+        self.world_size = world_width * world_height
         self.obstacle_locations: set[Position] = set()
 
     def __repr__(self) -> str:
@@ -203,13 +203,20 @@ class SnakeWorld(AbstractSnakeWorld):
         self.obstacle_locations.discard(square)
 
     def win(self) -> bool:
-        return len(self.snake) >= (self.max_snake_size - len(self.obstacle_locations))
+        return self.count_free_squares() <= 0
 
     # ---- protected methods
+    def count_free_squares(self) -> int:
+        return self.world_size - len(self.food_locations) - len(self.snake) - len(self.obstacle_locations)
+
     def get_new_food_position(self) -> Position:
+        assert self.count_free_squares() > 0
         while True:
             new_food = (randrange(self.world_width), randrange(self.world_height))
-            if new_food not in self.snake and new_food not in self.food_locations:
+            if (new_food not in self.snake and
+                new_food not in self.food_locations and
+                new_food not in self.obstacle_locations
+            ):
                 return new_food
 
     def moved_square(self, square: Position, direction: Direction) -> Position:
