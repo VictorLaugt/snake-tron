@@ -59,8 +59,8 @@ class RandomSnakeAi(SnakeAi):
 
 
 class NaiveSnakeAi(SnakeAi):
-    """Implements a neive snake ai which always follow the shortest path to the
-    nearest food, even if that makes hit himself.
+    """Implements a naive snake that always follows the shortest path to the
+    nearest food, even if it means getting stuck in the long term.
     """
     def __init__(self, world):
         self.world = world
