@@ -25,25 +25,7 @@ def oposite(direction: Direction) -> Direction:
 class AbstractSnakeWorld(ABC):
     """Abstract class for a snake game backend.
 
-
-    Usage
-    ---------------------------------------------------------------------------
-    A class which inherits from AbstractSnakeWorld implements a snake game
-    backend is it implements the following methods:
-    - get_new_food_position
-    - moved_square
-    - obstacle_hit
-    - win
-
-    Then, the instances of such classes can be used throught the following
-    methods:
-    - reset: Reset the game. (Must be used at least once before starting the
-    first game)
-    - add_request: Adds a new requested direction in which the snake must move
-    - move_snake: Advances the game one step
-
-
-    Attributes
+    Public attributes
     ---------------------------------------------------------------------------
     snake: list[tuple[int, int]]
         Positions of the snake squares. ``snake[0]`` is the snake's head and
@@ -76,6 +58,7 @@ class AbstractSnakeWorld(ABC):
         self.direction = None
         self.score = 0
 
+    # ---- public methods
     def reset(self) -> None:
         """Resets the game variables."""
         self.snake.clear()
@@ -102,7 +85,7 @@ class AbstractSnakeWorld(ABC):
 
     def move_snake(self) -> bool:
         """Moves the snake in the next requested direction.
-        Makes the snake grows if it eats a food.
+        If the snake eats a food, makes it graw and spawns a new food.
         Returns False if the snake hits an obstacle or its tail, True otherwise.
         """
         # determines the current direction
@@ -136,6 +119,19 @@ class AbstractSnakeWorld(ABC):
         return True
 
     @abstractmethod
+    def add_obstacle(self, square: Position) -> None:
+        """Put an obstacle in the world at the position `square`."""
+
+    @abstractmethod
+    def discard_obstacle(self, square: Position) -> None:
+        """If the position `square` contains an obstacle, remove this obstacle."""
+
+    @abstractmethod
+    def win(self) -> bool:
+        """Returns True if the game is won, False otherwise."""
+
+    # ---- protected methods
+    @abstractmethod
     def get_new_food_position(self) -> Position:
         """Returns the position of a new food."""
 
@@ -149,18 +145,14 @@ class AbstractSnakeWorld(ABC):
         tail), False otherwise.
         """
 
-    @abstractmethod
-    def win(self) -> bool:
-        """Returns True if the game is won, False otherwise."""
-
-
 
 class SnakeWorld(AbstractSnakeWorld):
     """Implements a snake game backend.
 
-    Attributes
+    Public attributes
     ---------------------------------------------------------------------------
-    see AbstractSnakeWorld attributes
+    see AbstractSnakeWorld public attributes
+
     world_width: int
         width of the snake world
 
@@ -179,6 +171,7 @@ class SnakeWorld(AbstractSnakeWorld):
         self.world_width = world_width   # x-axis length
         self.world_height = world_height # y-axis length
         self.max_snake_size = (world_height * world_width) - food_number
+        self.obstacle_locations: set[Position] = set()
 
     def __repr__(self) -> str:
         array = [[None]*self.world_width for y in range(self.world_height)]
@@ -186,16 +179,33 @@ class SnakeWorld(AbstractSnakeWorld):
             for y in range(self.world_height):
                 square = (x, y)
                 if square == self.snake[0]:
-                    square_repr = 'X'
+                    square_repr = '@'
                 elif square in self.snake:
                     square_repr = 'O'
                 elif square in self.food_locations:
                     square_repr = '*'
+                elif square in self.obstacle_locations:
+                    square_repr = 'X'
                 else:
                     square_repr = '.'
                 array[y][x] = square_repr
         return '\n'.join(''.join(row) for row in array)
 
+    # ---- public methods
+    def reset(self) -> None:
+        super().reset()
+        self.obstacle_locations.clear()
+
+    def add_obstacle(self, square: Position) -> None:
+        self.obstacle_locations.add(square)
+
+    def discard_obstacle(self, square) -> None:
+        self.obstacle_locations.discard(square)
+
+    def win(self) -> bool:
+        return len(self.snake) >= (self.max_snake_size - len(self.obstacle_locations))
+
+    # ---- protected methods
     def get_new_food_position(self) -> Position:
         while True:
             new_food = (randrange(self.world_width), randrange(self.world_height))
@@ -205,26 +215,28 @@ class SnakeWorld(AbstractSnakeWorld):
     def moved_square(self, square: Position, direction: Direction) -> Position:
         return (square[0] + direction[0], square[1] + direction[1])
 
-    def obstacle_hit(self, square: Position) -> bool:
+    def border_hit(self, square: Position) -> bool:
         return not (0 <= square[0] < self.world_width and
                     0 <= square[1] <= self.world_height)
 
-    def win(self) -> bool:
-        return len(self.snake) >= self.max_snake_size
+    def obstacle_hit(self, square: Position) -> bool:
+        return square in self.obstacle_locations or self.border_hit(square)
 
 
 class PeriodicSnakeWorld(SnakeWorld):
     """Implements snake game backend in a periodic world.
 
-    Attributes
+    Public attributes
     ---------------------------------------------------------------------------
-    see SnakeWorld attributes
+    see SnakeWorld public attributes
     """
+
+    # ---- protected methods
     def moved_square(self, square: Position, direction: Direction) -> Position:
         return (
             (square[0] + direction[0]) % self.world_width,
             (square[1] + direction[1]) % self.world_height
         )
 
-    def obstacle_hit(self, square: Position) -> bool:
+    def border_hit(self, square: Position) -> bool:
         return False
