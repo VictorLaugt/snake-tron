@@ -39,6 +39,8 @@ def launch_ai_game():
     graphic_ui.mainloop()
 
 
+# TODO: make the ai agent variant (single player) the default one
+# TODO: add an option to enable or disable the ai agent path visualization
 parser = argparse.ArgumentParser()
 parser.add_argument('-a', '--ai', action='store_true')
 args = parser.parse_args()

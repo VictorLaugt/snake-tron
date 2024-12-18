@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+import random
 
 import snake_back
-
 import a_star
-import random
+
+
 
 def direction_repr(direction):
     if direction == snake_back.UP:
@@ -21,9 +24,12 @@ def direction_repr(direction):
 INF = float('inf')
 
 class SnakeAi(ABC):
-    @abstractmethod
     def __init__(self, world):
-        """Initializes the ai."""
+        self.set_world(world)
+
+    @abstractmethod
+    def set_world(self, world):
+        """Initializes the ai to evolve in the given world."""
 
     @abstractmethod
     def reset(self):
@@ -49,6 +55,9 @@ class RandomSnakeAi(SnakeAi):
     )
 
     def __init__(self, world):
+        super().__init__(world)
+
+    def set_world(self, world):
         pass
 
     def reset(self):
@@ -61,8 +70,19 @@ class RandomSnakeAi(SnakeAi):
 class NaiveSnakeAi(SnakeAi):
     """Implements a naive snake that always follows the shortest path to the
     nearest food, even if it means getting stuck in the long term.
+
+    TODO: Make the ai agent aware of the world obstacles:
+        - call self.graph.obstruct_position when an obstacle appear
+        - call self.graph.free_position when an obstacle disapear
+
+    TODO: Make a variant of the agent which recomputes its path at each snake movement
     """
     def __init__(self, world):
+        self.world: snake_back.AbstractSnakeWorld = None
+        self.graph: a_star.GridGraph = None
+        super().__init__(world)
+
+    def set_world(self, world):
         self.world = world
         if isinstance(world, snake_back.PeriodicSnakeWorld):
             self.graph = a_star.PeriodicGridGraph(self.world.world_width, self.world.world_height)
