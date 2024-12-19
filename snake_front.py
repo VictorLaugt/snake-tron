@@ -1,17 +1,22 @@
-import snake_back
+from __future__ import annotations
+import snake_world
 
+from path_finding_ai import UP, DOWN, LEFT, RIGHT
 import tkinter as tk
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from snake_world import SnakeWorld
 
 
 TAG_WORLD = 'game'
-TAG_OBSTACLE = 'obstacle'
 TAG_INSPECT = 'inspect'
 
 class SnakeGameWindow(tk.Tk):
     """Implements a frontend for a snake game. The user can control the snake
     with the arrow keys.
     """
-    def __init__(self, snake_world, speed, ui_size_coeff):
+    def __init__(self, snake_world: SnakeWorld, speed: float, ui_size_coeff:float):
         super().__init__()
         # backend interface
         self.world = snake_world
@@ -26,19 +31,17 @@ class SnakeGameWindow(tk.Tk):
         self.next_step = None
 
         # widget declarations
-        self.score_text = tk.StringVar(self, self.world.score)
         self.world_grid = tk.Canvas(self,
-                                    width=self.world.world_width * self.square_side_size,
-                                    height=self.world.world_height * self.square_side_size,
+                                    width=self.world.width * self.square_side_size,
+                                    height=self.world.height * self.square_side_size,
                                     bg='gray')
-        self.snake_square_ids = [None] * (self.world.world_width * self.world.world_height)
+        self.snake_square_ids = [None] * (self.world.width * self.world.height)
         self.score_displayer = tk.Entry(self, textvariable=self.score_text)
 
         # events
         self.bind_all('<space>', lambda _: self.pause())
         self.bind_all('<Escape>', lambda _: self.destroy())
         self.bind_all('<KeyPress-q>', lambda _: self.destroy())
-        self.bind_all('<Button-1>', lambda event: self.obstacle_input(event.x, event.y))
         self.bind_snake_control()
 
         # widget positions
@@ -49,10 +52,10 @@ class SnakeGameWindow(tk.Tk):
         self.next_step = self.after_idle(self.game_step)
 
     def bind_snake_control(self):
-        self.world_grid.bind_all('<Up>', lambda _: self.direction_input(snake_back.UP))
-        self.world_grid.bind_all('<Down>', lambda _: self.direction_input(snake_back.DOWN))
-        self.world_grid.bind_all('<Left>', lambda _: self.direction_input(snake_back.LEFT))
-        self.world_grid.bind_all('<Right>', lambda _: self.direction_input(snake_back.RIGHT))
+        self.world_grid.bind_all('<Up>', lambda _: self.direction_input(UP))
+        self.world_grid.bind_all('<Down>', lambda _: self.direction_input(DOWN))
+        self.world_grid.bind_all('<Left>', lambda _: self.direction_input(LEFT))
+        self.world_grid.bind_all('<Right>', lambda _: self.direction_input(RIGHT))
 
 
     # ---- draw functions
@@ -70,34 +73,27 @@ class SnakeGameWindow(tk.Tk):
         shift = self.square_side_size
         return self.world_grid.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
 
-    def _draw_world(self, head_color, tail_color, food_color):
+    def _draw_world(self, head_color_seq, tail_color_seq, food_color):
+        assert len(head_color_seq) == len(tail_color_seq)
         self.world_grid.delete(TAG_WORLD)
 
         # draws the snake
-        head, *tail = self.world.snake
-        head_x, head_y = self.square_to_coordinates(head)
-        self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_WORLD)
-        for i, square in enumerate(tail, start=1):
-            x, y = self.square_to_coordinates(square)
-            self.snake_square_ids[i] = self.draw_square(x, y, tail_color, TAG_WORLD)
+        for i, (head_color, tail_color) in enumerate(zip(head_color_seq, tail_color_seq)):
+            head, *tail = self.world.snake_agents[i].snake_pos
+            head_x, head_y = self.square_to_coordinates(head)
+            self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_WORLD)
+            for j, square in enumerate(tail, start=1):
+                x, y = self.square_to_coordinates(square)
+                self.snake_square_ids[j] = self.draw_square(x, y, tail_color, TAG_WORLD)
 
         # draws the food
-        for food in self.world.food_locations:
+        for food in self.world.food_pos:
             x, y = self.square_to_coordinates(food)
             self.draw_square(x, y, food_color, TAG_WORLD)
 
-    def _draw_obstacles(self, obstacle_color):
-        self.world_grid.delete(TAG_OBSTACLE)
-
-        # draws the obstacles
-        for obstacle in self.world.obstacle_locations:
-            x, y = self.square_to_coordinates(obstacle)
-            self.draw_square(x, y, obstacle_color, TAG_WORLD)
-
     def draw(self):
         """Draws the entire game."""
-        self._draw_world('dark green', 'green', 'red')
-        self._draw_obstacles('black')
+        self._draw_world(('dark green',), ('green',), 'red')
 
     def _refresh_score(self):
         """Displays the current score."""
@@ -154,47 +150,38 @@ class SnakeGameWindow(tk.Tk):
         if direction is not None:
             self.world.add_request(direction)
 
-    def obstacle_input(self, x, y):
-        """Calls the backend to add or remove an obstacle."""
-        square = self.coordinates_to_square(x, y)
-        if square in self.world.obstacle_locations:
-            self.world.discard_obstacle(square)
-        elif square not in self.world.snake and square not in self.world.food_locations:
-            self.world.add_obstacle(square)
-        self._draw_obstacles('black')
+
+# class AutomaticSnakeGameWindow(SnakeGameWindow):
+#     """Implements a frontend for a snake game. An algorithm is used to control
+#     the snake, the user cannot interfere with it.
+#     """
+#     def __init__(self, snake_world, speed, ui_size_coeff, ai):
+#         super().__init__(snake_world, speed, ui_size_coeff)
+#         self.ai = ai
+
+#     def bind_snake_control(self):
+#         pass # only the ai is allowed to control the snake.
 
 
-class AutomaticSnakeGameWindow(SnakeGameWindow):
-    """Implements a frontend for a snake game. An algorithm is used to control
-    the snake, the user cannot interfere with it.
-    """
-    def __init__(self, snake_world, speed, ui_size_coeff, ai):
-        super().__init__(snake_world, speed, ui_size_coeff)
-        self.ai = ai
+#     # ---- draw functions
+#     def _draw_ai_inspection(self, color):
+#         self.world_grid.delete(TAG_INSPECT)
 
-    def bind_snake_control(self):
-        pass # only the ai is allowed to control the snake.
+#         for i, square in enumerate(self.ai.inspect()):
+#             x, y = self.square_to_coordinates(square)
+#             self.draw_square(x, y, color, TAG_INSPECT)
 
-
-    # ---- draw functions
-    def _draw_ai_inspection(self, color):
-        self.world_grid.delete(TAG_INSPECT)
-
-        for i, square in enumerate(self.ai.inspect()):
-            x, y = self.square_to_coordinates(square)
-            self.draw_square(x, y, color, TAG_INSPECT)
-
-    def draw(self):
-        self._draw_ai_inspection('yellow')
-        super().draw()
+#     def draw(self):
+#         self._draw_ai_inspection('yellow')
+#         super().draw()
 
 
-    # ---- gameloop managers
-    def game_step(self):
-        self.direction_input(self.ai.get_input())
-        super().game_step()
+#     # ---- gameloop managers
+#     def game_step(self):
+#         self.direction_input(self.ai.get_input())
+#         super().game_step()
 
-    def end_game(self):
-        super().end_game()
-        self.ai.reset()
-        # self.pause()
+#     def end_game(self):
+#         super().end_game()
+#         self.ai.reset()
+#         # self.pause()

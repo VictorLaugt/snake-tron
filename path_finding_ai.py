@@ -1,137 +1,175 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import deque
 import random
 
-import snake_back
-import a_star
+from graph import EuclidianDistanceHeuristic
+from a_star import shortest_path
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from type_hints import Position, Direction
+    from snake_world import SnakeWorld
+
+
+INF = float('inf')
+
+UP: Direction =    (0,  -1)
+DOWN: Direction =  (0,  1)
+LEFT: Direction =  (-1, 0)
+RIGHT: Direction = (1,  0)
 
 
 def direction_repr(direction):
-    if direction == snake_back.UP:
+    if direction == UP:
         return 'up'
-    elif direction == snake_back.DOWN:
+    elif direction == DOWN:
         return 'down'
-    elif direction == snake_back.LEFT:
+    elif direction == LEFT:
         return 'left'
-    elif direction == snake_back.RIGHT:
+    elif direction == RIGHT:
         return 'right'
     else:
         return repr(direction)
 
 
-INF = float('inf')
-
-class SnakeAi(ABC):
-    def __init__(self, world):
-        self.set_world(world)
-
-    @abstractmethod
-    def set_world(self, world):
-        """Initializes the ai to evolve in the given world."""
-
-    @abstractmethod
-    def reset(self):
-        """Resets the ai."""
-
-    @abstractmethod
-    def get_input(self):
-        """Returns the next direction in which the ai wants to move the snake."""
-
-    def inspect(self):
-        """Returns an iterable of positions to represent the intention of the ai."""
-        return
-        yield
+def oposite_dir(d: Direction) -> Direction:
+    return (-d[0], -d[1])
 
 
-class RandomSnakeAi(SnakeAi):
-    """Implements a dumb snake ai which plays randomly."""
-    possible_inputs = (
-        snake_back.UP,
-        snake_back.DOWN,
-        snake_back.LEFT,
-        snake_back.RIGHT
-    )
-
-    def __init__(self, world):
-        super().__init__(world)
-
-    def set_world(self, world):
-        pass
-
-    def reset(self):
-        pass
-
-    def get_input(self):
-        return random.choice(self.possible_inputs)
+class AbstractSnakeAgent(ABC):
+    ...
 
 
-class NaiveSnakeAi(SnakeAi):
-    """Implements a naive snake that always follows the shortest path to the
-    nearest food, even if it means getting stuck in the long term.
-
-    TODO: Make the ai agent aware of the world obstacles:
-        - call self.graph.obstruct_position when an obstacle appear
-        - call self.graph.free_position when an obstacle disapear
-
-    TODO: Make a variant of the agent which recomputes its path at each snake movement
-    """
-    def __init__(self, world):
-        self.world: snake_back.AbstractSnakeWorld = None
-        self.graph: a_star.GridGraph = None
-        super().__init__(world)
-
-    def set_world(self, world):
+class PlayerSnake(AbstractSnakeAgent):
+    def __init__(self, world: SnakeWorld, initial_snake_pos: list[Position], initial_snake_dir: Direction) -> None:
         self.world = world
-        if isinstance(world, snake_back.PeriodicSnakeWorld):
-            self.graph = a_star.PeriodicGridGraph(self.world.world_width, self.world.world_height)
-        else:
-            self.graph = a_star.GridGraph(self.world.world_width, self.world.world_height)
+        self.initial_snake_pos = initial_snake_pos
+        self.initial_snake_dir = initial_snake_dir
+
+        self.snake_pos: list[Position] = []
+        self.snake_dir: Direction = None
+        self.dir_requests: deque[Direction] = deque((), maxlen=5)
         self.reset()
 
-    def reset(self):
-        self.graph.free_every_positions()
-        self.snake_position = self.world.snake.copy()
-        self.path_x = []
-        self.path_y = []
+    def reset(self) -> None:
+        for pos in self.snake_pos:
+            self.world.free_pos(pos)
+        self.snake_pos.clear()
+        self.snake_pos.extend(self.initial_snake_pos)
+        self.snake_dir = self.initial_snake_dir
+        self.dir_requests.clear()
 
-    def _reached_target(self):
-        return len(self.path_x) == 0
+    def __len__(self) -> int:
+        return len(self.snake_pos)
 
-    def _acquire_target(self):
-        for x, y in self.snake_position:
-            self.graph.free_position(x, y)
+    def add_dir_request(self, request: Direction) -> None:
+        """Adds a new requested direction in which to move the snake."""
+        if len(self.dir_requests) < self.dir_requests.maxlen:
+            if len(self.dir_requests) > 0:
+                last_direction = self.dir_requests[-1]
+            else:
+                last_direction = self.direction
+            if request != oposite_dir(last_direction):
+                self.dir_requests.append(request)
 
-        self.snake_position = self.world.snake.copy()
-        for x, y in self.snake_position:
-            self.graph.obstruct_position(x, y)
+    def _cut_tail(self, cut_index: int) -> None:
+        for i in range(cut_index, len(self.snake_pos)):
+            self.world.free_pos(self.snake_pos[i])
+        del self.snake_pos[cut_index:]
 
-        min_length = INF
-        shortest_path_x = None
-        for food in self.world.food_locations:
-            path_x, path_y = self.graph.shortest_path(self.world.snake[0], food)
-            length = len(path_x)
-            if 0 < length < min_length and (path_x[0], path_y[0]) in self.world.food_locations:
-                min_length = length
-                shortest_path_x = path_x
-                shortest_path_y = path_y
-        if shortest_path_x is not None:
-            self.path_x = shortest_path_x
-            self.path_y = shortest_path_y
+    def move(self) -> bool:
+        """Moves the snake in the next requested direction.
+        The snake grows if it eats a food.
+        Return True if the snake is still alive after its movement, False otherwise.
+        """
+        # determines the current direction
+        if self.requests:
+            self.direction = self.requests.popleft()
 
-    def _get_next_direction(self):
-        if self._reached_target():
-            return None
+
+        # moves the snake and cuts its tail if its head hits it.
+        head = self.world.moved_pos(self.snake_pos[0], self.direction)
+        for i in range(len(self.snake_pos)-1, 0, -1):
+            self.snake_pos[i] = self.snake_pos[i-1]
+            if head == self.snake_pos[i-1]:
+                self._cut_tail(i-1)
+                break
+        self.snake_pos[0] = head
+
+        # detects collision between the head of the snake and an obstacle
+        # different from its own tail
+        if self.world.pos_is_free(head):
+            self.world.obstruct_pos(head)
         else:
-            x, y = self.world.snake[0]
-            x_next, y_next = self.path_x.pop(), self.path_y.pop()
-            return x_next - x, y_next - y
+            return False
 
-    def get_input(self):
-        if self._reached_target():
-            self._acquire_target()
-        return self._get_next_direction()
+        # makes the snake grow if it eats a food
+        tail_end = self.snake_pos[-1]
+        if self.world.eat_food(head):
+            self.snake_pos.append(tail_end)
+            self.world.obstruct_pos(tail_end)
 
-    def inspect(self):
-        return zip(self.path_x, self.path_y)
+        return True
+
+
+# class AStarSnake(AbstractSnakeAgent):
+#     """Implements a snake that always follows the shortest path to the nearest food,
+#     even if it means getting stuck in the long term.
+
+#     TODO: Make the ai agent aware of the world obstacles:
+#         - call self.graph.obstruct_position when an obstacle appear
+#         - call self.graph.free_position when an obstacle disapear
+
+#     TODO: Make a variant of the agent which recomputes its path at each snake movement
+#     """
+#     def __init__(self, initial_snake, initial_dir):
+#         self.initial_direction = initial_dir
+#         self.initial_snake = initial_snake
+
+#         self.snake: list[Position] = []
+#         self.ob
+
+
+
+#         self.world = world
+#         self.snake = snake
+
+#         self.path_x: list[int] = []
+#         self.path_y: list[int] = []
+
+#         self.direction: Direction = initial_direction
+
+#     def reset(self):
+#         self.graph.free_every_positions()
+#         self.snake_position = self.world.snake.copy()
+#         self.path_x = []
+#         self.path_y = []
+#         self.direction_x = None
+#         self.direction_y = None
+
+#     def get_direction(self):
+#         x, y = self.world.snake[0]
+
+#         min_length = INF
+#         length = 0
+#         for food in self.world.food_locations:
+#             heuristic = EuclidianDistanceHeuristic(*food)
+#             path_x, path_y = shortest_path(self.world.graph, (x, y), food, heuristic)
+#             length = len(path_x)
+
+#             if 0 < length < min_length and path_x[0] == food[0] and path_y[0] == food[1]:
+#                 min_length = length
+#                 shortest_path_x = path_x
+#                 shortest_path_y = path_y
+
+#         if length > 0:
+#             self.path_x = shortest_path_x
+#             self.path_y = shortest_path_y
+#             self.direction = (shortest_path_x.pop() - x, shortest_path_y.pop() - y)
+
+#         return self.direction
+
+#     def inspect(self):
+#         return zip(self.path_x, self.path_y)
