@@ -122,7 +122,7 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
 
         # makes the snake grow if it eats a food
         tail_end = self.snake_pos[-1]
-        if self.world.eat_food(head):
+        if self.world._eat_food(head):
             self.snake_pos.append(tail_end)
             self.world.obstruct_pos(tail_end)
 

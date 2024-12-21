@@ -26,15 +26,42 @@ class SnakeWorld:
 
     # ---- private
     def _get_new_food_pos(self) -> Optional[Position]:
+        """Returns an available position to spawn a new food if any, else
+        returns None.
+        """
         if sum(len(agent) for agent in self.snake_agents) + len(self.food_pos) >= self.width * self.height:
             return None
         while True:
             new_food = (randrange(self.world_width), randrange(self.world_height))
-            if self.pos_is_free(new_food) and new_food not in self.food_pos:
+            if self.vertices[new_food] and new_food not in self.food_pos:
                 return new_food
+
+    def _eat_food(self, p: Position) -> bool:
+        """If there is a food at position `p`, it is removed and replaced by a
+        new food at a random position, then True is returned. Otherwise, False
+        is returned.
+        """
+        for i in range(len(self.food_pos)):
+            if p == self.food_pos[i]:
+                new_food = self._get_new_food_pos()
+                if new_food is not None:
+                    self.food_pos[i] = new_food
+                return True
+        return False
 
 
     # ---- public
+    def reset(self) -> None:
+        """Reset the world and all its agents to make them ready to start a new game."""
+        self.food_pos.clear()
+        for _ in range(self.n_food):
+            new_food = self._get_new_food_pos()
+            if new_food is not None:
+                self.food_pos.append(new_food)
+        for agent in self.snake_agents:
+            agent.reset()
+
+
     def iter_agents(self) -> Iterator[AbstractSnakeAgent]:
         """Iterates over the agents of the world."""
         yield from self.snake_agents
@@ -51,41 +78,17 @@ class SnakeWorld:
         self.snake_agents.append(agent)
         return agent
 
-    def reset(self) -> None:
-        """Reset the world and all its agents to make them ready to start a new game."""
-        self.food_pos.clear()
-        for _ in range(self.n_food):
-            new_food = self._get_new_food_pos()
-            if new_food is not None:
-                self.food_pos.append(new_food)
-        for agent in self.snake_agents:
-            agent.reset()
-
-
-    def eat_food(self, p: Position) -> bool:
-        """If there is a food at position `p`, it is removed and replaced by a
-        new food at a random position, then True is returned. Otherwise, False
-        is returned.
-        """
-        for i in range(len(self.food_pos)):
-            if p == self.food_pos[i]:
-                new_food = self._get_new_food_pos()
-                if new_food is not None:
-                    self.food_pos[i] = new_food
-                return True
-        return False
-
 
     def pos_is_free(self, p: Position) -> bool:
         """Returns True if no obstacle is on the position `p`, False otherwise."""
         return self.vertices[p]
 
     def free_pos(self, p: Position) -> None:
-        """Removes any obstacle from the position `p`."""
+        """Removes obstacle from the position `p`."""
         self.vertices[p] = True
 
     def obstruct_pos(self, p: Position) -> None:
-        """Put an obstacle on the position `p`."""
+        """Puts an obstacle on the position `p`."""
         self.vertices[p] = False
 
 
