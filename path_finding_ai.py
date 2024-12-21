@@ -118,11 +118,6 @@ class PlayerSnake(AbstractSnakeAgent):
 #     """Implements a snake that always follows the shortest path to the nearest food,
 #     even if it means getting stuck in the long term.
 
-#     TODO: Make the ai agent aware of the world obstacles:
-#         - call self.graph.obstruct_position when an obstacle appear
-#         - call self.graph.free_position when an obstacle disapear
-
-#     TODO: Make a variant of the agent which recomputes its path at each snake movement
 #     """
 #     def __init__(self, initial_snake, initial_dir):
 #         self.initial_direction = initial_dir

@@ -3,6 +3,20 @@ import snake_front
 import snake_world
 import path_finding_ai
 
+"""
+TODO list:
+- terminer de remanier le code pour faire en sorte que le monde soit un système
+multi-agent dans lequel chaque agent est un snake pouvant être controllé par un
+algorithme (IA) ou un utilisateur
+- Quand un snake se tape la queue, il se coupe mais reste en vie
+- Quand un snake tape la queue d'un autre, il meurt
+- Quand un snake mange une pomme, il grandit d'une case
+- Dès qu'un snake IA se déplace d'une seule case, il recalcule en entier le chemin
+le plus court vers la pomme la plus proche.
+- Faire un mode 1 joueur (par défaut) où un agent utilisateur combat un agent IA
+- Faire un mode 2 joueurs où deux agents utilisateurs se combattent
+"""
+
 
 def launch_user_game():
     world = snake_world.SnakeWorld(
@@ -39,8 +53,6 @@ def launch_ai_game():
     graphic_ui.mainloop()
 
 
-# TODO: make the ai agent variant (single player) the default one
-# TODO: add an option to enable or disable the ai agent path visualization
 parser = argparse.ArgumentParser()
 parser.add_argument('-a', '--ai', action='store_true')
 args = parser.parse_args()
