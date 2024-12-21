@@ -1,7 +1,7 @@
 import argparse
-import snake_front
-import snake_world
-import path_finding_ai
+
+import front
+import world
 
 """
 TODO list:
@@ -17,47 +17,35 @@ le plus court vers la pomme la plus proche.
 - Faire un mode 2 joueurs où deux agents utilisateurs se combattent
 """
 
-
-def launch_user_game():
-    world = snake_world.SnakeWorld(
-        width=10, height=10,
-        n_food=2,
-        initial_snake=((1, 1), (1, 2), (1, 3), (1, 4), (1, 5)),
-        initial_dir=(0, -1)
-    )
-
-    graphic_ui = snake_front.SnakeGameWindow(
-        world,
-        ui_size_coeff=20,
-        speed=150,
-    )
-
-    graphic_ui.mainloop()
-
-
-def launch_ai_game():
-    world = snake_world.SnakeWorld(
-        width=20, height=20,
-        n_food=4,
-        initial_snake=((1, 1), (1, 2), (1, 3), (1, 4), (1, 5)),
-        initial_dir=(0, -1)
-    )
-
-    graphic_ui = snake_front.AutomaticSnakeGameWindow(
-        world,
-        ui_size_coeff=20,
-        speed=50,
-        ai=path_finding_ai.NaiveSnakeAi(world)
-    )
-
-    graphic_ui.mainloop()
-
-
 parser = argparse.ArgumentParser()
-parser.add_argument('-a', '--ai', action='store_true')
+parser.add_argument('mode', choices=('singleplayer', 'versus'), default='singleplayer')
+parser.add_argument('-e', '--explain-ai', action='store_true')
+parser.add_argument('-t', '--time-step', type=int, default=100)
 args = parser.parse_args()
-if args.ai:
-    launch_ai_game()
-else:
-    launch_user_game()
 
+world = world.SnakeWorld(width=20, height=20, n_food=4)
+
+agent_1_initial_pos = ((1,1), (1,2), (1,3), (1,4), (1,5))
+agent_1_initial_dir = (0,-1)
+
+agent_2_initial_pos = ((3,1), (3,2), (3,3), (3,4), (3,5))
+agent_2_initial_dir = (0,-1)
+
+player_agents = []
+ai_agents = []
+
+player_agents.append(world.new_player_agent(agent_1_initial_pos, agent_1_initial_dir))
+if args.mode == 'singleplayer':
+    ai_agents.append(world.new_ai_agent(agent_2_initial_pos, agent_2_initial_dir))
+else:
+    player_agents.append(world.new_player_agent(agent_2_initial_pos, agent_2_initial_dir))
+
+gui = front.SnakeGameWindow(
+    world,
+    player_agents=player_agents,
+    ai_agents=ai_agents,
+    explain_ai=args.explain_ai,
+    ui_size_coeff=20,
+    speed=args.time_step
+)
+gui.mainloop()

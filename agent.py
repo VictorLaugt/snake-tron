@@ -10,7 +10,7 @@ from a_star import shortest_path
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from type_hints import Position, Direction
-    from snake_world import SnakeWorld
+    from world import SnakeWorld
 
 
 INF = float('inf')

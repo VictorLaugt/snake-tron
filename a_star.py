@@ -5,7 +5,7 @@ import numpy as np
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from type_hints import Position, Path
-    from snake_world import SnakeWorld, AbstractHeuristic
+    from world import SnakeWorld, AbstractHeuristic
 
 
 NO_PATH_FOUND = (None, None)

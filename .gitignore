@@ -1,8 +1,10 @@
 # python
 __pycache__
 
-# editeurs
+# editors
 .spyproject
 .vscode
 .idea
 
+# misc
+refacto-road-map.txt

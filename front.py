@@ -1,12 +1,12 @@
 from __future__ import annotations
-import snake_world
+import world
 
-from path_finding_ai import UP, DOWN, LEFT, RIGHT
+from agent import UP, DOWN, LEFT, RIGHT
 import tkinter as tk
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from snake_world import SnakeWorld
+    from world import SnakeWorld
 
 
 TAG_WORLD = 'game'

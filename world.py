@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator
     from type_hints import Position, Direction
-    from path_finding_ai import AbstractSnakeAgent
+    from agent import AbstractSnakeAgent
 
 
 class AbstractHeuristic(ABC):
