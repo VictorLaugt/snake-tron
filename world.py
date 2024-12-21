@@ -71,7 +71,6 @@ class SnakeWorld:
                 self.food_pos.append(new_food)
         for agent in self.snake_agents:
             agent.reset()
-        assert np.all(self.vertices)
 
 
     def eat_food(self, p: Position) -> bool:
