@@ -19,20 +19,9 @@ class SnakeWorld:
         self.height = height
         self.n_food = n_food
 
-        self.vertices = np.ones((self.height, self.width), dtype=bool)
+        self.vertices = np.ones((self.width, self.height), dtype=bool)
         self.food_pos: list[Position] = []
         self.snake_agents: list[AbstractSnakeAgent] = []
-
-    def __repr__(self) -> str:
-        array = [['.']*self.world_width for y in range(self.world_height)]
-        for x, y in self.food_pos:
-            array[y][x] = '*'
-        for agent in self.snake_agents:
-            x, y = agent.snake_pos[0]
-            array[y][x] = '@'
-            for x, y in agent.snake_pos[1:]:
-                array[y][x] = 'O'
-        return '\n'.join(''.join(row) for row in array)
 
 
     # ---- private
@@ -89,15 +78,15 @@ class SnakeWorld:
 
     def pos_is_free(self, p: Position) -> bool:
         """Returns True if no obstacle is on the position `p`, False otherwise."""
-        return self.vertices[p[1], p[0]]
+        return self.vertices[p]
 
     def free_pos(self, p: Position) -> None:
         """Removes any obstacle from the position `p`."""
-        self.vertices[p[1], p[0]] = True
+        self.vertices[p] = True
 
     def obstruct_pos(self, p: Position) -> None:
         """Put an obstacle on the position `p`."""
-        self.vertices[p[1], p[0]] = False
+        self.vertices[p] = False
 
 
     def get_neighbor(self, p: Position, d: Direction) -> Position:
@@ -109,17 +98,16 @@ class SnakeWorld:
         any obstacle.
         """
         x, y = p
+        up = (x, (y-1) % self.height)
+        down = (x, (y+1) % self.height)
+        left = ((x-1) % self.width, y)
+        right = ((x+1) % self.width, y)
 
-        y_up, x_up = (y-1) % self.height, x
-        y_down, x_down = (y+1) % self.height, x
-        y_left, x_left = y, (x-1) % self.width
-        y_right, x_right = y, (x+1) % self.width
-
-        if self.vertices[y_up, x_up]:
-            yield x_up, y_up
-        if self.vertices[y_down, x_down]:
-            yield x_down, y_down
-        if self.vertices[y_left, x_left]:
-            yield x_left, y_left
-        if self.vertices[y_right, x_right]:
-            yield x_right, y_right
+        if self.vertices[up]:
+            yield up
+        if self.vertices[down]:
+            yield down
+        if self.vertices[left]:
+            yield left
+        if self.vertices[right]:
+            yield right
