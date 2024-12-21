@@ -79,7 +79,7 @@ class SnakeGameWindow(tk.Tk):
 
         # draws the snake
         for i, (head_color, tail_color) in enumerate(zip(head_color_seq, tail_color_seq)):
-            head, *tail = self.world.snake_agents[i].snake_pos
+            head, *tail = self.world.alive_agents[i].snake_pos
             head_x, head_y = self.square_to_coordinates(head)
             self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_WORLD)
             for j, square in enumerate(tail, start=1):

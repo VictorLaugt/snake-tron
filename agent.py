@@ -59,20 +59,49 @@ class AbstractSnakeAgent(ABC):
         assert len(initial_pos) > 0
         self.world = world
         self.initial_pos = initial_pos
-        self.pos = list(initial_pos)
+        self.pos = deque(initial_pos)
+        self.last_tail_pos = None
 
     def __len__(self) -> int:
         return len(self.pos)
 
     def get_head(self) -> Position:
-        return self.pos[0]
+        return self.pos[-1]
 
     def reset(self) -> None:
         self.pos.clear()
-        self.pos.extend(self.initial_pos)
+        self.pos.extendleft(self.initial_pos)
 
-    def move(self) -> None:
-        ...
+    def move(self, d: Direction) -> None:
+        """Moves once the snake in the direction `d`."""
+        self.pos.append(self.world.get_neighbor(self.pos[-1], d))
+        self.last_tail_pos = self.pos.popleft()
+        self.world.free_pos(self.last_tail_pos)
+
+    def check_self_collision(self) -> int:
+        return (self.pos.index(self.pos[-1]) + 1) % len(self.pos)
+
+    def cut(self, cut_length: int) -> None:
+        for _ in range(cut_length):
+            self.world.free_pos(self.pos.popleft())
+
+    def grow(self) -> bool:
+        if self.last_tail_pos is not None:
+            self.pos.appendleft(self.last_tail_pos)
+            self.world.obstruct_pos(self.last_tail_pos)
+            self.last_tail_pos = None
+            return True
+        return False
+
+    def collides_another(self) -> bool:
+        for other in self.world.iter_agents():
+            if self is not other and self.pos[-1] in other.pos:
+                return True
+        return False
+
+    def die(self) -> None:
+        for p in self.pos:
+            self.world.free_pos(p)
 
     @abstractmethod
     def get_new_direction(self) -> Direction:
