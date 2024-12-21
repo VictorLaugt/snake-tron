@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from collections import deque
 import random
 
-from graph import EuclidianDistanceHeuristic
 from a_star import shortest_path
 
 from typing import TYPE_CHECKING
@@ -15,10 +14,10 @@ if TYPE_CHECKING:
 
 INF = float('inf')
 
-UP: Direction =    (0,  -1)
-DOWN: Direction =  (0,  1)
-LEFT: Direction =  (-1, 0)
-RIGHT: Direction = (1,  0)
+UP: Direction = (0,-1)
+DOWN: Direction = (0,1)
+LEFT: Direction = (-1,0)
+RIGHT: Direction = (1,0)
 
 
 def direction_repr(direction):
@@ -38,11 +37,27 @@ def oposite_dir(d: Direction) -> Direction:
     return (-d[0], -d[1])
 
 
+class AbstractHeuristic(ABC):
+    @abstractmethod
+    def __call__(self, x: int, y: int) -> int:
+        pass
+
+
+class EuclidianDistanceHeuristic(AbstractHeuristic):
+    def __init__(self, x_dst: int, y_dst: int) -> None:
+        self.x_dst = x_dst
+        self.y_dst = y_dst
+
+    def __call__(self, x: int, y: int) -> int:
+        dx, dy = self.x_dst - x, self.y_dst - y
+        return dx*dx + dy*dy
+
+
 class AbstractSnakeAgent(ABC):
     ...
 
 
-class PlayerSnake(AbstractSnakeAgent):
+class PlayerSnakeAgent(AbstractSnakeAgent):
     def __init__(self, world: SnakeWorld, initial_snake_pos: list[Position], initial_snake_dir: Direction) -> None:
         self.world = world
         self.initial_snake_pos = initial_snake_pos
@@ -90,7 +105,7 @@ class PlayerSnake(AbstractSnakeAgent):
 
 
         # moves the snake and cuts its tail if its head hits it.
-        head = self.world.moved_pos(self.snake_pos[0], self.direction)
+        head = self.world.get_neighbor(self.snake_pos[0], self.direction)
         for i in range(len(self.snake_pos)-1, 0, -1):
             self.snake_pos[i] = self.snake_pos[i-1]
             if head == self.snake_pos[i-1]:
@@ -114,7 +129,8 @@ class PlayerSnake(AbstractSnakeAgent):
         return True
 
 
-# class AStarSnake(AbstractSnakeAgent):
+class AStarSnakeAgent(AbstractSnakeAgent): pass
+# class AStarSnakeAgent(AbstractSnakeAgent):
 #     """Implements a snake that always follows the shortest path to the nearest food,
 #     even if it means getting stuck in the long term.
 

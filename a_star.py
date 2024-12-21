@@ -62,7 +62,7 @@ def shortest_path(
     closed_positions = set()
 
     while current != dst:
-        for neighbor in graph.iter_neighbors(current):
+        for neighbor in graph.iter_free_neighbors(current):
             if neighbor in closed_positions:
                 continue
 
