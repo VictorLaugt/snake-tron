@@ -8,6 +8,7 @@ from a_star import shortest_path
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from typing import Sequence
     from type_hints import Position, Direction
     from world import SnakeWorld
 
@@ -54,8 +55,55 @@ class EuclidianDistanceHeuristic(AbstractHeuristic):
 
 
 class AbstractSnakeAgent(ABC):
-    ...
+    def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position]) -> None:
+        assert len(initial_pos) > 0
+        self.world = world
+        self.initial_pos = initial_pos
+        self.pos = list(initial_pos)
 
+    def __len__(self) -> int:
+        return len(self.pos)
+
+    def get_head(self) -> Position:
+        return self.pos[0]
+
+    def reset(self) -> None:
+        self.pos.clear()
+        self.pos.extend(self.initial_pos)
+
+    def move(self) -> None:
+        ...
+
+    @abstractmethod
+    def get_new_direction(self) -> Direction:
+        pass
+
+
+class PlayerSnakeAgent(AbstractSnakeAgent):
+    def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
+        super().__init__(world, initial_pos)
+        self.initial_dir = initial_dir
+        self.dir = initial_dir
+        self.dir_requests: deque[Direction] = deque((), maxlen=5)
+
+    def reset(self) -> None:
+        super().reset()
+        self.dir = self.initial_dir
+
+    def get_new_direction(self) -> Direction:
+        if len(self.dir_requests) > 0:
+            self.dir = self.dir_requests.popleft()
+        return self.dir
+
+    def add_dir_request(self, request: Direction) -> None:
+        """Adds a new requested direction in which to move the snake."""
+        if len(self.dir_requests) < self.dir_requests.maxlen:
+            if len(self.dir_requests) > 0:
+                last_dir = self.dir_requests[-1]
+            else:
+                last_dir = self.dir
+            if request != oposite_dir(last_dir):
+                self.dir_requests.append(request)
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
     def __init__(self, world: SnakeWorld, initial_snake_pos: list[Position], initial_snake_dir: Direction) -> None:
