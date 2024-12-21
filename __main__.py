@@ -5,11 +5,11 @@ import path_finding_ai
 
 
 def launch_user_game():
-    world = snake_world.PeriodicSnakeWorld(
-        world_width=10, world_height=10,
-        food_number=2,
+    world = snake_world.SnakeWorld(
+        width=10, height=10,
+        n_food=2,
         initial_snake=((1, 1), (1, 2), (1, 3), (1, 4), (1, 5)),
-        initial_dir=snake_world.UP
+        initial_dir=(0, -1)
     )
 
     graphic_ui = snake_front.SnakeGameWindow(
@@ -22,11 +22,11 @@ def launch_user_game():
 
 
 def launch_ai_game():
-    world = snake_world.PeriodicSnakeWorld(
-        world_width=20, world_height=20,
-        food_number=4,
+    world = snake_world.SnakeWorld(
+        width=20, height=20,
+        n_food=4,
         initial_snake=((1, 1), (1, 2), (1, 3), (1, 4), (1, 5)),
-        initial_dir=snake_world.UP
+        initial_dir=(0, -1)
     )
 
     graphic_ui = snake_front.AutomaticSnakeGameWindow(
