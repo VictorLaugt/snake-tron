@@ -36,7 +36,7 @@ ai_agents = []
 
 player_agents.append(world.new_player_agent(agent_1_initial_pos, agent_1_initial_dir))
 if args.mode == 'singleplayer':
-    ai_agents.append(world.new_ai_agent(agent_2_initial_pos, agent_2_initial_dir))
+    ai_agents.append(world.new_a_star_agent(agent_2_initial_pos, agent_2_initial_dir))
 else:
     player_agents.append(world.new_player_agent(agent_2_initial_pos, agent_2_initial_dir))
 
