@@ -41,6 +41,8 @@ class SnakeWorld(AbstractGridGraph):
         self.food_pos: set[Position] = set()
         self.alive_agents: list[AbstractSnakeAgent] = []
 
+    def __repr__(self) -> str:
+        return str(self.obstacle_count.T)
 
     # ---- private
     def _consume_food(self, p: Position) -> bool:
@@ -87,6 +89,11 @@ class SnakeWorld(AbstractGridGraph):
     def add_obstacle(self, p: Position) -> None:
         """Puts an obstacle on the position `p`."""
         self.obstacle_count[p] += 1
+
+    def pos_is_free(self, p: Position) -> bool:
+        """Returns True if there is no obstacle on the position `p`, False otherwise."""
+        return self.obstacle_count[p] == 0
+
 
     def get_neighbor(self, p: Position, d: Direction) -> Position:
         """Returns the neighbor of position `p` in the direction `d`."""

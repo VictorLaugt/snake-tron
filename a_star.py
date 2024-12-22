@@ -69,8 +69,8 @@ def shortest_path(
     dst: Position,
     heuristic: AbstractHeuristic
 ) -> Path:
-    parents = np.empty((graph.width, graph.height, 2), dtype=np.int64)
-    dist_from_src = np.full((graph.width, graph.height), np.inf, dtype=np.float64)
+    parents = np.empty((graph.get_width(), graph.get_height(), 2), dtype=np.int64)
+    dist_from_src = np.full((graph.get_width(), graph.get_height()), np.inf, dtype=np.float64)
 
     current = src
     dist_from_src[src] = 0.
