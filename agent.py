@@ -4,11 +4,11 @@ from abc import ABC, abstractmethod
 from collections import deque
 import random
 
-from a_star import shortest_path
+from a_star import shortest_path, EuclidianDistanceHeuristic
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Sequence
+    from typing import Sequence, Iterator
     from type_hints import Position, Direction
     from world import SnakeWorld
 
@@ -36,22 +36,6 @@ def direction_repr(direction):
 
 def oposite_dir(d: Direction) -> Direction:
     return (-d[0], -d[1])
-
-
-class AbstractHeuristic(ABC):
-    @abstractmethod
-    def __call__(self, x: int, y: int) -> int:
-        pass
-
-
-class EuclidianDistanceHeuristic(AbstractHeuristic):
-    def __init__(self, x_dst: int, y_dst: int) -> None:
-        self.x_dst = x_dst
-        self.y_dst = y_dst
-
-    def __call__(self, x: int, y: int) -> int:
-        dx, dy = self.x_dst - x, self.y_dst - y
-        return dx*dx + dy*dy
 
 
 class AbstractSnakeAgent(ABC):
@@ -149,58 +133,67 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
                 self.dir_requests.append(request)
 
 
-class AStarSnakeAgent(AbstractSnakeAgent): pass
-# class AStarSnakeAgent(AbstractSnakeAgent):
-#     """Implements a snake that always follows the shortest path to the nearest food,
-#     even if it means getting stuck in the long term.
-
-#     """
-#     def __init__(self, initial_snake, initial_dir):
-#         self.initial_direction = initial_dir
-#         self.initial_snake = initial_snake
-
-#         self.snake: list[Position] = []
-#         self.ob
+class AbstractAISnakeAgent(AbstractSnakeAgent):
+    @abstractmethod
+    def inspect(self) -> Iterator[Position]:
+        """Returns a position iterator which can be used to visually explain the
+        AI agent strategy.
+        """
 
 
+class RandomSnakeAgent(AbstractAISnakeAgent):
+    def __init__(self, world: SnakeWorld, initial_pos: Sequence, initial_dir: Direction) -> None:
+        super().__init__(world, initial_pos)
+        self.initial_dir = initial_dir
+        self.dir = self.initial_dir
 
-#         self.world = world
-#         self.snake = snake
+    def reset(self) -> None:
+        super().reset()
+        self.dir = self.initial_dir
 
-#         self.path_x: list[int] = []
-#         self.path_y: list[int] = []
+    def get_new_direction(self) -> Direction:
+        ...
+        # TODO: RandomSnakeAgent.get_new_direction: randomly select a direction into the 3 possible next directions
 
-#         self.direction: Direction = initial_direction
+    def inspect(self) -> Iterator[Position]:
+        return
+        yield
 
-#     def reset(self):
-#         self.graph.free_every_positions()
-#         self.snake_position = self.world.snake.copy()
-#         self.path_x = []
-#         self.path_y = []
-#         self.direction_x = None
-#         self.direction_y = None
+class AStarSnakeAgent(AbstractAISnakeAgent):
+    def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
+        super().__init__(world, initial_pos)
+        self.initial_dir = initial_dir
+        self.x_path: list[int] = []
+        self.y_path: list[int] = []
+        self.dir = initial_dir
 
-#     def get_direction(self):
-#         x, y = self.world.snake[0]
+    def reset(self) -> None:
+        super().reset()
+        self.x_path.clear()
+        self.y_path.clear()
+        self.dir = self.initial_dir
 
-#         min_length = INF
-#         length = 0
-#         for food in self.world.food_locations:
-#             heuristic = EuclidianDistanceHeuristic(*food)
-#             path_x, path_y = shortest_path(self.world.graph, (x, y), food, heuristic)
-#             length = len(path_x)
+    def get_new_direction(self) -> Direction:
+        x, y = self.get_head()
 
-#             if 0 < length < min_length and path_x[0] == food[0] and path_y[0] == food[1]:
-#                 min_length = length
-#                 shortest_path_x = path_x
-#                 shortest_path_y = path_y
+        min_path_len = INF
+        path_len = 0
+        for (x_food, y_food) in self.world.iter_food():
+            heuristic = EuclidianDistanceHeuristic(x_food, y_food)
+            x_path, y_path = shortest_path(self.world, (x, y), (x_food, y_food), heuristic)
+            path_len = len(x_path)
 
-#         if length > 0:
-#             self.path_x = shortest_path_x
-#             self.path_y = shortest_path_y
-#             self.direction = (shortest_path_x.pop() - x, shortest_path_y.pop() - y)
+            if 0 < path_len < min_path_len and x_path[0] == x_food and y_path[0] == y_food:
+                min_path_len = path_len
+                x_shortest_path = x_path
+                y_shortest_path = y_path
 
-#         return self.direction
+        if path_len > 0:
+            self.x_path = x_shortest_path
+            self.y_path = y_shortest_path
+            self.dir = (x_shortest_path.pop() - x, y_shortest_path.pop() - y)
 
-#     def inspect(self):
-#         return zip(self.path_x, self.path_y)
+        return self.dir
+
+    def inspect(self) -> Iterator[Position]:
+        return zip(self.x_path, self.y_path)

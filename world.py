@@ -13,7 +13,21 @@ if TYPE_CHECKING:
     from agent import AbstractSnakeAgent
 
 
-class SnakeWorld:
+class AbstractGridGraph(ABC):
+    @abstractmethod
+    def get_width(self) -> int:
+        pass
+
+    @abstractmethod
+    def get_height(self) -> int:
+        pass
+
+    @abstractmethod
+    def iter_free_neighbors(self) -> Iterator[Position]:
+        pass
+
+
+class SnakeWorld(AbstractGridGraph):
     def __init__(self, width: int, height: int, n_food: int) -> None:
         assert width > 0 and height > 0
         assert n_food >= 0
@@ -58,6 +72,51 @@ class SnakeWorld:
 
 
     # ---- public
+    def get_width(self) -> int:
+        return self.width
+
+    def get_height(self) -> int:
+        return self.height
+
+
+    def pop_obstacle(self, p: Position) -> None:
+        """Removes an obstacle from the position `p`."""
+        assert self.obstacle_count[p] > 0
+        self.obstacle_count[p] -= 1
+
+    def add_obstacle(self, p: Position) -> None:
+        """Puts an obstacle on the position `p`."""
+        self.obstacle_count[p] += 1
+
+    def get_neighbor(self, p: Position, d: Direction) -> Position:
+        """Returns the neighbor of position `p` in the direction `d`."""
+        return (p[0] + d[0]) % self.width, (p[1] + d[1]) % self.height
+
+    def iter_free_neighbors(self, p: Position) -> Iterator[Position]:
+        """Iterates over each neighbor of position `p` which does not contains
+        any obstacle.
+        """
+        x, y = p
+        up = (x, (y-1) % self.height)
+        down = (x, (y+1) % self.height)
+        left = ((x-1) % self.width, y)
+        right = ((x+1) % self.width, y)
+
+        if self.obstacle_count[up] == 0:
+            yield up
+        if self.obstacle_count[down] == 0:
+            yield down
+        if self.obstacle_count[left] == 0:
+            yield left
+        if self.obstacle_count[right] == 0:
+            yield right
+
+
+    def iter_food(self) -> Iterator[Position]:
+        """Iterates over each food position of the world."""
+        yield from self.food_pos
+
+
     def new_player_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> PlayerSnakeAgent:
         """Adds a new playable agent in the world and returns it."""
         agent = PlayerSnakeAgent(self, initial_pos, initial_dir)
@@ -126,36 +185,3 @@ class SnakeWorld:
         self._spawn_missing_food()
 
         return deads
-
-
-    def pop_obstacle(self, p: Position) -> None:
-        """Removes an obstacle from the position `p`."""
-        assert self.obstacle_count[p] > 0
-        self.obstacle_count[p] -= 1
-
-    def add_obstacle(self, p: Position) -> None:
-        """Puts an obstacle on the position `p`."""
-        self.obstacle_count[p] += 1
-
-    def get_neighbor(self, p: Position, d: Direction) -> Position:
-        """Returns the neighbor of position `p` in the direction `d`."""
-        return (p[0] + d[0]) % self.width, (p[1] + d[1]) % self.height
-
-    def iter_free_neighbors(self, p: Position) -> Iterator[Position]:
-        """Iterates over each neighbor of position `p` which does not contains
-        any obstacle.
-        """
-        x, y = p
-        up = (x, (y-1) % self.height)
-        down = (x, (y+1) % self.height)
-        left = ((x-1) % self.width, y)
-        right = ((x+1) % self.width, y)
-
-        if self.obstacle_count[up] == 0:
-            yield up
-        if self.obstacle_count[down] == 0:
-            yield down
-        if self.obstacle_count[left] == 0:
-            yield left
-        if self.obstacle_count[right] == 0:
-            yield right

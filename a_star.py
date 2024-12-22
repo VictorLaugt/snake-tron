@@ -1,14 +1,31 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import numpy as np
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from type_hints import Position, Path
-    from world import SnakeWorld, AbstractHeuristic
+    from world import AbstractGridGraph
 
 
 NO_PATH_FOUND = (None, None)
+
+
+class AbstractHeuristic(ABC):
+    @abstractmethod
+    def __call__(self, x: int, y: int) -> int:
+        pass
+
+
+class EuclidianDistanceHeuristic(AbstractHeuristic):
+    def __init__(self, x_dst: int, y_dst: int) -> None:
+        self.x_dst = x_dst
+        self.y_dst = y_dst
+
+    def __call__(self, x: int, y: int) -> int:
+        dx, dy = self.x_dst - x, self.y_dst - y
+        return dx*dx + dy*dy
 
 
 def _get_path(src: Position, dst: Position, parents: np.ndarray) -> Path:
@@ -47,7 +64,7 @@ def _minimizing_cost_position(
 
 
 def shortest_path(
-    graph: SnakeWorld,
+    graph: AbstractGridGraph,
     src: Position,
     dst: Position,
     heuristic: AbstractHeuristic
