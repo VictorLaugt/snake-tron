@@ -18,7 +18,7 @@ le plus court vers la pomme la plus proche.
 """
 
 parser = argparse.ArgumentParser()
-parser.add_argument('mode', choices=('singleplayer', 'versus'), default='singleplayer')
+parser.add_argument('mode', choices=('singleplayer', 'versus'), nargs='?', default='singleplayer')
 parser.add_argument('-e', '--explain-ai', action='store_true')
 parser.add_argument('-t', '--time-step', type=int, default=100)
 args = parser.parse_args()
@@ -46,6 +46,6 @@ gui = front.SnakeGameWindow(
     ai_agents=ai_agents,
     explain_ai=args.explain_ai,
     ui_size_coeff=20,
-    speed=args.time_step
+    time_step=args.time_step
 )
 gui.mainloop()

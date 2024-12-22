@@ -1,187 +1,201 @@
 from __future__ import annotations
-import world
 
-from agent import UP, DOWN, LEFT, RIGHT
 import tkinter as tk
+from itertools import chain
+from dataclasses import dataclass
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from typing import TypeAlias, Sequence, Iterable
+    from type_hints import Position, Direction
     from world import SnakeWorld
+    from agent import AbstractSnakeAgent, PlayerSnakeAgent, AbstractAISnakeAgent
+    Coordinate: TypeAlias = tuple[float, float]
 
 
 TAG_WORLD = 'game'
 TAG_INSPECT = 'inspect'
 
+UP: Direction = (0,-1)
+DOWN: Direction = (0,1)
+LEFT: Direction = (-1,0)
+RIGHT: Direction = (1,0)
+
+
+def direction_repr(d: Direction) -> str:
+    if d == UP:
+        return 'up'
+    elif d == DOWN:
+        return 'down'
+    elif d == LEFT:
+        return 'left'
+    elif d == RIGHT:
+        return 'right'
+    else:
+        return repr(d)
+
+@dataclass
+class SnakeColors:
+    head_color: str
+    tail_color: str
+    dead_color: str
+    inspect_colot: str
+
 class SnakeGameWindow(tk.Tk):
     """Implements a frontend for a snake game. The user can control the snake
     with the arrow keys.
     """
-    def __init__(self, snake_world: SnakeWorld, speed: float, ui_size_coeff:float):
+    CONTROL_SETS = (
+        ('<Up>', '<Left>', '<Down>', '<Right>'),
+        ('<z>', '<q>', '<s>', '<d>'),
+        ('<u>', '<h>', '<j>', '<k>'),
+    )
+
+    HEAD_COLORS = ('dark green', 'dark orange', 'dark violet', 'dark blue')
+    TAIL_COLORS = ('green', 'orange', 'violet', 'blue')
+    LAST_COLOR_IDX = len(HEAD_COLORS)-1
+
+    FOOD_COLOR = 'red'
+    DEAD_COLOR = 'dark red'
+    INSPECT_COLOR = 'yellow'
+
+    def __init__(
+        self,
+        snake_world: SnakeWorld,
+        player_agents: Sequence[PlayerSnakeAgent],
+        ai_agents: Sequence[AbstractAISnakeAgent],
+        explain_ai: bool,
+        ui_size_coeff: float,
+        time_step: float
+    ) -> None:
         super().__init__()
-        # backend interface
+
+        # interface with the backend
         self.world = snake_world
         self.world.reset()
-
-        # graphical characteristics
-        self.speed = speed
-        self.square_side_size = ui_size_coeff
+        self.player_snakes = list(player_agents)
+        self.ai_snakes = list(ai_agents)
 
         # pause system
         self.game_paused = False
         self.next_step = None
 
-        # widget declarations
-        self.world_grid = tk.Canvas(self,
-                                    width=self.world.width * self.square_side_size,
-                                    height=self.world.height * self.square_side_size,
-                                    bg='gray')
-        self.snake_square_ids = [None] * (self.world.width * self.world.height)
-        self.score_displayer = tk.Entry(self, textvariable=self.score_text)
+        # graphical features
+        self.snake_colors: dict[AbstractSnakeAgent, SnakeColors] = {}
+        color_idx = 0
+        for snake in chain(self.player_snakes, self.ai_snakes):
+            colors = SnakeColors(
+                self.HEAD_COLORS[color_idx],
+                self.TAIL_COLORS[color_idx],
+                self.DEAD_COLOR,
+                self.INSPECT_COLOR
+            )
+            self.snake_colors[snake] = colors
+            color_idx = min(color_idx+1, self.LAST_COLOR_IDX)
 
-        # events
+        self.explain_ai = explain_ai
+        self.square_side_size = ui_size_coeff
+        self.time_step = time_step
+
+        self.grid_display = tk.Canvas(
+            self,
+            width=self.world.get_width() * self.square_side_size,
+            height=self.world.get_height() * self.square_side_size,
+            bg='gray'
+        )
+        self.grid_display.pack()
+
+        # user interactions
         self.bind_all('<space>', lambda _: self.pause())
         self.bind_all('<Escape>', lambda _: self.destroy())
-        self.bind_all('<KeyPress-q>', lambda _: self.destroy())
-        self.bind_snake_control()
+        self.bind_all('<Return>', lambda _: self.reset())
+        for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
+            self.bind_user_inputs(snake, control_set)
 
-        # widget positions
-        tk.Label(self, text='Score: ').grid(row=0, column=0, columnspan=1)
-        self.score_displayer.grid(row=0, column=1, columnspan=2)
-        self.world_grid.grid(row=1, column=0, columnspan=3)
+        self.next_step = self.after_idle(self.start_game)
 
-        self.next_step = self.after_idle(self.game_step)
+    def bind_user_inputs(self, player_snake: PlayerSnakeAgent, control_set: tuple[str, str, str, str]) -> None:
+        self.bind_all(control_set[0], lambda _: player_snake.add_dir_request(UP))
+        self.bind_all(control_set[1], lambda _: player_snake.add_dir_request(LEFT))
+        self.bind_all(control_set[2], lambda _: player_snake.add_dir_request(DOWN))
+        self.bind_all(control_set[3], lambda _: player_snake.add_dir_request(RIGHT))
 
-    def bind_snake_control(self):
-        self.world_grid.bind_all('<Up>', lambda _: self.direction_input(UP))
-        self.world_grid.bind_all('<Down>', lambda _: self.direction_input(DOWN))
-        self.world_grid.bind_all('<Left>', lambda _: self.direction_input(LEFT))
-        self.world_grid.bind_all('<Right>', lambda _: self.direction_input(RIGHT))
+    def pos_to_coord(self, pos: Position) -> Coordinate:
+        """Returns the coordinates on the graphical ui canvas which corresponds to the
+        square at the position `pos` in the snake world.
+        """
+        return pos[0] * self.square_side_size, pos[1] * self.square_side_size
 
-
-    # ---- draw functions
-    def square_to_coordinates(self, square):
-        """Returns the coordinates of a square on the graphical ui canvas."""
-        return square[0] * self.square_side_size, square[1] * self.square_side_size
-
-    def coordinates_to_square(self, x, y):
-        """Returns the square of the snake world which corresponds to the `(x, y)`
-        coordinates on the graphical ui canvas.
+    def coord_to_pos(self, x: float, y: float) -> Position:
+        """Returns the square position in the snake world which corresponds to the
+        `(x, y)` coordinates on the graphical ui canvas.
         """
         return int(x / self.square_side_size), int(y / self.square_side_size)
 
-    def draw_square(self, x, y, color, tag):
+    def draw_square(self, x: int, y: int, color: str, tag: str) -> None:
         shift = self.square_side_size
-        return self.world_grid.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
+        return self.grid_display.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
 
-    def _draw_world(self, head_color_seq, tail_color_seq, food_color):
-        assert len(head_color_seq) == len(tail_color_seq)
-        self.world_grid.delete(TAG_WORLD)
+    def draw_world(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
+        self.grid_display.delete(TAG_WORLD)
 
-        # draws the snake
-        for i, (head_color, tail_color) in enumerate(zip(head_color_seq, tail_color_seq)):
-            head, *tail = self.world.alive_agents[i].snake_pos
-            head_x, head_y = self.square_to_coordinates(head)
-            self.snake_square_ids[0] = self.draw_square(head_x, head_y, head_color, TAG_WORLD)
-            for j, square in enumerate(tail, start=1):
-                x, y = self.square_to_coordinates(square)
-                self.snake_square_ids[j] = self.draw_square(x, y, tail_color, TAG_WORLD)
+        # draws the snakes
+        for snake in self.world.iter_alive_agents():
+            colors = self.snake_colors[snake]
+            cells = snake.iter_cells()
+            x, y = self.pos_to_coord(next(cells))
+            self.draw_square(x, y, colors.head_color, TAG_WORLD)
+            for pos in cells:
+                x, y = self.pos_to_coord(pos)
+                self.draw_square(x, y, colors.tail_color, TAG_WORLD)
 
         # draws the food
-        for food in self.world.food_pos:
-            x, y = self.square_to_coordinates(food)
-            self.draw_square(x, y, food_color, TAG_WORLD)
+        for food in self.world.iter_food():
+            x, y = self.pos_to_coord(food)
+            self.draw_square(x, y, self.FOOD_COLOR, TAG_WORLD)
 
-    def draw(self):
+        # draws the snakes which died during the last step
+        for snake in dead_snakes:
+            colors = self.snake_colors[snake]
+            for pos in snake.iter_cells():
+                x, y = self.pos_to_coord(pos)
+                self.draw_square(x, y, colors.dead_color, TAG_WORLD)
+
+    def draw_ai_inspection(self) -> None:
+        for snake in self.ai_snakes:
+            colors = self.snake_colors[snake]
+            for pos in snake.inspect():
+                x, y = self.pos_to_coord(pos)
+                self.draw_square(x, y, colors.inspect_color, TAG_INSPECT)
+
+    def draw(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         """Draws the entire game."""
-        self._draw_world(('dark green',), ('green',), 'red')
+        if self.explain_ai:
+            self.draw_ai_inspection()
+        self.draw_world(dead_snakes)
 
-    def _refresh_score(self):
-        """Displays the current score."""
-        self.score_text.set(self.world.score)
+    def start_game(self) -> None:
+        """Draws the world and start the game loop after a small time delay."""
+        self.draw(())
+        self.next_step = self.after(5*self.time_step, self.game_step)
 
-    def _schedule_death_animation(self):
-        """Displays the death animation of the snake."""
-        def colorize_red_function(square_id):
-            return lambda: self.world_grid.itemconfig(square_id, fill='dark red')
-        self.world_grid.itemconfig(self.snake_square_ids[0], fill='dark red')
-        for i in range(1, len(self.world.snake)):
-            self.after(i * self.speed, colorize_red_function(self.snake_square_ids[i]))
+    def game_step(self) -> None:
+        """Simulates and displays one step of the game."""
+        self.draw(self.world.simulate())
+        self.next_step = self.after(self.time_step, self.game_step)
 
-
-    # ---- gameloop managers
-    def _move(self):
-        """Moves the snake and returns False if the snake hits something,
-        True otherwise.
-        """
-        continue_game = self.world.move_snake()
-        self.draw()
-        return continue_game
-
-    def end_game(self):
-        """Ends the current game."""
-        self._schedule_death_animation()
-        self.next_step = self.after(self.speed * (len(self.world.snake)+1), self.game_step)
-        self.world.reset()
-
-    def game_step(self):
-        """Executes one step of the game loop."""
-        self._refresh_score()
-        if self._move():
-            # the game continues
-            self.next_step = self.after(self.speed, self.game_step)
-        else:
-            # the game is over
-            self.end_game()
-
-    def pause(self):
+    def pause(self) -> None:
         """Pauses or resumes the game."""
         self.game_paused = not self.game_paused
         if self.game_paused:
-            self.score_text.set('Game paused')
             self.after_cancel(self.next_step)
             self.next_step = None
         else:
             self.next_step = self.after_idle(self.game_step)
 
-
-    # ---- events
-    def direction_input(self, direction):
-        """Calls the backend to add a new requested direction."""
-        if direction is not None:
-            self.world.add_request(direction)
-
-
-# class AutomaticSnakeGameWindow(SnakeGameWindow):
-#     """Implements a frontend for a snake game. An algorithm is used to control
-#     the snake, the user cannot interfere with it.
-#     """
-#     def __init__(self, snake_world, speed, ui_size_coeff, ai):
-#         super().__init__(snake_world, speed, ui_size_coeff)
-#         self.ai = ai
-
-#     def bind_snake_control(self):
-#         pass # only the ai is allowed to control the snake.
-
-
-#     # ---- draw functions
-#     def _draw_ai_inspection(self, color):
-#         self.world_grid.delete(TAG_INSPECT)
-
-#         for i, square in enumerate(self.ai.inspect()):
-#             x, y = self.square_to_coordinates(square)
-#             self.draw_square(x, y, color, TAG_INSPECT)
-
-#     def draw(self):
-#         self._draw_ai_inspection('yellow')
-#         super().draw()
-
-
-#     # ---- gameloop managers
-#     def game_step(self):
-#         self.direction_input(self.ai.get_input())
-#         super().game_step()
-
-#     def end_game(self):
-#         super().end_game()
-#         self.ai.reset()
-#         # self.pause()
+    def reset(self) -> None:
+        """Reset the game."""
+        self.after_cancel(self.next_step)
+        self.next_step = None
+        self.world.reset()
+        self.start_game()

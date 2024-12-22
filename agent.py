@@ -13,27 +13,6 @@ if TYPE_CHECKING:
     from world import SnakeWorld
 
 
-INF = float('inf')
-
-UP: Direction = (0,-1)
-DOWN: Direction = (0,1)
-LEFT: Direction = (-1,0)
-RIGHT: Direction = (1,0)
-
-
-def direction_repr(direction):
-    if direction == UP:
-        return 'up'
-    elif direction == DOWN:
-        return 'down'
-    elif direction == LEFT:
-        return 'left'
-    elif direction == RIGHT:
-        return 'right'
-    else:
-        return repr(direction)
-
-
 def oposite_dir(d: Direction) -> Direction:
     return (-d[0], -d[1])
 
@@ -46,6 +25,9 @@ class AbstractSnakeAgent(ABC):
         self.pos = deque(initial_pos)
         self.last_tail_pos = None
 
+    def __hash__(self) -> int:
+        return hash(id(self))
+
     def __len__(self) -> int:
         """Returns the length of the snake."""
         return len(self.pos)
@@ -53,6 +35,10 @@ class AbstractSnakeAgent(ABC):
     def get_head(self) -> Position:
         """Returns the position of the snake's head."""
         return self.pos[-1]
+
+    def iter_cells(self) -> Iterator[Position]:
+        """Iterates over the snake's cells from the head to the tail."""
+        return reversed(self.pos)
 
     def reset(self) -> None:
         """Reset the snake agent to make it ready to start a new game."""
@@ -91,7 +77,7 @@ class AbstractSnakeAgent(ABC):
         """Returns True if the snake collides another snake of the world, False
         otherwise.
         """
-        for other in self.world.iter_agents():
+        for other in self.world.iter_alive_agents():
             if self is not other and self.pos[-1] in other.pos:
                 return True
         return False
@@ -176,7 +162,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
     def get_new_direction(self) -> Direction:
         x, y = self.get_head()
 
-        min_path_len = INF
+        min_path_len = float('inf')
         path_len = 0
         for (x_food, y_food) in self.world.iter_food():
             heuristic = EuclidianDistanceHeuristic(x_food, y_food)
@@ -189,7 +175,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                 y_shortest_path = y_path
 
         if path_len > 0:
-            self.x_path = x_shortest_path
+            self.x_path = x_shortest_path  # FIXME: s'il n'existe aucun chemin, la variable x_shortest_path n'existe pas
             self.y_path = y_shortest_path
             self.dir = (x_shortest_path.pop() - x, y_shortest_path.pop() - y)
 

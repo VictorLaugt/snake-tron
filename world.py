@@ -42,7 +42,13 @@ class SnakeWorld(AbstractGridGraph):
         self.alive_agents: list[AbstractSnakeAgent] = []
 
     def __repr__(self) -> str:
-        return str(self.obstacle_count.T)
+        repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
+        for y in range(self.height):
+            for x in range(self.width):
+                repr_grid[y][x] = f" {self.obstacle_count[x, y]:03d} "
+                if (x, y) in self.food_pos:
+                    repr_grid[y][x] = "  *  "
+        return '\n'.join(''.join(row) for row in repr_grid) + '\n'
 
     # ---- private
     def _consume_food(self, p: Position) -> bool:
@@ -127,22 +133,22 @@ class SnakeWorld(AbstractGridGraph):
     def new_player_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> PlayerSnakeAgent:
         """Adds a new playable agent in the world and returns it."""
         agent = PlayerSnakeAgent(self, initial_pos, initial_dir)
-        self.alive_agents.append(agent)
+        self.initial_agents.append(agent)
         return agent
 
     def new_random_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> RandomSnakeAgent:
         agent = RandomSnakeAgent(self, initial_pos, initial_dir)
-        self.alive_agents.append(agent)
+        self.initial_agents.append(agent)
         return agent
 
     def new_a_star_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> AStarSnakeAgent:
         """Adds a new A* ai agent in the world and returns it."""
         agent = AStarSnakeAgent(self, initial_pos, initial_dir)
-        self.alive_agents.append(agent)
+        self.initial_agents.append(agent)
         return agent
 
-    def iter_agents(self) -> Iterator[AbstractSnakeAgent]:
-        """Iterates over the agents of the world."""
+    def iter_alive_agents(self) -> Iterator[AbstractSnakeAgent]:
+        """Iterates over the agents of the world which are still alive."""
         yield from self.alive_agents
 
 
@@ -157,6 +163,8 @@ class SnakeWorld(AbstractGridGraph):
         for agent in self.initial_agents:
             agent.reset()
             self.alive_agents.append(agent)
+            for pos in agent.iter_cells():
+                self.obstacle_count[pos] += 1
 
     def simulate(self) -> list[AbstractSnakeAgent]:
         """Simulates one step of the world evolution and returns the agents
