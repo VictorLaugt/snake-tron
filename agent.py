@@ -172,14 +172,11 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
 
             if 0 < path_len < min_path_len and x_path[0] == x_food and y_path[0] == y_food:
                 min_path_len = path_len
-                x_shortest_path = x_path
-                y_shortest_path = y_path
+                self.x_path = x_path
+                self.y_path = y_path
 
-        if path_len > 0:
-            self.x_path = x_shortest_path  # FIXME: s'il n'existe aucun chemin, la variable x_shortest_path n'existe pas
-            self.y_path = y_shortest_path
-            self.dir = (x_shortest_path.pop() - x, y_shortest_path.pop() - y)
-
+        if len(self.x_path) > 0:
+            self.dir = (self.x_path.pop() - x, self.y_path.pop() - y)
         return self.dir
 
     def inspect(self) -> Iterator[Position]:
