@@ -39,7 +39,7 @@ class SnakeColors:
     head_color: str
     tail_color: str
     dead_color: str
-    inspect_colot: str
+    inspect_color: str
 
 class SnakeGameWindow(tk.Tk):
     """Implements a frontend for a snake game. The user can control the snake
@@ -57,7 +57,7 @@ class SnakeGameWindow(tk.Tk):
 
     FOOD_COLOR = 'red'
     DEAD_COLOR = 'dark red'
-    INSPECT_COLOR = 'yellow'
+    INSPECT_COLOR = 'gray'
 
     def __init__(
         self,
@@ -162,6 +162,7 @@ class SnakeGameWindow(tk.Tk):
                 self.draw_square(x, y, colors.dead_color, TAG_WORLD)
 
     def draw_ai_inspection(self) -> None:
+        self.grid_display.delete(TAG_INSPECT)
         for snake in self.ai_snakes:
             colors = self.snake_colors[snake]
             for pos in snake.inspect():
