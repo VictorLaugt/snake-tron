@@ -63,49 +63,63 @@ class AbstractSnakeAgent(ABC):
         self.last_tail_pos = None
 
     def __len__(self) -> int:
+        """Returns the length of the snake."""
         return len(self.pos)
 
     def get_head(self) -> Position:
+        """Returns the position of the snake's head."""
         return self.pos[-1]
 
     def reset(self) -> None:
+        """Reset the snake agent to make it ready to start a new game."""
         self.pos.clear()
         self.pos.extendleft(self.initial_pos)
 
     def move(self, d: Direction) -> None:
         """Moves once the snake in the direction `d`."""
-        self.pos.append(self.world.get_neighbor(self.pos[-1], d))
+        new_head = self.world.get_neighbor(self.pos[-1], d)
+        self.world.add_obstacle(new_head)
+        self.pos.append(new_head)
         self.last_tail_pos = self.pos.popleft()
-        self.world.free_pos(self.last_tail_pos)
+        self.world.pop_obstacle(self.last_tail_pos)
 
     def check_self_collision(self) -> int:
+        """Returns the length which should be cutted from the snake's tail if it
+        collides with its head. Else, returns 0.
+        """
         return (self.pos.index(self.pos[-1]) + 1) % len(self.pos)
 
     def cut(self, cut_length: int) -> None:
+        """Removes the `cut_length` last cells from the snake."""
         for _ in range(cut_length):
-            self.world.free_pos(self.pos.popleft())
+            self.world.pop_obstacle(self.pos.popleft())
 
     def grow(self) -> bool:
+        """Adds a cell at the end of the snake's tail."""
         if self.last_tail_pos is not None:
             self.pos.appendleft(self.last_tail_pos)
-            self.world.obstruct_pos(self.last_tail_pos)
+            self.world.add_obstacle(self.last_tail_pos)
             self.last_tail_pos = None
             return True
         return False
 
     def collides_another(self) -> bool:
+        """Returns True if the snake collides another snake of the world, False
+        otherwise.
+        """
         for other in self.world.iter_agents():
             if self is not other and self.pos[-1] in other.pos:
                 return True
         return False
 
     def die(self) -> None:
+        """Kills the snake."""
         for p in self.pos:
-            self.world.free_pos(p)
+            self.world.pop_obstacle(p)
 
     @abstractmethod
     def get_new_direction(self) -> Direction:
-        pass
+        """Returns the direction in which the snake wants to move."""
 
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
@@ -125,7 +139,7 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
         return self.dir
 
     def add_dir_request(self, request: Direction) -> None:
-        """Adds a new requested direction in which to move the snake."""
+        """Registers a new direction request in which to move the snake."""
         if len(self.dir_requests) < self.dir_requests.maxlen:
             if len(self.dir_requests) > 0:
                 last_dir = self.dir_requests[-1]
@@ -133,77 +147,6 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
                 last_dir = self.dir
             if request != oposite_dir(last_dir):
                 self.dir_requests.append(request)
-
-class PlayerSnakeAgent(AbstractSnakeAgent):
-    def __init__(self, world: SnakeWorld, initial_snake_pos: list[Position], initial_snake_dir: Direction) -> None:
-        self.world = world
-        self.initial_snake_pos = initial_snake_pos
-        self.initial_snake_dir = initial_snake_dir
-
-        self.snake_pos: list[Position] = []
-        self.snake_dir: Direction = None
-        self.dir_requests: deque[Direction] = deque((), maxlen=5)
-        self.reset()
-
-    def reset(self) -> None:
-        for pos in self.snake_pos:
-            self.world.free_pos(pos)
-        self.snake_pos.clear()
-        self.snake_pos.extend(self.initial_snake_pos)
-        self.snake_dir = self.initial_snake_dir
-        self.dir_requests.clear()
-
-    def __len__(self) -> int:
-        return len(self.snake_pos)
-
-    def add_dir_request(self, request: Direction) -> None:
-        """Adds a new requested direction in which to move the snake."""
-        if len(self.dir_requests) < self.dir_requests.maxlen:
-            if len(self.dir_requests) > 0:
-                last_direction = self.dir_requests[-1]
-            else:
-                last_direction = self.direction
-            if request != oposite_dir(last_direction):
-                self.dir_requests.append(request)
-
-    def _cut_tail(self, cut_index: int) -> None:
-        for i in range(cut_index, len(self.snake_pos)):
-            self.world.free_pos(self.snake_pos[i])
-        del self.snake_pos[cut_index:]
-
-    def move(self) -> bool:
-        """Moves the snake in the next requested direction.
-        The snake grows if it eats a food.
-        Return True if the snake is still alive after its movement, False otherwise.
-        """
-        # determines the current direction
-        if self.requests:
-            self.direction = self.requests.popleft()
-
-
-        # moves the snake and cuts its tail if its head hits it.
-        head = self.world.get_neighbor(self.snake_pos[0], self.direction)
-        for i in range(len(self.snake_pos)-1, 0, -1):
-            self.snake_pos[i] = self.snake_pos[i-1]
-            if head == self.snake_pos[i-1]:
-                self._cut_tail(i-1)
-                break
-        self.snake_pos[0] = head
-
-        # detects collision between the head of the snake and an obstacle
-        # different from its own tail
-        if self.world.pos_is_free(head):
-            self.world.obstruct_pos(head)
-        else:
-            return False
-
-        # makes the snake grow if it eats a food
-        tail_end = self.snake_pos[-1]
-        if self.world._eat_food(head):
-            self.snake_pos.append(tail_end)
-            self.world.obstruct_pos(tail_end)
-
-        return True
 
 
 class AStarSnakeAgent(AbstractSnakeAgent): pass

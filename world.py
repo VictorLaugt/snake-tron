@@ -23,7 +23,7 @@ class SnakeWorld:
         self.initial_n_food = n_food
         self.initial_agents: list[AbstractSnakeAgent] = []
 
-        self.vertices = np.empty((self.width, self.height), dtype=bool)
+        self.obstacle_count = np.zeros((self.width, self.height), dtype=np.uint8)
         self.food_pos: set[Position] = set()
         self.alive_agents: list[AbstractSnakeAgent] = []
 
@@ -46,7 +46,7 @@ class SnakeWorld:
         """
         for _ in range(max_try):
             pos = (randrange(self.width), randrange(self.height))
-            if self.vertices[pos] and pos not in self.food_pos:
+            if self.obstacle_count[pos] == 0 and pos not in self.food_pos:
                 return pos
 
     def _spawn_missing_food(self) -> None:
@@ -77,7 +77,7 @@ class SnakeWorld:
 
     def reset(self) -> None:
         """Reset the world and all its agents to make them ready to start a new game."""
-        self.vertices.fill(True)
+        self.obstacle_count.fill(0)
 
         self.food_pos.clear()
         self._spawn_missing_food()
@@ -128,17 +128,14 @@ class SnakeWorld:
         return deads
 
 
-    def free_pos(self, p: Position) -> None:
-        """Removes obstacle from the position `p`."""
-        self.vertices[p] = True
+    def pop_obstacle(self, p: Position) -> None:
+        """Removes an obstacle from the position `p`."""
+        assert self.obstacle_count[p] > 0
+        self.obstacle_count[p] -= 1
 
-    def obstruct_pos(self, p: Position) -> None:
+    def add_obstacle(self, p: Position) -> None:
         """Puts an obstacle on the position `p`."""
-        self.vertices[p] = False
-
-    def pos_is_free(self, p: Position) -> bool:
-        """Returns True if no obstacle is on the position `p`, False otherwise."""
-        return self.vertices[p]
+        self.obstacle_count[p] += 1
 
     def get_neighbor(self, p: Position, d: Direction) -> Position:
         """Returns the neighbor of position `p` in the direction `d`."""
@@ -154,11 +151,11 @@ class SnakeWorld:
         left = ((x-1) % self.width, y)
         right = ((x+1) % self.width, y)
 
-        if self.vertices[up]:
+        if self.obstacle_count[up] == 0:
             yield up
-        if self.vertices[down]:
+        if self.obstacle_count[down] == 0:
             yield down
-        if self.vertices[left]:
+        if self.obstacle_count[left] == 0:
             yield left
-        if self.vertices[right]:
+        if self.obstacle_count[right] == 0:
             yield right
