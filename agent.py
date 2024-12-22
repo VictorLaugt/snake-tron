@@ -102,6 +102,7 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
     def reset(self) -> None:
         super().reset()
         self.dir = self.initial_dir
+        self.dir_requests.clear()
 
     def get_new_direction(self) -> Direction:
         if len(self.dir_requests) > 0:

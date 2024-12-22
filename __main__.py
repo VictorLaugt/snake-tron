@@ -10,15 +10,15 @@ parser.add_argument('-e', '--explain-ai', action='store_true')
 parser.add_argument('-t', '--time-step', type=int, default=100)
 args = parser.parse_args()
 
-world = world.SnakeWorld(width=30, height=30, n_food=4)
+world = world.SnakeWorld(width=30, height=30, n_food=1)
 
-agent_1_initial_pos = ((2,5), (2,4), (2,3), (2,2), (2,1))
+agent_1_initial_pos = ((2,9), (2,8), (2,7), (2,6), (2,5), (2,4), (2,3), (2,2), (2,1))
 agent_1_initial_dir = (0,1)
 
 agent_2_initial_pos = ((5,1), (5,2), (5,3), (5,4), (5,5))
 agent_2_initial_dir = (0,-1)
 
-agent_3_initial_pos = ((8,5), (8,4), (8,3), (8,2), (8,1))
+agent_3_initial_pos = ((8,9), (8,8), (8,7), (8,6), (8,5), (8,4), (8,3), (8,2), (8,1))
 agent_3_initial_dir = (0,1)
 
 player_agents = []
