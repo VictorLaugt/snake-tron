@@ -3,19 +3,6 @@ import argparse
 import front
 import world
 
-"""
-TODO list:
-- terminer de remanier le code pour faire en sorte que le monde soit un système
-multi-agent dans lequel chaque agent est un snake pouvant être controllé par un
-algorithme (IA) ou un utilisateur
-- Quand un snake se tape la queue, il se coupe mais reste en vie
-- Quand un snake tape la queue d'un autre, il meurt
-- Quand un snake mange une pomme, il grandit d'une case
-- Dès qu'un snake IA se déplace d'une seule case, il recalcule en entier le chemin
-le plus court vers la pomme la plus proche.
-- Faire un mode 1 joueur (par défaut) où un agent utilisateur combat un agent IA
-- Faire un mode 2 joueurs où deux agents utilisateurs se combattent
-"""
 
 parser = argparse.ArgumentParser()
 parser.add_argument('mode', choices=('singleplayer', 'versus', 'twoplayers'), nargs='?', default='singleplayer')
