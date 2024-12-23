@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from random import randrange
 import numpy as np
 
-from agent import PlayerSnakeAgent, RandomSnakeAgent, AStarSnakeAgent
+from agent import PlayerSnakeAgent, AStarSnakeAgent
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -133,11 +133,6 @@ class SnakeWorld(AbstractGridGraph):
     def new_player_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> PlayerSnakeAgent:
         """Adds a new playable agent in the world and returns it."""
         agent = PlayerSnakeAgent(self, initial_pos, initial_dir)
-        self.initial_agents.append(agent)
-        return agent
-
-    def new_random_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> RandomSnakeAgent:
-        agent = RandomSnakeAgent(self, initial_pos, initial_dir)
         self.initial_agents.append(agent)
         return agent
 
