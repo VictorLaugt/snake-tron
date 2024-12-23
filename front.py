@@ -4,6 +4,8 @@ import tkinter as tk
 from itertools import chain
 from dataclasses import dataclass
 
+from world import UP, DOWN, LEFT, RIGHT
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeAlias, Sequence, Iterable
@@ -16,23 +18,6 @@ if TYPE_CHECKING:
 TAG_WORLD = 'game'
 TAG_INSPECT = 'inspect'
 
-UP: Direction = (0,-1)
-DOWN: Direction = (0,1)
-LEFT: Direction = (-1,0)
-RIGHT: Direction = (1,0)
-
-
-def direction_repr(d: Direction) -> str:
-    if d == UP:
-        return 'up'
-    elif d == DOWN:
-        return 'down'
-    elif d == LEFT:
-        return 'left'
-    elif d == RIGHT:
-        return 'right'
-    else:
-        return repr(d)
 
 @dataclass
 class SnakeColors:

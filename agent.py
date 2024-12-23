@@ -4,17 +4,14 @@ from abc import ABC, abstractmethod
 from collections import deque
 import random
 
-from a_star import shortest_path, EuclidianDistanceHeuristic
+from a_star import shortest_path
+from world import oposite_dir, EuclidianDistanceHeuristic
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Sequence, Iterator
     from type_hints import Position, Direction
     from world import SnakeWorld
-
-
-def oposite_dir(d: Direction) -> Direction:
-    return (-d[0], -d[1])
 
 
 class AbstractSnakeAgent(ABC):
@@ -133,12 +130,14 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         self.initial_dir = initial_dir
         self.x_path: list[int] = []
         self.y_path: list[int] = []
+        self.dir_path: list[Direction] = []
         self.dir = initial_dir
 
     def reset(self) -> None:
         super().reset()
         self.x_path.clear()
         self.y_path.clear()
+        self.dir_path.clear()
         self.dir = self.initial_dir
 
     def get_new_direction(self) -> Direction:
@@ -148,22 +147,26 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         path_len = 0
         for (x_food, y_food) in self.world.iter_food():
             heuristic = EuclidianDistanceHeuristic(x_food, y_food)
-            x_path, y_path = shortest_path(self.world, (x, y), (x_food, y_food), heuristic)
-            path_len = len(x_path)
+            x_path, y_path, dir_path = shortest_path(self.world, (x, y), (x_food, y_food), heuristic)
+            path_len = len(dir_path)
 
             if 0 < path_len < min_path_len and x_path[0] == x_food and y_path[0] == y_food:
                 min_path_len = path_len
                 self.x_path = x_path
                 self.y_path = y_path
+                self.dir_path = dir_path
 
-        if len(self.x_path) > 0:
-            self.dir = (self.x_path.pop() - x, self.y_path.pop() - y)
+        if len(self.dir_path) > 0:
+            self.x_path.pop()
+            self.y_path.pop()
+            self.dir = self.dir_path.pop()
         return self.dir
 
     def die(self) -> None:
         super().die()
         self.x_path.clear()
         self.y_path.clear()
+        self.dir_path.clear()
 
     def inspect(self) -> Iterator[Position]:
         return zip(self.x_path, self.y_path)

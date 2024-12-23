@@ -4,13 +4,11 @@ from abc import ABC, abstractmethod
 from random import randrange
 import numpy as np
 
-from agent import PlayerSnakeAgent, AStarSnakeAgent
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator, Sequence, Optional
     from type_hints import Position, Direction
-    from agent import AbstractSnakeAgent
+    from agent import AbstractSnakeAgent, PlayerSnakeAgent, AStarSnakeAgent
 
 
 class AbstractGridGraph(ABC):
@@ -23,8 +21,14 @@ class AbstractGridGraph(ABC):
         pass
 
     @abstractmethod
-    def iter_free_neighbors(self) -> Iterator[Position]:
-        pass
+    def get_neighbor(self, p: Position, d: Direction) -> Position:
+        """Returns the neighbor of position `p` in the direction `d`."""
+
+    @abstractmethod
+    def iter_free_neighbors(self) -> Iterator[tuple[Position, Direction]]:
+        """Iterates over each neighbor of position `p` which does not contains
+        any obstacle.
+        """
 
 
 class AbstractHeuristic(ABC):
@@ -41,6 +45,16 @@ class EuclidianDistanceHeuristic(AbstractHeuristic):
     def __call__(self, x: int, y: int) -> int:
         dx, dy = self.x_dst - x, self.y_dst - y
         return dx*dx + dy*dy
+
+
+UP: Direction = (0,-1)
+DOWN: Direction = (0,1)
+LEFT: Direction = (-1,0)
+RIGHT: Direction = (1,0)
+
+
+def oposite_dir(d: Direction) -> Direction:
+    return (-d[0], -d[1])
 
 
 class SnakeWorld(AbstractGridGraph):
@@ -118,27 +132,23 @@ class SnakeWorld(AbstractGridGraph):
 
 
     def get_neighbor(self, p: Position, d: Direction) -> Position:
-        """Returns the neighbor of position `p` in the direction `d`."""
         return (p[0] + d[0]) % self.width, (p[1] + d[1]) % self.height
 
-    def iter_free_neighbors(self, p: Position) -> Iterator[Position]:
-        """Iterates over each neighbor of position `p` which does not contains
-        any obstacle.
-        """
+    def iter_free_neighbors(self, p: Position) -> Iterator[tuple[Position, Direction]]:
         x, y = p
-        up = (x, (y-1) % self.height)
-        down = (x, (y+1) % self.height)
-        left = ((x-1) % self.width, y)
-        right = ((x+1) % self.width, y)
+        up_neighbor = (x, (y-1) % self.height)
+        down_neighbor = (x, (y+1) % self.height)
+        left_neighbor = ((x-1) % self.width, y)
+        right_neighbor = ((x+1) % self.width, y)
 
-        if self.obstacle_count[up] == 0:
-            yield up
-        if self.obstacle_count[down] == 0:
-            yield down
-        if self.obstacle_count[left] == 0:
-            yield left
-        if self.obstacle_count[right] == 0:
-            yield right
+        if self.obstacle_count[up_neighbor] == 0:
+            yield up_neighbor, UP
+        if self.obstacle_count[down_neighbor] == 0:
+            yield down_neighbor, DOWN
+        if self.obstacle_count[left_neighbor] == 0:
+            yield left_neighbor, LEFT
+        if self.obstacle_count[right_neighbor] == 0:
+            yield right_neighbor, RIGHT
 
 
     def iter_food(self) -> Iterator[Position]:
@@ -146,17 +156,8 @@ class SnakeWorld(AbstractGridGraph):
         yield from self.food_pos
 
 
-    def new_player_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> PlayerSnakeAgent:
-        """Adds a new playable agent in the world and returns it."""
-        agent = PlayerSnakeAgent(self, initial_pos, initial_dir)
+    def attach_agent(self, agent: AbstractSnakeAgent) -> None:
         self.initial_agents.append(agent)
-        return agent
-
-    def new_a_star_agent(self, initial_pos: Sequence[Position], initial_dir: Direction) -> AStarSnakeAgent:
-        """Adds a new A* ai agent in the world and returns it."""
-        agent = AStarSnakeAgent(self, initial_pos, initial_dir)
-        self.initial_agents.append(agent)
-        return agent
 
     def iter_alive_agents(self) -> Iterator[AbstractSnakeAgent]:
         """Iterates over the agents of the world which are still alive."""

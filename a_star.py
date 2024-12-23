@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+from world import oposite_dir
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -11,17 +12,20 @@ if TYPE_CHECKING:
 NO_PATH_FOUND = (None, None)
 
 
-def _get_path(src: Position, dst: Position, parents: np.ndarray) -> Path:
+def _get_path(graph: AbstractGridGraph, src: Position, dst: Position, parents: np.ndarray) -> Path:
     x_src, y_src = src
     x_dst, y_dst = dst
     path_x = []
     path_y = []
+    path_dir = []
     x, y = x_dst, y_dst
     while x != x_src or y != y_src:
+        direction = parents[x, y]
         path_x.append(x)
         path_y.append(y)
-        x, y = parents[x, y]
-    return path_x, path_y
+        path_dir.append(direction)
+        x, y = graph.get_neighbor((x, y), oposite_dir(direction))
+    return path_x, path_y, path_dir
 
 
 def _minimizing_cost_position(
@@ -52,7 +56,7 @@ def shortest_path(
     dst: Position,
     heuristic: AbstractHeuristic
 ) -> Path:
-    parents = np.empty((graph.get_width(), graph.get_height(), 2), dtype=np.int64)
+    parents = np.empty((graph.get_width(), graph.get_height(), 2), dtype=np.int32)
     dist_from_src = np.full((graph.get_width(), graph.get_height()), np.inf, dtype=np.float64)
 
     current = src
@@ -62,7 +66,7 @@ def shortest_path(
     closed_positions = set()
 
     while current != dst:
-        for neighbor in graph.iter_free_neighbors(current):
+        for neighbor, direction in graph.iter_free_neighbors(current):
             if neighbor in closed_positions:
                 continue
 
@@ -70,7 +74,7 @@ def shortest_path(
             current_path_length = d + 1.
             if current_path_length < dist_from_src[neighbor]:
                 dist_from_src[neighbor] = current_path_length
-                parents[neighbor] = current
+                parents[neighbor] = direction
                 opened_positions.add(neighbor)
 
         opened_positions.remove(current)
@@ -81,4 +85,4 @@ def shortest_path(
             break
         current = next_position
 
-    return _get_path(src, current, parents)
+    return _get_path(graph, src, current, parents)

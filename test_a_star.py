@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import tkinter as tk
-from world import SnakeWorld
-from a_star import shortest_path, EuclidianDistanceHeuristic
+from world import SnakeWorld, EuclidianDistanceHeuristic
+from a_star import shortest_path
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -139,7 +139,7 @@ class AStarInteractiveTester(tk.Tk):
         self.canvas.delete('path')
 
         # compute new path
-        path_u, path_v = shortest_path(
+        path_u, path_v, path_dir = shortest_path(
             self.graph,
             self.src,
             self.dst,
@@ -147,10 +147,10 @@ class AStarInteractiveTester(tk.Tk):
         )
 
         # display new path
-        for u, v in zip(path_u, path_v):
-            self.draw_square(u, v, 'yellow', other_tag='path')
         print(f'source={self.src}, destination={self.dst}')
         print(f'{path_u=}', f'{path_v=}', sep='\n', end='\n'*2)
+        for u, v in zip(path_u, path_v):
+            self.draw_square(u, v, 'yellow', other_tag='path')
 
 
     # ---- graph setters
