@@ -90,6 +90,7 @@ class AbstractSnakeAgent(ABC):
 
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
+    """Implements an agent which can be controlled by a request queuing system."""
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
         super().__init__(world, initial_pos)
         self.initial_dir = initial_dir
@@ -107,7 +108,7 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
         return self.dir
 
     def add_dir_request(self, request: Direction) -> None:
-        """Registers a new direction request in which to move the snake."""
+        """Queues a new direction request in which to move the snake."""
         if len(self.dir_requests) < self.dir_requests.maxlen:
             if len(self.dir_requests) > 0:
                 last_dir = self.dir_requests[-1]
@@ -125,6 +126,7 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         """
 
 class AStarSnakeAgent(AbstractAISnakeAgent):
+    """Implement a snake agent which always tries to grow."""
     def __init__(
         self,
         world: SnakeWorld,
@@ -132,6 +134,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic]
     ) -> None:
+        # TODO: add a reactivity parameter to the AStarSnakeAgent
         super().__init__(world, initial_pos)
         self.heuristic_type = heuristic_type
         self.initial_dir = initial_dir
@@ -177,3 +180,6 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
 
     def inspect(self) -> Iterator[Position]:
         return zip(self.x_path, self.y_path)
+
+
+# TODO: implement an AI agent which try to attack its enemies

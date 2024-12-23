@@ -1,4 +1,3 @@
-import argparse
 from itertools import chain
 
 from front import SnakeGameWindow
@@ -14,8 +13,8 @@ agent_1_initial_dir = (0,1)
 agent_2_initial_pos = ((5,1), (5,2), (5,3), (5,4), (5,5))
 agent_2_initial_dir = (0,-1)
 
-agent_3_initial_pos = ((8,9), (8,8), (8,7), (8,6), (8,5), (8,4), (8,3), (8,2), (8,1))
-agent_3_initial_dir = (0,1)
+# agent_3_initial_pos = ((8,9), (8,8), (8,7), (8,6), (8,5), (8,4), (8,3), (8,2), (8,1))
+# agent_3_initial_dir = (0,1)
 
 
 player_agents = [
