@@ -1,12 +1,12 @@
 import argparse
 from itertools import chain
 
-import front
-import agent
-import world
+from front import SnakeGameWindow
+from agent import PlayerSnakeAgent, AStarSnakeAgent
+from world import SnakeWorld, EuclidianDistanceHeuristic, ManhattanDistanceHeuristic
 
 
-world = world.SnakeWorld(width=30, height=30, n_food=1)
+world = SnakeWorld(width=30, height=30, n_food=1)
 
 agent_1_initial_pos = ((2,9), (2,8), (2,7), (2,6), (2,5), (2,4), (2,3), (2,2), (2,1))
 agent_1_initial_dir = (0,1)
@@ -19,7 +19,7 @@ agent_3_initial_dir = (0,1)
 
 
 player_agents = [
-    agent.PlayerSnakeAgent(
+    PlayerSnakeAgent(
         world,
         agent_1_initial_pos,
         agent_1_initial_dir
@@ -27,17 +27,18 @@ player_agents = [
 ]
 
 ai_agents = [
-    agent.AStarSnakeAgent(
+    AStarSnakeAgent(
         world,
         agent_2_initial_pos,
-        agent_2_initial_dir
+        agent_2_initial_dir,
+        EuclidianDistanceHeuristic
     )
 ]
 
 for agent in chain(ai_agents, player_agents):
     world.attach_agent(agent)
 
-gui = front.SnakeGameWindow(
+gui = SnakeGameWindow(
     world,
     player_agents=player_agents,
     ai_agents=ai_agents,

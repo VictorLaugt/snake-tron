@@ -5,13 +5,13 @@ from collections import deque
 import random
 
 from a_star import shortest_path
-from world import oposite_dir, EuclidianDistanceHeuristic
+from world import oposite_dir
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Sequence, Iterator
+    from typing import Sequence, Iterator, Type
     from type_hints import Position, Direction
-    from world import SnakeWorld
+    from world import SnakeWorld, AbstractHeuristic
 
 
 class AbstractSnakeAgent(ABC):
@@ -125,8 +125,15 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         """
 
 class AStarSnakeAgent(AbstractAISnakeAgent):
-    def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
+    def __init__(
+        self,
+        world: SnakeWorld,
+        initial_pos: Sequence[Position],
+        initial_dir: Direction,
+        heuristic_type: Type[AbstractHeuristic]
+    ) -> None:
         super().__init__(world, initial_pos)
+        self.heuristic_type = heuristic_type
         self.initial_dir = initial_dir
         self.x_path: list[int] = []
         self.y_path: list[int] = []
@@ -146,7 +153,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         min_path_len = float('inf')
         path_len = 0
         for (x_food, y_food) in self.world.iter_food():
-            heuristic = EuclidianDistanceHeuristic(x_food, y_food)
+            heuristic = self.heuristic_type(x_food, y_food)
             x_path, y_path, dir_path = shortest_path(self.world, (x, y), (x_food, y_food), heuristic)
             path_len = len(dir_path)
 

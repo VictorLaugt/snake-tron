@@ -32,19 +32,24 @@ class AbstractGridGraph(ABC):
 
 
 class AbstractHeuristic(ABC):
+    def __init__(self, x_dst: int, y_dst: int) -> None:
+        self.x_dst = x_dst
+        self.y_dst = y_dst
+
     @abstractmethod
     def __call__(self, x: int, y: int) -> int:
         pass
 
 
 class EuclidianDistanceHeuristic(AbstractHeuristic):
-    def __init__(self, x_dst: int, y_dst: int) -> None:
-        self.x_dst = x_dst
-        self.y_dst = y_dst
-
     def __call__(self, x: int, y: int) -> int:
         dx, dy = self.x_dst - x, self.y_dst - y
         return dx*dx + dy*dy
+
+class ManhattanDistanceHeuristic(AbstractHeuristic):
+    def __call__(self, x: int, y: int) -> int:
+        return abs(self.x_dst - x) + abs(self.y_dst - y)
+
 
 
 UP: Direction = (0,-1)
