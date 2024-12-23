@@ -127,25 +127,6 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         AI agent strategy.
         """
 
-
-class RandomSnakeAgent(AbstractAISnakeAgent):
-    def __init__(self, world: SnakeWorld, initial_pos: Sequence, initial_dir: Direction) -> None:
-        super().__init__(world, initial_pos)
-        self.initial_dir = initial_dir
-        self.dir = self.initial_dir
-
-    def reset(self) -> None:
-        super().reset()
-        self.dir = self.initial_dir
-
-    def get_new_direction(self) -> Direction:
-        ...
-        # TODO: RandomSnakeAgent.get_new_direction: randomly select a direction into the 3 possible next directions
-
-    def inspect(self) -> Iterator[Position]:
-        return
-        yield
-
 class AStarSnakeAgent(AbstractAISnakeAgent):
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
         super().__init__(world, initial_pos)
@@ -178,6 +159,11 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         if len(self.x_path) > 0:
             self.dir = (self.x_path.pop() - x, self.y_path.pop() - y)
         return self.dir
+
+    def die(self) -> None:
+        super().die()
+        self.x_path.clear()
+        self.y_path.clear()
 
     def inspect(self) -> Iterator[Position]:
         return zip(self.x_path, self.y_path)
