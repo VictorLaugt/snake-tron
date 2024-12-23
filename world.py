@@ -27,6 +27,22 @@ class AbstractGridGraph(ABC):
         pass
 
 
+class AbstractHeuristic(ABC):
+    @abstractmethod
+    def __call__(self, x: int, y: int) -> int:
+        pass
+
+
+class EuclidianDistanceHeuristic(AbstractHeuristic):
+    def __init__(self, x_dst: int, y_dst: int) -> None:
+        self.x_dst = x_dst
+        self.y_dst = y_dst
+
+    def __call__(self, x: int, y: int) -> int:
+        dx, dy = self.x_dst - x, self.y_dst - y
+        return dx*dx + dy*dy
+
+
 class SnakeWorld(AbstractGridGraph):
     def __init__(self, width: int, height: int, n_food: int) -> None:
         assert width > 0 and height > 0
