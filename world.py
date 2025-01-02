@@ -190,7 +190,8 @@ class SnakeWorld(AbstractGridGraph):
         # moves the snakes
         directions: list[Direction] = []
         for agent in self.alive_agents:
-            directions.append(agent.get_new_direction())
+            agent.decide_direction()
+            directions.append(agent.get_direction())
         for agent, d in zip(self.alive_agents, directions):
             agent.move(d)
 

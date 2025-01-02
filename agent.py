@@ -85,8 +85,12 @@ class AbstractSnakeAgent(ABC):
             self.world.pop_obstacle(p)
 
     @abstractmethod
-    def get_new_direction(self) -> Direction:
-        """Returns the direction in which the snake wants to move."""
+    def decide_direction(self) -> None:
+        """Makes the snake decide its next direction."""
+
+    @abstractmethod
+    def get_direction(self) -> Direction:
+        """Returns the direction in which the snake want to move."""
 
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
@@ -102,9 +106,11 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
         self.dir = self.initial_dir
         self.dir_requests.clear()
 
-    def get_new_direction(self) -> Direction:
+    def decide_direction(self) -> None:
         if len(self.dir_requests) > 0:
             self.dir = self.dir_requests.popleft()
+
+    def get_direction(self) -> Direction:
         return self.dir
 
     def add_dir_request(self, request: Direction) -> None:
@@ -132,16 +138,20 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         world: SnakeWorld,
         initial_pos: Sequence[Position],
         initial_dir: Direction,
-        heuristic_type: Type[AbstractHeuristic]
+        heuristic_type: Type[AbstractHeuristic],
+        latency: int=0
     ) -> None:
-        # TODO: add a reactivity parameter to the AStarSnakeAgent
         super().__init__(world, initial_pos)
         self.heuristic_type = heuristic_type
+
         self.initial_dir = initial_dir
         self.x_path: list[int] = []
         self.y_path: list[int] = []
         self.dir_path: list[Direction] = []
-        self.dir = initial_dir
+        self.dir = self.initial_dir
+
+        self.latency = latency
+        self.cooldown = 0
 
     def reset(self) -> None:
         super().reset()
@@ -149,15 +159,30 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         self.y_path.clear()
         self.dir_path.clear()
         self.dir = self.initial_dir
+        self.cooldown = 0
 
-    def get_new_direction(self) -> Direction:
-        x, y = self.get_head()
+    def anticipate_latency(self) -> list[Position]:
+        latency_anticipation = []
+        for other in self.world.iter_alive_agents():
+            if self is not other:
+                p = other.get_head()
+                d = other.get_direction()
+                for _ in range(self.latency):
+                    p = self.world.get_neighbor(p, d)
+                    latency_anticipation.append(p)
+        return latency_anticipation
 
+    def compute_path(self) -> None:
+        latency_anticipation = self.anticipate_latency()
+        for pos in latency_anticipation:
+            self.world.add_obstacle(pos)
+
+        head = self.get_head()
         min_path_len = float('inf')
         path_len = 0
         for (x_food, y_food) in self.world.iter_food():
             heuristic = self.heuristic_type(x_food, y_food)
-            x_path, y_path, dir_path = shortest_path(self.world, (x, y), (x_food, y_food), heuristic)
+            x_path, y_path, dir_path = shortest_path(self.world, head, (x_food, y_food), heuristic)
             path_len = len(dir_path)
 
             if 0 < path_len < min_path_len and x_path[0] == x_food and y_path[0] == y_food:
@@ -166,10 +191,22 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                 self.y_path = y_path
                 self.dir_path = dir_path
 
+        for pos in latency_anticipation:
+            self.world.pop_obstacle(pos)
+
+    def decide_direction(self) -> None:
+        if self.cooldown == 0 or len(self.dir_path) == 0:
+            self.compute_path()
+            self.cooldown = self.latency
+        else:
+            self.cooldown -= 1
+
         if len(self.dir_path) > 0:
             self.x_path.pop()
             self.y_path.pop()
             self.dir = self.dir_path.pop()
+
+    def get_direction(self) -> Direction:
         return self.dir
 
     def die(self) -> None:

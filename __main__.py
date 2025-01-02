@@ -30,7 +30,8 @@ ai_agents = [
         world,
         agent_2_initial_pos,
         agent_2_initial_dir,
-        EuclidianDistanceHeuristic
+        EuclidianDistanceHeuristic,
+        latency=5
     )
 ]
 
