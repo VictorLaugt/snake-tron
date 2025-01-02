@@ -180,16 +180,17 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         head = self.get_head()
         min_path_len = float('inf')
         path_len = 0
-        for (x_food, y_food) in self.world.iter_food():
-            heuristic = self.heuristic_type(x_food, y_food)
-            x_path, y_path, dir_path = shortest_path(self.world, head, (x_food, y_food), heuristic)
-            path_len = len(dir_path)
+        for food in self.world.iter_food():
+            if self.world.pos_is_free(food):
+                heuristic = self.heuristic_type(food[0], food[1])
+                x_path, y_path, dir_path = shortest_path(self.world, head, food, heuristic)
+                path_len = len(dir_path)
 
-            if 0 < path_len < min_path_len and x_path[0] == x_food and y_path[0] == y_food:
-                min_path_len = path_len
-                self.x_path = x_path
-                self.y_path = y_path
-                self.dir_path = dir_path
+                if 0 < path_len < min_path_len and x_path[0] == food[0] and y_path[0] == food[1]:
+                    min_path_len = path_len
+                    self.x_path = x_path
+                    self.y_path = y_path
+                    self.dir_path = dir_path
 
         for pos in latency_anticipation:
             self.world.pop_obstacle(pos)
