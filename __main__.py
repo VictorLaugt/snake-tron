@@ -8,15 +8,19 @@ width = 30
 height = 30
 world = SnakeWorld(width, height, n_food=2)
 
+# blue
 agent_1_initial_pos = [(4, y) for y in range(10, 1, -1)]
 agent_1_initial_dir = (0,1)
 
+# yellow
 agent_2_initial_pos = [(width-5, y) for y in range(6, 1, -1)]
 agent_2_initial_dir = (0,1)
 
+# purple
 agent_3_initial_pos = [(4, y) for y in range(height-6, height-1, 1)]
 agent_3_initial_dir = (0,-1)
 
+# green
 agent_4_initial_pos = [(width-5, y) for y in range(height-6, height-1, 1)]
 agent_4_initial_dir = (0,-1)
 
@@ -36,7 +40,7 @@ ai_agents = [
         agent_2_initial_dir,
         EuclidianDistanceHeuristic,
         latency=0,
-        caution=0
+        caution=1
     ),
     AStarSnakeAgent(
         world,

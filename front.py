@@ -69,7 +69,7 @@ class SnakeGameWindow(tk.Tk):
         self.next_step = None
 
         # graphical features
-        self.snake_colors: dict[AbstractSnakeAgent, SnakeColors] = {}
+        self.snake_colors: list[SnakeColors] = [None] * (len(player_agents) + len(ai_agents))
         color_idx = 0
         for snake in chain(self.player_snakes, self.ai_snakes):
             colors = SnakeColors(
@@ -78,7 +78,7 @@ class SnakeGameWindow(tk.Tk):
                 self.DEAD_COLOR,
                 self.INSPECT_COLOR
             )
-            self.snake_colors[snake] = colors
+            self.snake_colors[snake.get_id()] = colors
             color_idx = min(color_idx+1, self.LAST_COLOR_IDX)
 
         self.explain_ai = explain_ai
@@ -147,8 +147,8 @@ class SnakeGameWindow(tk.Tk):
         self.grid_display.delete(TAG_WORLD)
 
         # draws the snakes
-        for snake in self.world.iter_alive_agents():
-            colors = self.snake_colors[snake]
+        for snake in self.world.get_alive_agents():
+            colors = self.snake_colors[snake.get_id()]
             cells = snake.iter_cells()
             x, y = self.pos_to_coord(next(cells))
             # self.draw_square(x, y, colors.head_color, TAG_WORLD)
@@ -164,7 +164,7 @@ class SnakeGameWindow(tk.Tk):
 
         # draws the snakes which died during the last step
         for snake in dead_snakes:
-            colors = self.snake_colors[snake]
+            colors = self.snake_colors[snake.get_id()]
             for pos in snake.iter_cells():
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, fill=colors.dead_color, outline=colors.dead_color, tag=TAG_WORLD)
@@ -172,7 +172,7 @@ class SnakeGameWindow(tk.Tk):
     def draw_ai_inspection(self) -> None:
         self.grid_display.delete(TAG_INSPECT)
         for snake in self.ai_snakes:
-            colors = self.snake_colors[snake]
+            colors = self.snake_colors[snake.get_id()]
             for pos in snake.inspect():
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, fill=colors.inspect_color, outline=colors.inspect_color, tag=TAG_INSPECT)

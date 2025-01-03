@@ -6,7 +6,7 @@ import numpy as np
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Iterator, Optional
+    from typing import Iterator, Sequence, Optional
     from type_hints import Position, Direction
     from agent import AbstractSnakeAgent
 
@@ -162,11 +162,12 @@ class SnakeWorld(AbstractGridGraph):
 
 
     def attach_agent(self, agent: AbstractSnakeAgent) -> None:
+        agent.set_id(len(self.initial_agents))
         self.initial_agents.append(agent)
 
-    def iter_alive_agents(self) -> Iterator[AbstractSnakeAgent]:
-        """Iterates over the agents of the world which are still alive."""
-        yield from self.alive_agents
+    def get_alive_agents(self) -> Sequence[AbstractSnakeAgent]:
+        """Returns the agents of the world which are still alive"""
+        return self.alive_agents
 
 
     def reset(self) -> None:

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
-from itertools import chain
 
 from a_star import shortest_path
 from world import oposite_dir, UP, DOWN, LEFT, RIGHT
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Sequence, Iterator, Type
+    from typing import Sequence, Iterable, Iterator, Type, Optional
     from type_hints import Position, Direction
     from world import SnakeWorld, AbstractHeuristic
 
@@ -18,13 +17,17 @@ class AbstractSnakeAgent(ABC):
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position]) -> None:
         assert len(initial_pos) > 0
 
+        self.agent_id = -1
         self.world = world
         self.initial_pos = initial_pos
         self.pos = deque(initial_pos)
         self.last_tail_pos = None
 
-    def __hash__(self) -> int:
-        return hash(id(self))
+    def get_id(self) -> int:
+        return self.agent_id
+
+    def set_id(self, agent_id: int) -> None:
+        self.agent_id = agent_id
 
     def __len__(self) -> int:
         """Returns the length of the snake."""
@@ -75,7 +78,7 @@ class AbstractSnakeAgent(ABC):
         """Returns True if the snake collides another snake of the world, False
         otherwise.
         """
-        for other in self.world.iter_alive_agents():
+        for other in self.world.get_alive_agents():
             if self is not other and self.pos[-1] in other.pos:
                 return True
         return False
@@ -164,6 +167,8 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
 
         self.caution = caution
 
+        self.target: Optional[AbstractSnakeAgent] = None
+
     def reset(self) -> None:
         super().reset()
         self.x_path.clear()
@@ -171,83 +176,108 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         self.dir_path.clear()
         self.dir = self.initial_dir
         self.cooldown = 0
+        self.target = None
 
-    def anticipate_latency(self) -> list[Position]:
-        """Add virtual obstacles in the world to avoid positions in front of
-        other snakes' heads.
+    # def anticipate_latency(self) -> list[Position]:
+    #     """Add virtual obstacles in the world to avoid positions in front of
+    #     other snakes' heads.
+    #     """
+    #     latency_anticipation = []
+    #     for other in self.world.get_alive_agents():
+    #         if self is not other:
+    #             p = other.get_head()
+    #             d = other.get_direction()
+    #             for _ in range(self.latency):
+    #                 p = self.world.get_neighbor(p, d)
+    #                 self.world.add_obstacle(p)
+    #                 latency_anticipation.append(p)
+    #     return latency_anticipation
+
+    # def take_caution(self) -> list[list[Position]]:
+    #     """Add virtual obstacles in the world to avoid positions that are too
+    #     close to other snakes' heads.
+    #     """
+    #     caution_layers = []
+    #     for other in self.world.get_alive_agents():
+    #         if self is not other:
+    #             layer = (other.get_head(),)
+    #             for _ in range(self.caution):
+    #                 new_layer = []
+    #                 for p in layer:
+    #                     for n, d in self.world.iter_free_neighbors(p):
+    #                         self.world.add_obstacle(n)
+    #                         new_layer.append(n)
+    #                 caution_layers.append(new_layer)
+    #                 layer = new_layer
+    #     return caution_layers
+
+    def start_avoid(self, dangerous_agents: Iterable[AbstractSnakeAgent]) -> list[list[Position]]:
+        """Add virtual obstacles in the world to avoid positions that are to close
+        to the dangerous snakes' heads.
         """
-        latency_anticipation = []
-        for other in self.world.iter_alive_agents():
-            if self is not other:
-                p = other.get_head()
-                d = other.get_direction()
-                for _ in range(self.latency):
-                    p = self.world.get_neighbor(p, d)
-                    self.world.add_obstacle(p)
-                    latency_anticipation.append(p)
-        return latency_anticipation
+        danger_layers = []
+        for agent in dangerous_agents:
+            layer = (agent.get_head(),)
+            for _ in range(self.caution):
+                new_layer = []
+                for position in layer:
+                    for neighbor, direction in self.world.iter_free_neighbors(position):
+                        self.world.add_obstacle(neighbor)
+                        new_layer.append(neighbor)
+                danger_layers.append(new_layer)
+                layer = new_layer
+        return danger_layers
 
-    def take_caution(self) -> list[list[Position]]:
-        """Add virtual obstacles in the world to avoid positions that are too
-        close to other snakes' heads.
+    def stop_avoid(self, danger_layers: list[list[Position]]) -> None:
+        """Removes the virtual obstacles from the world."""
+        for layer in danger_layers:
+            for position in layer:
+                self.world.pop_obstacle(position)
+
+    def compute_shortest_path(
+        self,
+        destinations: Iterable[Position],
+        inf_len: int,
+        sup_len: int|float = float('inf')
+    ) -> Optional[int]:
+        """Tries to computes the shortest path from the snake's head to one of
+        the destination positions, and whose length is strictly between inf_len
+        and sup_len. If success, returns the index of the selected destination,
+        else returns None.
         """
-        caution_layers = []
-        for other in self.world.iter_alive_agents():
-            if self is not other:
-                layer = (other.get_head(),)
-                for _ in range(self.caution):
-                    new_layer = []
-                    for p in layer:
-                        for n, d in self.world.iter_free_neighbors(p):
-                            self.world.add_obstacle(n)
-                            new_layer.append(n)
-                    caution_layers.append(new_layer)
-                    layer = new_layer
-        return caution_layers
-
-    def compute_path_nearest_food(self) -> None:
         head = self.get_head()
-        min_path_len = float('inf')
+        destination_idx = None
+        current_min = float('inf')
         path_len = 0
-        for food in self.world.iter_food():
-            if self.world.pos_is_free(food):
-                heuristic = self.heuristic_type(food[0], food[1])
-                x_path, y_path, dir_path = shortest_path(self.world, head, food, heuristic)
+
+        for i, dst in enumerate(destinations):
+            if self.world.pos_is_free(dst):
+                heuristic = self.heuristic_type(dst[0], dst[1])
+                x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic)
                 path_len = len(dir_path)
 
-                if 0 < path_len < min_path_len and x_path[0] == food[0] and y_path[0] == food[1]:
-                    min_path_len = path_len
+                if inf_len < path_len < min(current_min, sup_len) and x_path[0] == dst[0] and y_path[0] == dst[1]:
+                    destination_idx = i
+                    current_min = path_len
                     self.x_path = x_path
                     self.y_path = y_path
                     self.dir_path = dir_path
 
-    def compute_path_attack(self, potential_targets: Sequence[AbstractSnakeAgent]) -> bool:
-        self_head = self.get_head()
-        for other in potential_targets:
-            if self is not other:
-                other_head = colision_pos = other.get_head()
-                direction = other.get_direction()
+        return destination_idx
 
-                for colision_distance in range(1, 10):
-                    colision_pos = self.world.get_neighbor(colision_pos, direction)
-                    if not self.world.pos_is_free(colision_pos):
-                        break
-
-                    heuristic = self.heuristic_type(colision_pos[0], colision_pos[1])
-                    x_path, y_path, dir_path = shortest_path(self.world, self_head, colision_pos, heuristic)
-                    path_len = len(dir_path)
-
-                    if 0 < path_len < colision_distance and x_path[0] == colision_pos[0] and y_path[0] == colision_pos[1]:
-                        ...
+    def compute_path_to_nearest_food(self) -> bool:
+        destination_idx = self.compute_shortest_path(self.world.iter_food(), 0, float('inf'))
+        return destination_idx is not None
 
     def compute_path(self) -> None:
-        latency_anticipation = self.anticipate_latency()
-        caution_layers = self.take_caution()
+        dangerous_agents = [agent for agent in self.world.get_alive_agents() if self is not agent]
 
-        self.compute_path_nearest_food()
+        danger_zone = self.start_avoid(dangerous_agents)
+        success = self.compute_path_to_nearest_food()
+        self.stop_avoid(danger_zone)
 
-        for pos in chain(latency_anticipation, *caution_layers):
-            self.world.pop_obstacle(pos)
+        if not success:
+            self.compute_path_to_nearest_food()
 
     def decide_direction(self) -> None:
         if self.cooldown == 0 or len(self.dir_path) == 0:
