@@ -165,7 +165,8 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         self.latency = latency
         self.cooldown = 0
 
-        self.caution = caution
+        self.danger_zones: list[list[list[Position]]] = []
+        self.caution_radius = caution
 
         self.target: Optional[AbstractSnakeAgent] = None
 
@@ -178,39 +179,6 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         self.cooldown = 0
         self.target = None
 
-    # def anticipate_latency(self) -> list[Position]:
-    #     """Add virtual obstacles in the world to avoid positions in front of
-    #     other snakes' heads.
-    #     """
-    #     latency_anticipation = []
-    #     for other in self.world.get_alive_agents():
-    #         if self is not other:
-    #             p = other.get_head()
-    #             d = other.get_direction()
-    #             for _ in range(self.latency):
-    #                 p = self.world.get_neighbor(p, d)
-    #                 self.world.add_obstacle(p)
-    #                 latency_anticipation.append(p)
-    #     return latency_anticipation
-
-    # def take_caution(self) -> list[list[Position]]:
-    #     """Add virtual obstacles in the world to avoid positions that are too
-    #     close to other snakes' heads.
-    #     """
-    #     caution_layers = []
-    #     for other in self.world.get_alive_agents():
-    #         if self is not other:
-    #             layer = (other.get_head(),)
-    #             for _ in range(self.caution):
-    #                 new_layer = []
-    #                 for p in layer:
-    #                     for n, d in self.world.iter_free_neighbors(p):
-    #                         self.world.add_obstacle(n)
-    #                         new_layer.append(n)
-    #                 caution_layers.append(new_layer)
-    #                 layer = new_layer
-    #     return caution_layers
-
     def start_avoid(self, dangerous_agents: Iterable[AbstractSnakeAgent]) -> list[list[Position]]:
         """Add virtual obstacles in the world to avoid positions that are to close
         to the dangerous snakes' heads.
@@ -218,7 +186,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         danger_layers = []
         for agent in dangerous_agents:
             layer = (agent.get_head(),)
-            for _ in range(self.caution):
+            for _ in range(self.caution_radius):
                 new_layer = []
                 for position in layer:
                     for neighbor, direction in self.world.iter_free_neighbors(position):
@@ -270,9 +238,10 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         return destination_idx is not None
 
     def compute_path(self) -> None:
+        # TODO: implement the attacking behavior
         dangerous_agents = [agent for agent in self.world.get_alive_agents() if self is not agent]
-
         danger_zone = self.start_avoid(dangerous_agents)
+
         success = self.compute_path_to_nearest_food()
         self.stop_avoid(danger_zone)
 
@@ -302,6 +271,3 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
 
     def inspect(self) -> Iterator[Position]:
         return zip(self.x_path, self.y_path)
-
-
-# TODO: implement an AI agent which try to attack its enemies

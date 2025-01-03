@@ -68,7 +68,7 @@ gui = SnakeGameWindow(
     world,
     player_agents=player_agents,
     ai_agents=ai_agents,
-    explain_ai=True,
+    explain_ai=False,
     ui_size_coeff=20,
     time_step=100
 )
