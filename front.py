@@ -97,9 +97,9 @@ class SnakeGameWindow(tk.Tk):
         self.grid_display.pack()
 
         # user interactions
-        self.bind_all('<space>', lambda _: self.pause())
+        self.bind_all('<space>', lambda _: self.toggle_pause())
         self.bind_all('<Escape>', lambda _: self.destroy())
-        self.bind_all('<Return>', lambda _: self.reset())
+        self.bind_all('<Return>', lambda _: self.reset_game())
         for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
             self.bind_user_inputs(snake, control_set)
 
@@ -193,18 +193,22 @@ class SnakeGameWindow(tk.Tk):
         self.draw(self.world.simulate())
         self.next_step = self.after(self.time_step, self.game_step)
 
-    def pause(self) -> None:
+    def toggle_pause(self) -> None:
         """Pauses or resumes the game."""
-        self.game_paused = not self.game_paused
         if self.game_paused:
+            self.next_step = self.after_idle(self.game_step)
+            self.game_paused = False
+        else:
             self.after_cancel(self.next_step)
             self.next_step = None
-        else:
-            self.next_step = self.after_idle(self.game_step)
+            self.game_paused = True
 
-    def reset(self) -> None:
+    def reset_game(self) -> None:
         """Reset the game."""
-        self.after_cancel(self.next_step)
+        if self.game_paused:
+            self.game_paused = False
+        else:
+            self.after_cancel(self.next_step)
         self.next_step = None
         self.world.reset()
         self.start_game()
