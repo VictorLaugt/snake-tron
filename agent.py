@@ -173,11 +173,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                     latency_anticipation.append(p)
         return latency_anticipation
 
-    def compute_path(self) -> None:
-        latency_anticipation = self.anticipate_latency()
-        for pos in latency_anticipation:
-            self.world.add_obstacle(pos)
-
+    def compute_path_nearest_food(self) -> None:
         head = self.get_head()
         min_path_len = float('inf')
         path_len = 0
@@ -192,6 +188,34 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                     self.x_path = x_path
                     self.y_path = y_path
                     self.dir_path = dir_path
+
+    def compute_path_attack(self, potential_targets: Sequence[AbstractSnakeAgent]) -> bool:
+        self_head = self.get_head()
+        for other in potential_targets:
+            if self is not other:
+                other_head = colision_pos = other.get_head()
+                direction = other.get_direction()
+
+                for colision_distance in range(1, 10):
+                    colision_pos = self.world.get_neighbor(colision_pos, direction)
+                    if not self.world.pos_is_free(colision_pos):
+                        break
+
+                    heuristic = self.heuristic_type(colision_pos[0], colision_pos[1])
+                    x_path, y_path, dir_path = shortest_path(self.world, self_head, colision_pos, heuristic)
+                    path_len = len(dir_path)
+
+                    if 0 < path_len < colision_distance and x_path[0] == colision_pos[0] and y_path[0] == colision_pos[1]:
+                        ...
+
+
+
+    def compute_path(self) -> None:
+        latency_anticipation = self.anticipate_latency()
+        for pos in latency_anticipation:
+            self.world.add_obstacle(pos)
+
+        self.compute_path_nearest_food()
 
         for pos in latency_anticipation:
             self.world.pop_obstacle(pos)

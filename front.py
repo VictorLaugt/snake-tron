@@ -36,13 +36,16 @@ class SnakeGameWindow(tk.Tk):
         ('<u>', '<h>', '<j>', '<k>'),
     )
 
-    HEAD_COLORS = ('dark green', 'dark orange', 'dark violet', 'dark blue')
-    TAIL_COLORS = ('green', 'orange', 'violet', 'blue')
+    HEAD_COLORS = ('#0066CC', '#D19300', '#9400D3', '#008000')
+    TAIL_COLORS = ('#0088EE', '#F3B500', '#EE82EE', '#006400')
     LAST_COLOR_IDX = len(HEAD_COLORS)-1
 
-    FOOD_COLOR = 'red'
-    DEAD_COLOR = 'dark red'
-    INSPECT_COLOR = 'gray'
+    FOOD_OUTLINE_COLOR = '#FF6666'
+    FOOD_COLOR = '#FF0000'
+    DEAD_COLOR = '#8B0000'
+    INSPECT_COLOR = '#000060'
+    BACKGROUND_COLOR = '#000030'
+    GRIDLINE_COLOR = '#000090'
 
     def __init__(
         self,
@@ -82,12 +85,15 @@ class SnakeGameWindow(tk.Tk):
         self.square_side_size = ui_size_coeff
         self.time_step = time_step
 
+        self.configure(bg='black')
         self.grid_display = tk.Canvas(
             self,
             width=self.world.get_width() * self.square_side_size,
             height=self.world.get_height() * self.square_side_size,
-            bg='gray'
+            bg=self.BACKGROUND_COLOR,
+            highlightthickness=0
         )
+        self.draw_grid_lines()
         self.grid_display.pack()
 
         # user interactions
@@ -117,9 +123,25 @@ class SnakeGameWindow(tk.Tk):
         """
         return int(x / self.square_side_size), int(y / self.square_side_size)
 
-    def draw_square(self, x: int, y: int, color: str, tag: str) -> None:
+    def draw_grid_lines(self) -> None:
+        h, w = self.world.get_height(), self.world.get_width()
+        for u in range(3, w, 3):
+            x0, y0 = self.pos_to_coord((u, 0))
+            x1, y1 = self.pos_to_coord((u, h))
+            self.grid_display.create_line(x0, y0, x1, y1, fill=self.GRIDLINE_COLOR)
+        for v in range(3, h, 3):
+            x0, y0 = self.pos_to_coord((0, v))
+            x1, y1 = self.pos_to_coord((w, v))
+            self.grid_display.create_line(x0, y0, x1, y1, fill=self.GRIDLINE_COLOR)
+
+    def draw_square(self, x: float, y: float, **kwargs) -> None:
         shift = self.square_side_size
-        return self.grid_display.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
+        # return self.grid_display.create_rectangle(x, y, x + shift, y + shift, fill=color, tag=tag)
+        return self.grid_display.create_rectangle(x, y, x + shift, y + shift, **kwargs)
+
+    def draw_circle(self, x: float, y: float, **kwargs) -> None:
+        shift = self.square_side_size
+        return self.grid_display.create_oval(x, y, x + shift, y + shift, **kwargs)
 
     def draw_world(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         self.grid_display.delete(TAG_WORLD)
@@ -129,22 +151,23 @@ class SnakeGameWindow(tk.Tk):
             colors = self.snake_colors[snake]
             cells = snake.iter_cells()
             x, y = self.pos_to_coord(next(cells))
-            self.draw_square(x, y, colors.head_color, TAG_WORLD)
+            # self.draw_square(x, y, colors.head_color, TAG_WORLD)
+            self.draw_square(x, y, fill=colors.head_color, outline=colors.tail_color, tag=TAG_WORLD)
             for pos in cells:
                 x, y = self.pos_to_coord(pos)
-                self.draw_square(x, y, colors.tail_color, TAG_WORLD)
+                self.draw_square(x, y, fill=colors.tail_color, outline=colors.tail_color, tag=TAG_WORLD)
 
         # draws the food
         for food in self.world.iter_food():
             x, y = self.pos_to_coord(food)
-            self.draw_square(x, y, self.FOOD_COLOR, TAG_WORLD)
+            self.draw_circle(x, y, fill=self.FOOD_COLOR, outline=self.FOOD_OUTLINE_COLOR, tag=TAG_WORLD)
 
         # draws the snakes which died during the last step
         for snake in dead_snakes:
             colors = self.snake_colors[snake]
             for pos in snake.iter_cells():
                 x, y = self.pos_to_coord(pos)
-                self.draw_square(x, y, colors.dead_color, TAG_WORLD)
+                self.draw_square(x, y, fill=colors.dead_color, outline=colors.dead_color, tag=TAG_WORLD)
 
     def draw_ai_inspection(self) -> None:
         self.grid_display.delete(TAG_INSPECT)
@@ -152,7 +175,7 @@ class SnakeGameWindow(tk.Tk):
             colors = self.snake_colors[snake]
             for pos in snake.inspect():
                 x, y = self.pos_to_coord(pos)
-                self.draw_square(x, y, colors.inspect_color, TAG_INSPECT)
+                self.draw_square(x, y, fill=colors.inspect_color, outline=colors.inspect_color, tag=TAG_INSPECT)
 
     def draw(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         """Draws the entire game."""
