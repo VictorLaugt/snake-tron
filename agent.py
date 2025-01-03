@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
-import random
+from itertools import chain
 
 from a_star import shortest_path
 from world import oposite_dir
@@ -140,7 +140,8 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         initial_pos: Sequence[Position],
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic],
-        latency: int=0
+        latency: int=0,
+        caution: int=0
     ) -> None:
         super().__init__(world, initial_pos)
         self.heuristic_type = heuristic_type
@@ -153,6 +154,8 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
 
         self.latency = latency
         self.cooldown = 0
+
+        self.caution = caution
 
     def reset(self) -> None:
         super().reset()
@@ -170,8 +173,24 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                 d = other.get_direction()
                 for _ in range(self.latency):
                     p = self.world.get_neighbor(p, d)
+                    self.world.add_obstacle(p)
                     latency_anticipation.append(p)
         return latency_anticipation
+
+    def take_caution(self) -> list[list[Position]]:
+        caution_layers = []
+        for other in self.world.iter_alive_agents():
+            if self is not other:
+                layer = (other.get_head(),)
+                for _ in range(self.caution):
+                    new_layer = []
+                    for p in layer:
+                        for n, d in self.world.iter_free_neighbors(p):
+                            self.world.add_obstacle(n)
+                            new_layer.append(n)
+                    caution_layers.append(new_layer)
+                    layer = new_layer
+        return caution_layers
 
     def compute_path_nearest_food(self) -> None:
         head = self.get_head()
@@ -212,12 +231,11 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
 
     def compute_path(self) -> None:
         latency_anticipation = self.anticipate_latency()
-        for pos in latency_anticipation:
-            self.world.add_obstacle(pos)
+        caution_layers = self.take_caution()
 
         self.compute_path_nearest_food()
 
-        for pos in latency_anticipation:
+        for pos in chain(latency_anticipation, *caution_layers):
             self.world.pop_obstacle(pos)
 
     def decide_direction(self) -> None:
