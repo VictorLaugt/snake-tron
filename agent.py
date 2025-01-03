@@ -131,6 +131,7 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         AI agent strategy.
         """
 
+
 class AStarSnakeAgent(AbstractAISnakeAgent):
     """Implement a snake agent which always tries to grow."""
     def __init__(
