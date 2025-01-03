@@ -227,8 +227,6 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                     if 0 < path_len < colision_distance and x_path[0] == colision_pos[0] and y_path[0] == colision_pos[1]:
                         ...
 
-
-
     def compute_path(self) -> None:
         latency_anticipation = self.anticipate_latency()
         caution_layers = self.take_caution()

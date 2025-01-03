@@ -21,7 +21,6 @@ agent_4_initial_pos = [(width-5, y) for y in range(height-6, height-1, 1)]
 agent_4_initial_dir = (0,-1)
 
 
-
 player_agents = [
     PlayerSnakeAgent(
         world,
@@ -59,6 +58,7 @@ ai_agents = [
 
 for agent in chain(ai_agents, player_agents):
     world.attach_agent(agent)
+
 
 gui = SnakeGameWindow(
     world,
