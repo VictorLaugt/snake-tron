@@ -6,9 +6,9 @@ import numpy as np
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Iterator, Sequence, Optional
+    from typing import Iterator, Optional
     from type_hints import Position, Direction
-    from agent import AbstractSnakeAgent, PlayerSnakeAgent, AStarSnakeAgent
+    from agent import AbstractSnakeAgent
 
 
 class AbstractGridGraph(ABC):

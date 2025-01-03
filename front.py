@@ -9,7 +9,7 @@ from world import UP, DOWN, LEFT, RIGHT
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeAlias, Sequence, Iterable
-    from type_hints import Position, Direction
+    from type_hints import Position
     from world import SnakeWorld
     from agent import AbstractSnakeAgent, PlayerSnakeAgent, AbstractAISnakeAgent
     Coordinate: TypeAlias = tuple[float, float]

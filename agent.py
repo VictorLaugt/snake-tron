@@ -5,7 +5,7 @@ from collections import deque
 from itertools import chain
 
 from a_star import shortest_path
-from world import oposite_dir
+from world import oposite_dir, UP, DOWN, LEFT, RIGHT
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class AbstractSnakeAgent(ABC):
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position]) -> None:
         assert len(initial_pos) > 0
+
         self.world = world
         self.initial_pos = initial_pos
         self.pos = deque(initial_pos)
@@ -96,6 +97,8 @@ class AbstractSnakeAgent(ABC):
 class PlayerSnakeAgent(AbstractSnakeAgent):
     """Implements an agent which can be controlled by a request queuing system."""
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
+        assert initial_dir in (UP, DOWN, LEFT, RIGHT)
+
         super().__init__(world, initial_pos)
         self.initial_dir = initial_dir
         self.dir = initial_dir
@@ -143,6 +146,10 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         latency: int=0,
         caution: int=0
     ) -> None:
+        assert initial_dir in (UP, DOWN, LEFT, RIGHT)
+        assert latency >= 0
+        assert caution >= 0
+
         super().__init__(world, initial_pos)
         self.heuristic_type = heuristic_type
 
@@ -166,6 +173,9 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         self.cooldown = 0
 
     def anticipate_latency(self) -> list[Position]:
+        """Add virtual obstacles in the world to avoid positions in front of
+        other snakes' heads.
+        """
         latency_anticipation = []
         for other in self.world.iter_alive_agents():
             if self is not other:
@@ -178,6 +188,9 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         return latency_anticipation
 
     def take_caution(self) -> list[list[Position]]:
+        """Add virtual obstacles in the world to avoid positions that are too
+        close to other snakes' heads.
+        """
         caution_layers = []
         for other in self.world.iter_alive_agents():
             if self is not other:
