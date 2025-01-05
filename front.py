@@ -94,7 +94,7 @@ class SnakeGameWindow(tk.Tk):
             highlightthickness=0
         )
         self.draw_grid_lines()
-        self.grid_display.pack()
+        self.grid_display.grid(row=0, column=0, columnspan=3, pady=self.square_side_size, padx=self.square_side_size)
 
         # user interactions
         self.bind_all('<space>', lambda _: self.toggle_pause())
@@ -102,6 +102,10 @@ class SnakeGameWindow(tk.Tk):
         self.bind_all('<Return>', lambda _: self.reset_game())
         for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
             self.bind_user_inputs(snake, control_set)
+
+        tk.Button(text="pause", command=self.toggle_pause).grid(row=1, column=1)
+        tk.Button(text="reset", command=self.reset_game).grid(row=1, column=0)
+        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=1, column=2)
 
         self.next_step = self.after_idle(self.start_game)
 
@@ -202,6 +206,11 @@ class SnakeGameWindow(tk.Tk):
             self.after_cancel(self.next_step)
             self.next_step = None
             self.game_paused = True
+
+    def toggle_ai_explanation(self) -> None:
+        self.explain_ai = not self.explain_ai
+        self.grid_display.delete(TAG_INSPECT)
+        self.draw(())
 
     def reset_game(self) -> None:
         """Reset the game."""
