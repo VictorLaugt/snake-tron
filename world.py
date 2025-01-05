@@ -63,13 +63,11 @@ def oposite_dir(d: Direction) -> Direction:
 
 
 class SnakeWorld(AbstractGridGraph):
-    def __init__(self, width: int, height: int, n_food: int) -> None:
+    def __init__(self, width: int, height: int) -> None:
         assert width > 0 and height > 0
-        assert n_food >= 0
 
         self.width = width
         self.height = height
-        self.initial_n_food = n_food
         self.initial_agents: list[AbstractSnakeAgent] = []
 
         self.obstacle_count = np.zeros((self.width, self.height), dtype=np.uint8)
@@ -107,7 +105,9 @@ class SnakeWorld(AbstractGridGraph):
                 return pos
 
     def _spawn_missing_food(self) -> None:
-        for _ in range(self.initial_n_food - len(self.food_pos)):
+        q, r = divmod(len(self.alive_agents), 2)
+        n_food = q + (r != 0)
+        for _ in range(n_food - len(self.food_pos)):
             pos = self._find_available_food_pos()
             if pos is None:
                 break

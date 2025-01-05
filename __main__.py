@@ -6,7 +6,7 @@ from world import SnakeWorld, EuclidianDistanceHeuristic, ManhattanDistanceHeuri
 
 width = 30
 height = 30
-world = SnakeWorld(width, height, n_food=2)
+world = SnakeWorld(width, height)
 
 # blue
 agent_1_initial_pos = [(4, y) for y in range(10, 1, -1)]
