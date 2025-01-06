@@ -1,6 +1,6 @@
 from itertools import chain
 
-from front import SnakeGameWindow
+from front import SnakeGameWindow, MobileSnakeGameWindow
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, ManhattanDistanceHeuristic
 
@@ -28,7 +28,7 @@ agent_1 = AStarOffensiveSnakeAgent(
 # purple
 agent_2 = AStarOffensiveSnakeAgent(
     world,
-    initial_pos=[(4, y) for y in range(height-6, height-1, 1)],
+    initial_pos=[(4, y) for y in range(height-10, height-1, 1)],
     initial_dir=(0, -1),
     heuristic_type=EuclidianDistanceHeuristic,
     latency=0,
@@ -38,7 +38,7 @@ agent_2 = AStarOffensiveSnakeAgent(
 # green
 agent_3 = AStarSnakeAgent(
     world,
-    initial_pos=[(width-5, y) for y in range(height-6, height-1, 1)],
+    initial_pos=[(width-5, y) for y in range(height-10, height-1, 1)],
     initial_dir=(0, -1),
     heuristic_type=EuclidianDistanceHeuristic,
     latency=0,
@@ -46,10 +46,8 @@ agent_3 = AStarSnakeAgent(
 )
 
 agent_1.add_opponent(agent_2)
-agent_1.add_opponent(agent_3)
-
+agent_1.add_opponent(agent_0)
 agent_2.add_opponent(agent_0)
-agent_2.add_opponent(agent_1)
 
 player_agents = [agent_0]
 ai_agents = [agent_1, agent_2, agent_3]

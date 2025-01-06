@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import tkinter as tk
 from itertools import chain
 from dataclasses import dataclass
@@ -26,16 +27,10 @@ class SnakeColors:
     dead_color: str
     inspect_color: str
 
-class SnakeGameWindow(tk.Tk):
+class AbstractGameWindow(tk.Tk, ABC):
     """Implements a frontend for a snake game. The user can control the snake
     with the arrow keys.
     """
-    CONTROL_SETS = (
-        ('<Up>', '<Left>', '<Down>', '<Right>'),
-        ('<z>', '<q>', '<s>', '<d>'),
-        ('<u>', '<h>', '<j>', '<k>'),
-    )
-
     HEAD_COLORS = ('#0066CC', '#D19300', '#9400D3', '#008000')
     TAIL_COLORS = ('#0088EE', '#F3B500', '#EE82EE', '#006400')
     LAST_COLOR_IDX = len(HEAD_COLORS)-1
@@ -68,7 +63,16 @@ class SnakeGameWindow(tk.Tk):
         self.game_paused = False
         self.next_step = None
 
-        # graphical features
+        # game speed
+        self.regular_time_step = time_step
+        self.time_step = time_step
+        self.fullspeed = False
+
+        # ai inspection
+        self.explain_ai = explain_ai
+
+        # snake colors
+        self.square_side_size = ui_size_coeff
         self.snake_colors: list[SnakeColors] = [None] * (len(player_agents) + len(ai_agents))
         for snake in chain(self.player_snakes, self.ai_snakes):
             color_idx = min(snake.get_id(), self.LAST_COLOR_IDX)
@@ -80,10 +84,7 @@ class SnakeGameWindow(tk.Tk):
             )
             self.snake_colors[snake.get_id()] = colors
 
-        self.explain_ai = explain_ai
-        self.square_side_size = ui_size_coeff
-        self.time_step = time_step
-
+        # world appearance
         self.configure(bg='black')
         self.grid_display = tk.Canvas(
             self,
@@ -93,26 +94,16 @@ class SnakeGameWindow(tk.Tk):
             highlightthickness=0
         )
         self.draw_grid_lines()
-        self.grid_display.grid(row=0, column=0, columnspan=3, pady=self.square_side_size, padx=self.square_side_size)
+        self.grid_display.grid(row=0, column=0, columnspan=4, pady=self.square_side_size, padx=self.square_side_size)
 
         # user interactions
-        self.bind_all('<space>', lambda _: self.toggle_pause())
-        self.bind_all('<Escape>', lambda _: self.destroy())
-        self.bind_all('<Return>', lambda _: self.reset_game())
-        for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
-            self.bind_user_inputs(snake, control_set)
-
-        tk.Button(text="pause", command=self.toggle_pause).grid(row=1, column=1)
-        tk.Button(text="reset", command=self.reset_game).grid(row=1, column=0)
-        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=1, column=2)
+        self.config_user_interactions()
 
         self.next_step = self.after_idle(self.start_game)
 
-    def bind_user_inputs(self, player_snake: PlayerSnakeAgent, control_set: tuple[str, str, str, str]) -> None:
-        self.bind_all(control_set[0], lambda _: player_snake.add_dir_request(UP))
-        self.bind_all(control_set[1], lambda _: player_snake.add_dir_request(LEFT))
-        self.bind_all(control_set[2], lambda _: player_snake.add_dir_request(DOWN))
-        self.bind_all(control_set[3], lambda _: player_snake.add_dir_request(RIGHT))
+    @abstractmethod
+    def config_user_interactions(self) -> None:
+        """Binds the user inputs"""
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         """Returns the coordinates on the graphical ui canvas which corresponds to the
@@ -211,6 +202,10 @@ class SnakeGameWindow(tk.Tk):
         self.grid_display.delete(TAG_INSPECT)
         self.draw(())
 
+    def toggle_fullspeed(self) -> None:
+        self.fullspeed = not self.fullspeed
+        self.time_step = 1 if self.fullspeed else self.regular_time_step
+
     def reset_game(self) -> None:
         """Reset the game."""
         if self.game_paused:
@@ -220,3 +215,74 @@ class SnakeGameWindow(tk.Tk):
         self.next_step = None
         self.world.reset()
         self.start_game()
+
+
+
+class SnakeGameWindow(AbstractGameWindow):
+    CONTROL_SETS = (
+        ('<Up>', '<Left>', '<Down>', '<Right>'),
+        ('<z>', '<q>', '<s>', '<d>'),
+        ('<u>', '<h>', '<j>', '<k>'),
+    )
+
+    def bind_user_inputs(self, player_snake: PlayerSnakeAgent, control_set: tuple[str, str, str, str]) -> None:
+        self.bind_all(control_set[0], lambda _: player_snake.add_dir_request(UP))
+        self.bind_all(control_set[1], lambda _: player_snake.add_dir_request(LEFT))
+        self.bind_all(control_set[2], lambda _: player_snake.add_dir_request(DOWN))
+        self.bind_all(control_set[3], lambda _: player_snake.add_dir_request(RIGHT))
+
+    def config_user_interactions(self) -> None:
+        self.bind_all('<space>', lambda _: self.toggle_pause())
+        self.bind_all('<Escape>', lambda _: self.destroy())
+        self.bind_all('<Return>', lambda _: self.reset_game())
+        for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
+            self.bind_user_inputs(snake, control_set)
+
+        tk.Button(text="pause", command=self.toggle_pause).grid(row=1, column=1)
+        tk.Button(text="reset", command=self.reset_game).grid(row=1, column=0)
+        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=1, column=2)
+        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=1, column=3)
+
+
+class DirectionalCross(tk.Canvas):
+    def __init__(self, master, snake: PlayerSnakeAgent, width: int, height: int, bg: str, **kwargs) -> None:
+        super().__init__(master, width=width, height=height, bg=bg, **kwargs)
+        self.snake = snake
+        self.last_dir = snake.get_direction()
+        self.width = width
+        self.height = height
+        self.create_line(0, 0, self.width, self.height, fill='black', dash=(4, 2))
+        self.create_line(0, self.height, self.width, 0, fill='black', dash=(4, 2))
+        self.bind('<B1-Motion>', self.on_drag)
+
+    def on_drag(self, event) -> None:
+        x, y = event.x, event.y
+        above_diag_0 = (y > (self.height/self.width * x))
+        above_diag_1 = (y > (-self.height/self.width * (x-self.width)))
+        if above_diag_0 and above_diag_1:
+            d = DOWN
+        elif above_diag_0 and not above_diag_1:
+            d = LEFT
+        elif not above_diag_0 and above_diag_1:
+            d = RIGHT
+        elif not above_diag_0 and not above_diag_1:
+            d = UP
+        if d != self.last_dir:
+            self.snake.add_dir_request(d)
+            self.last_dir = d
+
+
+class MobileSnakeGameWindow(AbstractGameWindow):
+    def config_user_interactions(self) -> None:
+        n_controlable_players = min(3, len(self.player_snakes))
+        pad_size = 500 // n_controlable_players
+        controller_frame = tk.Frame(self, width=500, height=pad_size)
+        for i in range(n_controlable_players):
+            snake = self.player_snakes[i]
+            directional_cross = DirectionalCross(controller_frame, snake, width=pad_size, height=pad_size, bg=self.snake_colors[snake.get_id()].tail_color)
+            directional_cross.grid(row=0, column=i)
+        controller_frame.grid(row=1, column=0, columnspan=4)
+        tk.Button(text="pause", command=self.toggle_pause).grid(row=2, column=1)
+        tk.Button(text="reset", command=self.reset_game).grid(row=2, column=0)
+        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=2, column=2)
+        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=2, column=3)
