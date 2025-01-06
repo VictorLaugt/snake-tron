@@ -221,7 +221,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         for i, dst in enumerate(destinations):
             if self.world.pos_is_free(dst):
                 heuristic = self.heuristic_type(dst[0], dst[1])
-                x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic)
+                x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic, max_iteraton=450)
                 path_len = len(dir_path)
 
                 if inf_len < path_len < min(current_min, sup_len) and x_path[0] == dst[0] and y_path[0] == dst[1]:

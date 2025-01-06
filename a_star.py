@@ -50,12 +50,12 @@ def _minimizing_cost_position(
     return x_min, y_min
 
 
-# TODO: implement a max iteration parameter (use 500 iteration max)
 def shortest_path(
     graph: AbstractGridGraph,
     src: Position,
     dst: Position,
-    heuristic: AbstractHeuristic
+    heuristic: AbstractHeuristic,
+    max_iteraton: int=-1
 ) -> Path:
     parents = np.empty((graph.get_width(), graph.get_height(), 2), dtype=np.int32)
     dist_from_src = np.full((graph.get_width(), graph.get_height()), np.inf, dtype=np.float64)
@@ -66,7 +66,8 @@ def shortest_path(
     opened_positions = {src}
     closed_positions = set()
 
-    while current != dst:
+    iteration_count = 0
+    while current != dst and iteration_count != max_iteraton:
         for neighbor, direction in graph.iter_free_neighbors(current):
             if neighbor in closed_positions:
                 continue
@@ -85,5 +86,6 @@ def shortest_path(
         if next_position == NO_PATH_FOUND:
             break
         current = next_position
+        iteration_count += 1
 
     return _get_path(graph, src, current, parents)
