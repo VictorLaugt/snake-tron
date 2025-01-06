@@ -70,6 +70,6 @@ gui = SnakeGameWindow(
     ai_agents=ai_agents,
     explain_ai=False,
     ui_size_coeff=20,
-    time_step=100
+    time_step=1
 )
 gui.mainloop()

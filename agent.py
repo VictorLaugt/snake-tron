@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 class AbstractSnakeAgent(ABC):
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position]) -> None:
         assert len(initial_pos) > 0
-
         self.agent_id = -1
         self.world = world
         self.initial_pos = initial_pos
@@ -98,10 +97,9 @@ class AbstractSnakeAgent(ABC):
 
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
-    """Implements an agent which can be controlled by a request queuing system."""
+    """Implements a snake agent which can be controlled by a request queuing system."""
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
         assert initial_dir in (UP, DOWN, LEFT, RIGHT)
-
         super().__init__(world, initial_pos)
         self.initial_dir = initial_dir
         self.dir = initial_dir
@@ -131,11 +129,98 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
 
 
 class AbstractAISnakeAgent(AbstractSnakeAgent):
-    @abstractmethod
+    def __init__(
+        self,
+        world: SnakeWorld,
+        initial_pos: Sequence[Position],
+        initial_dir: Direction,
+        heuristic_type: Type[AbstractHeuristic],
+        latency: int=0
+    ) -> None:
+        assert initial_dir in (UP, DOWN, LEFT, RIGHT)
+        assert latency >= 0
+        super().__init__(world, initial_pos)
+
+        self.initial_dir = initial_dir
+        self.x_path: list[int] = []
+        self.y_path: list[int] = []
+        self.dir_path: list[Direction] = []
+        self.dir = self.initial_dir
+
+        self.heuristic_type = heuristic_type
+
+        self.latency = latency
+        self.cooldown = 0
+
+    def reset(self) -> None:
+        super().reset()
+        self.x_path.clear()
+        self.y_path.clear()
+        self.dir_path.clear()
+        self.dir = self.initial_dir
+        self.cooldown = 0
+
+    def die(self) -> None:
+        super().die()
+        self.x_path.clear()
+        self.y_path.clear()
+        self.dir_path.clear()
+
+    def decide_direction(self) -> None:
+        if self.cooldown == 0 or len(self.dir_path) == 0:
+            self.update_path()
+            self.cooldown = self.latency
+        else:
+            self.cooldown -= 1
+
+        if len(self.dir_path) > 0:
+            self.x_path.pop()
+            self.y_path.pop()
+            self.dir = self.dir_path.pop()
+
+    def get_direction(self) -> Direction:
+        return self.dir
+
     def inspect(self) -> Iterator[Position]:
-        """Returns a position iterator which can be used to visually explain the
-        AI agent strategy.
+        """Iterates over the positions of the path the AI snake is following."""
+        return zip(self.x_path, self.y_path)
+
+    def compute_shortest_path(
+        self,
+        destinations: Iterable[Position],
+        inf_len: int,
+        sup_len: int|float = float('inf')
+    ) -> Optional[int]:
+        """Tries to computes the shortest path from the snake's head to one of
+        the destination positions, and whose length is strictly between inf_len
+        and sup_len. If success, returns the index of the selected destination,
+        else returns None.
         """
+        inf_len = max(inf_len, 0)
+
+        head = self.get_head()
+        destination_idx = None
+        current_min = float('inf')
+        path_len = 0
+
+        for i, dst in enumerate(destinations):
+            if self.world.pos_is_free(dst):
+                heuristic = self.heuristic_type(dst[0], dst[1])
+                x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic, max_iteraton=450)
+                path_len = len(dir_path)
+
+                if inf_len < path_len < min(current_min, sup_len) and x_path[0] == dst[0] and y_path[0] == dst[1]:
+                    destination_idx = i
+                    current_min = path_len
+                    self.x_path = x_path
+                    self.y_path = y_path
+                    self.dir_path = dir_path
+
+        return destination_idx
+
+    @abstractmethod
+    def update_path(self) -> None:
+        """Updates the path the AI agent is following."""
 
 
 class AStarSnakeAgent(AbstractAISnakeAgent):
@@ -149,35 +234,9 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         latency: int=0,
         caution: int=0
     ) -> None:
-        assert initial_dir in (UP, DOWN, LEFT, RIGHT)
-        assert latency >= 0
         assert caution >= 0
-
-        super().__init__(world, initial_pos)
-        self.heuristic_type = heuristic_type
-
-        self.initial_dir = initial_dir
-        self.x_path: list[int] = []
-        self.y_path: list[int] = []
-        self.dir_path: list[Direction] = []
-        self.dir = self.initial_dir
-
-        self.latency = latency
-        self.cooldown = 0
-
-        self.danger_zones: list[list[list[Position]]] = []
+        super().__init__(world, initial_pos, initial_dir, heuristic_type, latency)
         self.caution_radius = caution
-
-        self.target: Optional[AbstractSnakeAgent] = None
-
-    def reset(self) -> None:
-        super().reset()
-        self.x_path.clear()
-        self.y_path.clear()
-        self.dir_path.clear()
-        self.dir = self.initial_dir
-        self.cooldown = 0
-        self.target = None
 
     def start_avoid(self, dangerous_agents: Iterable[AbstractSnakeAgent]) -> list[list[Position]]:
         """Add virtual obstacles in the world to avoid positions that are to close
@@ -202,72 +261,76 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
             for position in layer:
                 self.world.pop_obstacle(position)
 
-    def compute_shortest_path(
-        self,
-        destinations: Iterable[Position],
-        inf_len: int,
-        sup_len: int|float = float('inf')
-    ) -> Optional[int]:
-        """Tries to computes the shortest path from the snake's head to one of
-        the destination positions, and whose length is strictly between inf_len
-        and sup_len. If success, returns the index of the selected destination,
-        else returns None.
-        """
-        head = self.get_head()
-        destination_idx = None
-        current_min = float('inf')
-        path_len = 0
-
-        for i, dst in enumerate(destinations):
-            if self.world.pos_is_free(dst):
-                heuristic = self.heuristic_type(dst[0], dst[1])
-                x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic, max_iteraton=450)
-                path_len = len(dir_path)
-
-                if inf_len < path_len < min(current_min, sup_len) and x_path[0] == dst[0] and y_path[0] == dst[1]:
-                    destination_idx = i
-                    current_min = path_len
-                    self.x_path = x_path
-                    self.y_path = y_path
-                    self.dir_path = dir_path
-
-        return destination_idx
-
     def compute_path_to_nearest_food(self) -> bool:
-        destination_idx = self.compute_shortest_path(self.world.iter_food(), 0, float('inf'))
-        return destination_idx is not None
+        """Tries to compute the shortest path to the nearest food.
+        Returns True if success, False otherwise.
+        """
+        return self.compute_shortest_path(self.world.iter_food(), 0, float('inf')) is not None
 
-    def compute_path(self) -> None:
-        # TODO: implement the attacking behavior
-        dangerous_agents = [agent for agent in self.world.get_alive_agents() if self is not agent]
-        danger_zone = self.start_avoid(dangerous_agents)
-
+    def update_path(self) -> None:
+        danger_zone = self.start_avoid(a for a in self.world.get_alive_agents() if self is not a)
         success = self.compute_path_to_nearest_food()
         self.stop_avoid(danger_zone)
 
         if not success:
             self.compute_path_to_nearest_food()
 
-    def decide_direction(self) -> None:
-        if self.cooldown == 0 or len(self.dir_path) == 0:
-            self.compute_path()
-            self.cooldown = self.latency
+
+class AStarOffensiveSnakeAgent(AStarSnakeAgent):
+    def __init__(
+        self,
+        world: SnakeWorld,
+        initial_pos: Sequence[Position],
+        initial_dir: Direction,
+        heuristic_type: Type[AbstractHeuristic],
+        latency: int=0,
+        caution: int=0,
+    ) -> None:
+        super().__init__(world, initial_pos, initial_dir, heuristic_type, latency, caution)
+        self.target: Optional[AbstractSnakeAgent] = None
+        self.opponents: list[AbstractSnakeAgent] = []
+
+    def add_opponent(self, opponent: AbstractAISnakeAgent) -> None:
+        self.opponents.append(opponent)
+
+    def reset(self) -> None:
+        super().reset()
+        self.target = None
+
+    def compute_attack_path(self, potential_targets: Sequence[AbstractSnakeAgent]) -> bool:
+        """Tries to compute a path to attack one of the given target.
+        Returns True if sucess, False otherwise.
+        """
+        # initialize the list of potential attack destinations
+        impact_positions = [a.get_head() for a in potential_targets if self is not a]
+
+        for impact_delay in range(1, 10):
+            # update the list of potential attack destinations
+            new_potential_targets: list[AbstractSnakeAgent] = []
+            new_impact_positions: list[Position] = []
+            for agent, pos in zip(potential_targets, impact_positions):
+                pos = self.world.get_neighbor(pos, agent.get_direction())
+                if self.world.pos_is_free(pos):
+                    new_impact_positions.append(pos)
+                    new_potential_targets.append(agent)
+            potential_targets = new_potential_targets
+            impact_positions = new_impact_positions
+
+
+            for agent in potential_targets:
+                i = self.compute_shortest_path(impact_positions, impact_delay - len(self), impact_delay)
+                if i is not None:
+                    self.target = potential_targets[i]
+                    return True
+
+        self.target = None
+        return False
+
+    def update_path(self) -> None:
+        if self.target is None:
+            success = self.compute_attack_path(self.opponents)
         else:
-            self.cooldown -= 1
+            success = self.compute_attack_path((self.target,))
 
-        if len(self.dir_path) > 0:
-            self.x_path.pop()
-            self.y_path.pop()
-            self.dir = self.dir_path.pop()
-
-    def get_direction(self) -> Direction:
-        return self.dir
-
-    def die(self) -> None:
-        super().die()
-        self.x_path.clear()
-        self.y_path.clear()
-        self.dir_path.clear()
-
-    def inspect(self) -> Iterator[Position]:
-        return zip(self.x_path, self.y_path)
+        if not success:
+            super().update_path()
