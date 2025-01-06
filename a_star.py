@@ -50,6 +50,7 @@ def _minimizing_cost_position(
     return x_min, y_min
 
 
+# TODO: implement a max iteration parameter (use 500 iteration max)
 def shortest_path(
     graph: AbstractGridGraph,
     src: Position,
