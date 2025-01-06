@@ -1,7 +1,7 @@
 from itertools import chain
 
 from front import SnakeGameWindow
-from agent import PlayerSnakeAgent, AStarSnakeAgent
+from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, ManhattanDistanceHeuristic
 
 width = 30
@@ -9,60 +9,53 @@ height = 30
 world = SnakeWorld(width, height, n_food=2)
 
 # blue
-agent_1_initial_pos = [(4, y) for y in range(10, 1, -1)]
-agent_1_initial_dir = (0,1)
+agent_0 = PlayerSnakeAgent(
+    world,
+    initial_pos=[(4, y) for y in range(10, 1, -1)],
+    initial_dir=(0, 1)
+)
 
 # yellow
-agent_2_initial_pos = [(width-5, y) for y in range(6, 1, -1)]
-agent_2_initial_dir = (0,1)
+agent_1 = AStarOffensiveSnakeAgent(
+    world,
+    initial_pos=[(width-5, y) for y in range(10, 1, -1)],
+    initial_dir=(0, 1),
+    heuristic_type=EuclidianDistanceHeuristic,
+    latency=0,
+    caution=1
+)
 
 # purple
-agent_3_initial_pos = [(4, y) for y in range(height-6, height-1, 1)]
-agent_3_initial_dir = (0,-1)
+agent_2 = AStarOffensiveSnakeAgent(
+    world,
+    initial_pos=[(4, y) for y in range(height-6, height-1, 1)],
+    initial_dir=(0, -1),
+    heuristic_type=EuclidianDistanceHeuristic,
+    latency=0,
+    caution=2
+)
 
 # green
-agent_4_initial_pos = [(width-5, y) for y in range(height-6, height-1, 1)]
-agent_4_initial_dir = (0,-1)
+agent_3 = AStarSnakeAgent(
+    world,
+    initial_pos=[(width-5, y) for y in range(height-6, height-1, 1)],
+    initial_dir=(0, -1),
+    heuristic_type=EuclidianDistanceHeuristic,
+    latency=0,
+    caution=3
+)
 
+agent_1.add_opponent(agent_2)
+agent_1.add_opponent(agent_3)
 
-player_agents = [
-    PlayerSnakeAgent(
-        world,
-        agent_1_initial_pos,
-        agent_1_initial_dir
-    ),
-]
+agent_2.add_opponent(agent_0)
+agent_2.add_opponent(agent_1)
 
-ai_agents = [
-    AStarSnakeAgent(
-        world,
-        agent_2_initial_pos,
-        agent_2_initial_dir,
-        EuclidianDistanceHeuristic,
-        latency=0,
-        caution=1
-    ),
-    AStarSnakeAgent(
-        world,
-        agent_3_initial_pos,
-        agent_3_initial_dir,
-        EuclidianDistanceHeuristic,
-        latency=0,
-        caution=2
-    ),
-    AStarSnakeAgent(
-        world,
-        agent_4_initial_pos,
-        agent_4_initial_dir,
-        EuclidianDistanceHeuristic,
-        latency=0,
-        caution=3
-    ),
-]
+player_agents = [agent_0]
+ai_agents = [agent_1, agent_2, agent_3]
 
-for agent in chain(ai_agents, player_agents):
+for agent in chain(player_agents, ai_agents):
     world.attach_agent(agent)
-
 
 gui = SnakeGameWindow(
     world,
@@ -70,6 +63,6 @@ gui = SnakeGameWindow(
     ai_agents=ai_agents,
     explain_ai=False,
     ui_size_coeff=20,
-    time_step=1
+    time_step=100
 )
 gui.mainloop()

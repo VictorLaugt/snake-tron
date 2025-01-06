@@ -18,6 +18,7 @@ class AbstractSnakeAgent(ABC):
         assert len(initial_pos) > 0
         self.agent_id = -1
         self.world = world
+        self.alive = True
         self.initial_pos = initial_pos
         self.pos = deque(initial_pos)
         self.last_tail_pos = None
@@ -42,6 +43,7 @@ class AbstractSnakeAgent(ABC):
 
     def reset(self) -> None:
         """Reset the snake agent to make it ready to start a new game."""
+        self.alive = True
         self.pos.clear()
         self.pos.extendleft(self.initial_pos)
 
@@ -84,8 +86,13 @@ class AbstractSnakeAgent(ABC):
 
     def die(self) -> None:
         """Kills the snake."""
+        self.alive = False
         for p in self.pos:
             self.world.pop_obstacle(p)
+
+    def is_alive(self) -> bool:
+        """Returns True if the snake is alive, False otherwise."""
+        return self.alive
 
     @abstractmethod
     def decide_direction(self) -> None:
@@ -302,7 +309,7 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
         Returns True if sucess, False otherwise.
         """
         # initialize the list of potential attack destinations
-        impact_positions = [a.get_head() for a in potential_targets if self is not a]
+        impact_positions = [a.get_head() for a in potential_targets]
 
         for impact_delay in range(1, 10):
             # update the list of potential attack destinations
@@ -327,10 +334,10 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
         return False
 
     def update_path(self) -> None:
-        if self.target is None:
-            success = self.compute_attack_path(self.opponents)
-        else:
+        if self.target is not None and self.target.is_alive():
             success = self.compute_attack_path((self.target,))
+        else:
+            success = self.compute_attack_path([a for a in self.opponents if a.is_alive()])
 
         if not success:
             super().update_path()

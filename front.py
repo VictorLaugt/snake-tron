@@ -70,8 +70,8 @@ class SnakeGameWindow(tk.Tk):
 
         # graphical features
         self.snake_colors: list[SnakeColors] = [None] * (len(player_agents) + len(ai_agents))
-        color_idx = 0
         for snake in chain(self.player_snakes, self.ai_snakes):
+            color_idx = min(snake.get_id(), self.LAST_COLOR_IDX)
             colors = SnakeColors(
                 self.HEAD_COLORS[color_idx],
                 self.TAIL_COLORS[color_idx],
@@ -79,7 +79,6 @@ class SnakeGameWindow(tk.Tk):
                 self.INSPECT_COLOR
             )
             self.snake_colors[snake.get_id()] = colors
-            color_idx = min(color_idx+1, self.LAST_COLOR_IDX)
 
         self.explain_ai = explain_ai
         self.square_side_size = ui_size_coeff
