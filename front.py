@@ -47,9 +47,10 @@ class AbstractGameWindow(tk.Tk, ABC):
         snake_world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
-        explain_ai: bool,
         ui_size_coeff: float,
-        time_step: float
+        time_step: float,
+        explain_ai: bool=False,
+        fullspeed: bool=False
     ) -> None:
         super().__init__()
 
@@ -65,8 +66,8 @@ class AbstractGameWindow(tk.Tk, ABC):
 
         # game speed
         self.regular_time_step = time_step
-        self.time_step = time_step
-        self.fullspeed = False
+        self.fullspeed = fullspeed
+        self.time_step = 1 if self.fullspeed else self.regular_time_step
 
         # ai inspection
         self.explain_ai = explain_ai
@@ -238,8 +239,8 @@ class SnakeGameWindow(AbstractGameWindow):
         for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
             self.bind_user_inputs(snake, control_set)
 
-        tk.Button(text="pause", command=self.toggle_pause).grid(row=1, column=1)
-        tk.Button(text="reset", command=self.reset_game).grid(row=1, column=0)
+        tk.Button(text="pause (space)", command=self.toggle_pause).grid(row=1, column=1)
+        tk.Button(text="reset (return)", command=self.reset_game).grid(row=1, column=0)
         tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=1, column=2)
         tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=1, column=3)
 

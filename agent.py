@@ -239,7 +239,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic],
         latency: int=0,
-        caution: int=0
+        caution: int=1
     ) -> None:
         assert caution >= 0
         super().__init__(world, initial_pos, initial_dir, heuristic_type, latency)
