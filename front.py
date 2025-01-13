@@ -31,8 +31,8 @@ class AbstractGameWindow(tk.Tk, ABC):
     """Implements a frontend for a snake game. The user can control the snake
     with the arrow keys.
     """
-    HEAD_COLORS = ('#0066CC', '#D19300', '#9400D3', '#008000')
-    TAIL_COLORS = ('#0088EE', '#F3B500', '#EE82EE', '#006400')
+    HEAD_COLORS = ('#0066CC', '#D19300', '#9400D3', '#008000', '#FF7070', '#EEAE30', '#44FF40', '#003BCC')
+    TAIL_COLORS = ('#0088EE', '#F3B500', '#EE82EE', '#006400', '#FF0000', '#EE8E00', '#44AA00', '#003BFF')
     LAST_COLOR_IDX = len(HEAD_COLORS)-1
 
     FOOD_OUTLINE_COLOR = '#FF6666'
