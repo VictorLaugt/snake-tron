@@ -31,8 +31,8 @@ class AbstractGameWindow(tk.Tk, ABC):
     """Implements a frontend for a snake game. The user can control the snake
     with the arrow keys.
     """
-    HEAD_COLORS = ('#0066CC', '#D19300', '#9400D3', '#008000', '#FF7070', '#EEAE30', '#44FF40', '#003BCC')
-    TAIL_COLORS = ('#0088EE', '#F3B500', '#EE82EE', '#006400', '#FF0000', '#EE8E00', '#44AA00', '#003BFF')
+    HEAD_COLORS = ('#0066CC', '#D19300', '#9400D3', '#008000')
+    TAIL_COLORS = ('#0088EE', '#F3B500', '#EE82EE', '#006400')
     LAST_COLOR_IDX = len(HEAD_COLORS)-1
 
     FOOD_OUTLINE_COLOR = '#FF6666'
@@ -47,10 +47,9 @@ class AbstractGameWindow(tk.Tk, ABC):
         snake_world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
+        explain_ai: bool,
         ui_size_coeff: float,
-        time_step: float,
-        explain_ai: bool=False,
-        fullspeed: bool=False
+        time_step: float
     ) -> None:
         super().__init__()
 
@@ -66,8 +65,8 @@ class AbstractGameWindow(tk.Tk, ABC):
 
         # game speed
         self.regular_time_step = time_step
-        self.fullspeed = fullspeed
-        self.time_step = 1 if self.fullspeed else self.regular_time_step
+        self.time_step = time_step
+        self.fullspeed = False
 
         # ai inspection
         self.explain_ai = explain_ai
@@ -96,6 +95,15 @@ class AbstractGameWindow(tk.Tk, ABC):
         )
         self.draw_grid_lines()
         self.grid_display.grid(row=0, column=0, columnspan=4, pady=self.square_side_size, padx=self.square_side_size)
+
+        # score board
+        self.score_board = tk.Frame(self)
+        self.score_labels = [None] * (len(player_agents) + len(ai_agents))
+        for snake in chain(self.player_snakes, self.ai_snakes):
+            score_label = tk.Label(self.score_board, text="0", fg="white", bg=self.snake_colors[snake.get_id()].head_color)
+            score_label.pack(side="left")
+            self.score_labels[snake.get_id()] = score_label
+        self.score_board.grid(row=1, column=0)
 
         # user interactions
         self.config_user_interactions()
@@ -172,11 +180,16 @@ class AbstractGameWindow(tk.Tk, ABC):
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, fill=colors.inspect_color, outline=colors.inspect_color, tag=TAG_INSPECT)
 
+    def update_scores(self) -> None:
+        for snake in chain(self.player_snakes, self.ai_snakes):
+            self.score_labels[snake.get_id()].config(text=str(len(snake)))
+
     def draw(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         """Draws the entire game."""
         if self.explain_ai:
             self.draw_ai_inspection()
         self.draw_world(dead_snakes)
+        self.update_scores()
 
     def start_game(self) -> None:
         """Draws the world and start the game loop after a small time delay."""
@@ -239,10 +252,10 @@ class SnakeGameWindow(AbstractGameWindow):
         for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
             self.bind_user_inputs(snake, control_set)
 
-        tk.Button(text="pause (space)", command=self.toggle_pause).grid(row=1, column=1)
-        tk.Button(text="reset (return)", command=self.reset_game).grid(row=1, column=0)
-        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=1, column=2)
-        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=1, column=3)
+        tk.Button(text="pause", command=self.toggle_pause).grid(row=2, column=1)
+        tk.Button(text="reset", command=self.reset_game).grid(row=2, column=0)
+        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=2, column=2)
+        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=2, column=3)
 
 
 class DirectionalCross(tk.Canvas):
@@ -271,7 +284,7 @@ class DirectionalCross(tk.Canvas):
         if d != self.last_dir:
             self.snake.add_dir_request(d)
             self.last_dir = d
-
+        
 
 class MobileSnakeGameWindow(AbstractGameWindow):
     def config_user_interactions(self) -> None:
@@ -282,8 +295,8 @@ class MobileSnakeGameWindow(AbstractGameWindow):
             snake = self.player_snakes[i]
             directional_cross = DirectionalCross(controller_frame, snake, width=pad_size, height=pad_size, bg=self.snake_colors[snake.get_id()].tail_color)
             directional_cross.grid(row=0, column=i)
-        controller_frame.grid(row=1, column=0, columnspan=4)
-        tk.Button(text="pause", command=self.toggle_pause).grid(row=2, column=1)
-        tk.Button(text="reset", command=self.reset_game).grid(row=2, column=0)
-        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=2, column=2)
-        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=2, column=3)
+        controller_frame.grid(row=2, column=0, columnspan=4)
+        tk.Button(text="pause", command=self.toggle_pause).grid(row=3, column=1)
+        tk.Button(text="reset", command=self.reset_game).grid(row=3, column=0)
+        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=3, column=2)
+        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=3, column=3)

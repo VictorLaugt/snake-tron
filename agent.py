@@ -239,7 +239,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic],
         latency: int=0,
-        caution: int=1
+        caution: int=0
     ) -> None:
         assert caution >= 0
         super().__init__(world, initial_pos, initial_dir, heuristic_type, latency)
@@ -292,8 +292,10 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
         heuristic_type: Type[AbstractHeuristic],
         latency: int=0,
         caution: int=0,
+        attack_anticipation: int=15
     ) -> None:
         super().__init__(world, initial_pos, initial_dir, heuristic_type, latency, caution)
+        self.attack_anticipation = attack_anticipation
         self.target: Optional[AbstractSnakeAgent] = None
         self.opponents: list[AbstractSnakeAgent] = []
 
@@ -311,7 +313,7 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
         # initialize the list of potential attack destinations
         impact_positions = [a.get_head() for a in potential_targets]
 
-        for impact_delay in range(1, 10):
+        for impact_delay in range(1, self.attack_anticipation+1):
             # update the list of potential attack destinations
             new_potential_targets: list[AbstractSnakeAgent] = []
             new_impact_positions: list[Position] = []

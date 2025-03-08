@@ -1,66 +1,88 @@
+#Pydroid should import tkinter
 from itertools import chain
 
 from front import SnakeGameWindow, MobileSnakeGameWindow
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, ManhattanDistanceHeuristic
 
-width = 30
-height = 30
-world = SnakeWorld(width, height, n_food=2)
 
-# blue
-agent_0 = PlayerSnakeAgent(
-    world,
-    initial_pos=[(4, y) for y in range(10, 1, -1)],
-    initial_dir=(0, 1)
-)
+def build_world(height: int, width: int, n_food: int) -> SnakeWorld:
+    dx = int(0.2 * width)
+    dy = 1
+    init_length = int(0.36 * height)
 
-# yellow
-agent_1 = AStarOffensiveSnakeAgent(
-    world,
-    initial_pos=[(width-5, y) for y in range(10, 1, -1)],
-    initial_dir=(0, 1),
-    heuristic_type=EuclidianDistanceHeuristic,
-    latency=0,
-    caution=1
-)
+    x_left = dx
+    x_right = width - dx - 1
+    
+    attack_anticipation = int(0.3*(height + width))
 
-# purple
-agent_2 = AStarOffensiveSnakeAgent(
-    world,
-    initial_pos=[(4, y) for y in range(height-10, height-1, 1)],
-    initial_dir=(0, -1),
-    heuristic_type=EuclidianDistanceHeuristic,
-    latency=0,
-    caution=2
-)
+    world = SnakeWorld(width, height, n_food)
 
-# green
-agent_3 = AStarSnakeAgent(
-    world,
-    initial_pos=[(width-5, y) for y in range(height-10, height-1, 1)],
-    initial_dir=(0, -1),
-    heuristic_type=EuclidianDistanceHeuristic,
-    latency=0,
-    caution=3
-)
+    blue = PlayerSnakeAgent(
+        world,
+        initial_pos=[(x_left, y) for y in range(init_length-1+dy, -1+dy, -1)],
+        initial_dir=(0, 1)
+    )
 
-agent_1.add_opponent(agent_2)
-agent_1.add_opponent(agent_0)
-agent_2.add_opponent(agent_0)
+    yellow = AStarOffensiveSnakeAgent(
+        world,
+        initial_pos=[(x_right, y) for y in range(init_length-1+dy, -1+dy, -1)],
+        initial_dir=(0, 1),
+        heuristic_type=EuclidianDistanceHeuristic,
+        latency=0,
+        caution=1,
+        attack_anticipation=attack_anticipation
+    )
 
-player_agents = [agent_0]
-ai_agents = [agent_1, agent_2, agent_3]
+    purple = AStarOffensiveSnakeAgent(
+        world,
+        initial_pos=[(x_left, y) for y in range(height-1-dy, height-1-init_length-dy, -1)],
+        initial_dir=(0, 1),
+        heuristic_type=EuclidianDistanceHeuristic,
+        latency=0,
+        # caution=2,
+        caution=1,
+        attack_anticipation=attack_anticipation
+    )
 
-for agent in chain(player_agents, ai_agents):
-    world.attach_agent(agent)
+    green = AStarOffensiveSnakeAgent(
+        world,
+        initial_pos=[(x_right, y) for y in range(height-init_length-dy, height-dy, 1)],
+        initial_dir=(0, -1),
+        heuristic_type=EuclidianDistanceHeuristic,
+        latency=0,
+        # caution=3,
+        caution=3,
+        attack_anticipation=attack_anticipation
+    )
 
-gui = SnakeGameWindow(
+    #yellow.add_opponent(green)
+    yellow.add_opponent(blue)
+    purple.add_opponent(blue)
+    green.add_opponent(blue)
+
+    player_agents = [blue]
+    ai_agents = [yellow, purple, green]
+
+    for agent in chain(player_agents, ai_agents):
+        world.attach_agent(agent)
+
+    return world, player_agents, ai_agents
+
+
+# height, width = 25, 25
+height, width = 20, 20
+world, player_agents, ai_agents = build_world(height, width, n_food=2)
+
+gui = MobileSnakeGameWindow(
     world,
     player_agents=player_agents,
     ai_agents=ai_agents,
     explain_ai=False,
-    ui_size_coeff=20,
-    time_step=100
+    ui_size_coeff=1000/max(height, width),
+    # time_step=100
+    time_step=150
+    # time_step=200
+    # time_step=250
 )
 gui.mainloop()
