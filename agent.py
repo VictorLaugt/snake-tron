@@ -29,6 +29,10 @@ class AbstractSnakeAgent(ABC):
     def set_id(self, agent_id: int) -> None:
         self.agent_id = agent_id
 
+    def get_world(self) -> SnakeWorld:
+        """Returns the world in which the snake evolves."""
+        return self.world
+
     def __len__(self) -> int:
         """Returns the length of the snake."""
         return len(self.pos)
@@ -212,7 +216,7 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
 
         for i, dst in enumerate(destinations):
             if self.world.pos_is_free(dst):
-                heuristic = self.heuristic_type(dst[0], dst[1])
+                heuristic = self.heuristic_type(self.get_world(), dst[0], dst[1])
                 x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic, max_iteraton=450)
                 path_len = len(dir_path)
 

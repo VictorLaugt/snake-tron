@@ -3,7 +3,7 @@ from itertools import chain
 
 from front import SnakeGameWindow, MobileSnakeGameWindow
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
-from world import SnakeWorld, EuclidianDistanceHeuristic, ManhattanDistanceHeuristic
+from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,  ManhattanDistanceHeuristic
 
 
 def build_world(height: int, width: int, n_food: int) -> SnakeWorld:
@@ -28,7 +28,7 @@ def build_world(height: int, width: int, n_food: int) -> SnakeWorld:
         world,
         initial_pos=[(x_right, y) for y in range(init_length-1+dy, -1+dy, -1)],
         initial_dir=(0, 1),
-        heuristic_type=EuclidianDistanceHeuristic,
+        heuristic_type=EuclidianDistancePeriodicHeuristic,
         latency=0,
         caution=1,
         attack_anticipation=attack_anticipation
