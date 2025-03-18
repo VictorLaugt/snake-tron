@@ -100,7 +100,10 @@ class AbstractGameWindow(tk.Tk, ABC):
         self.score_board = tk.Frame(self)
         self.score_labels = [None] * (len(player_agents) + len(ai_agents))
         for snake in chain(self.player_snakes, self.ai_snakes):
-            score_label = tk.Label(self.score_board, text="0", fg="white", bg=self.snake_colors[snake.get_id()].head_color)
+            score_label = tk.Label(
+                self.score_board,
+                text="0", fg="white", bg=self.snake_colors[snake.get_id()].head_color
+            )
             score_label.pack(side="left")
             self.score_labels[snake.get_id()] = score_label
         self.score_board.grid(row=1, column=0)
@@ -154,7 +157,6 @@ class AbstractGameWindow(tk.Tk, ABC):
             colors = self.snake_colors[snake.get_id()]
             cells = snake.iter_cells()
             x, y = self.pos_to_coord(next(cells))
-            # self.draw_square(x, y, colors.head_color, TAG_WORLD)
             self.draw_square(x, y, fill=colors.head_color, outline=colors.tail_color, tag=TAG_WORLD)
             for pos in cells:
                 x, y = self.pos_to_coord(pos)
@@ -284,7 +286,7 @@ class DirectionalCross(tk.Canvas):
         if d != self.last_dir:
             self.snake.add_dir_request(d)
             self.last_dir = d
-        
+
 
 class MobileSnakeGameWindow(AbstractGameWindow):
     def config_user_interactions(self) -> None:
@@ -294,10 +296,13 @@ class MobileSnakeGameWindow(AbstractGameWindow):
             controller_frame = tk.Frame(self, width=500, height=pad_size)
             for i in range(n_controlable_players):
                 snake = self.player_snakes[i]
-                directional_cross = DirectionalCross(controller_frame, snake, width=pad_size, height=pad_size, bg=self.snake_colors[snake.get_id()].tail_color)
+                directional_cross = DirectionalCross(
+                    controller_frame, snake,
+                    width=pad_size, height=pad_size, bg=self.snake_colors[snake.get_id()].tail_color
+                )
                 directional_cross.grid(row=0, column=i)
             controller_frame.grid(row=2, column=0, columnspan=4)
-        
+
         tk.Button(text="pause", command=self.toggle_pause).grid(row=3, column=1)
         tk.Button(text="reset", command=self.reset_game).grid(row=3, column=0)
         tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=3, column=2)
