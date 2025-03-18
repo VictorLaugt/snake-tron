@@ -289,13 +289,15 @@ class DirectionalCross(tk.Canvas):
 class MobileSnakeGameWindow(AbstractGameWindow):
     def config_user_interactions(self) -> None:
         n_controlable_players = min(3, len(self.player_snakes))
-        pad_size = 500 // n_controlable_players
-        controller_frame = tk.Frame(self, width=500, height=pad_size)
-        for i in range(n_controlable_players):
-            snake = self.player_snakes[i]
-            directional_cross = DirectionalCross(controller_frame, snake, width=pad_size, height=pad_size, bg=self.snake_colors[snake.get_id()].tail_color)
-            directional_cross.grid(row=0, column=i)
-        controller_frame.grid(row=2, column=0, columnspan=4)
+        if n_controlable_players > 0:
+            pad_size = 500 // n_controlable_players
+            controller_frame = tk.Frame(self, width=500, height=pad_size)
+            for i in range(n_controlable_players):
+                snake = self.player_snakes[i]
+                directional_cross = DirectionalCross(controller_frame, snake, width=pad_size, height=pad_size, bg=self.snake_colors[snake.get_id()].tail_color)
+                directional_cross.grid(row=0, column=i)
+            controller_frame.grid(row=2, column=0, columnspan=4)
+        
         tk.Button(text="pause", command=self.toggle_pause).grid(row=3, column=1)
         tk.Button(text="reset", command=self.reset_game).grid(row=3, column=0)
         tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=3, column=2)
