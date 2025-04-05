@@ -83,7 +83,7 @@ class AbstractSnakeAgent(ABC):
         """Returns True if the snake collides another snake of the world, False
         otherwise.
         """
-        for other in self.world.get_alive_agents():
+        for other in self.world.iter_alive_agents():
             if self is not other and self.pos[-1] in other.pos:
                 return True
         return False
@@ -279,7 +279,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         return self.compute_shortest_path(self.world.iter_food(), 0, float('inf')) is not None
 
     def update_path(self) -> None:
-        danger_zone = self.start_avoid(a for a in self.world.get_alive_agents() if self is not a)
+        danger_zone = self.start_avoid(a for a in self.world.iter_alive_agents() if self is not a)
         success = self.compute_path_to_nearest_food()
         self.stop_avoid(danger_zone)
 

@@ -153,7 +153,7 @@ class AbstractGameWindow(tk.Tk, ABC):
         self.grid_display.delete(TAG_WORLD)
 
         # draws the snakes
-        for snake in self.world.get_alive_agents():
+        for snake in self.world.iter_alive_agents():
             colors = self.snake_colors[snake.get_id()]
             cells = snake.iter_cells()
             x, y = self.pos_to_coord(next(cells))

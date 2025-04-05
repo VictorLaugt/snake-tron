@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from random import randrange
 import numpy as np
+from collections import deque
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ class EuclidianDistanceHeuristic(AbstractHeuristic):
     def __init__(self, graph: AbstractGridGraph, x_dst: int, y_dst: int) -> None:
         self.x_dst = x_dst
         self.y_dst = y_dst
-    
+
     def __call__(self, x: int, y: int) -> int:
         dx, dy = self.x_dst - x, self.y_dst - y
         return dx*dx + dy*dy
@@ -54,7 +55,7 @@ class ManhattanDistanceHeuristic(AbstractHeuristic):
     def __init__(self, graph: AbstractGridGraph, x_dst: int, y_dst: int) -> None:
         self.x_dst = x_dst
         self.y_dst = y_dst
-    
+
     def __call__(self, x: int, y: int) -> int:
         return abs(self.x_dst - x) + abs(self.y_dst - y)
 
@@ -64,7 +65,7 @@ class EuclidianDistancePeriodicHeuristic(AbstractHeuristic):
         self.w = graph.get_width()
         self.x_dst = x_dst
         self.y_dst = y_dst
-    
+
     def __call__(self, x: int, y: int) -> int:
         dx, dy = abs(self.x_dst - x), abs(self.y_dst - y)
         dx, dy = min(dx, self.w - dx), min(dy, self.h - dy)
@@ -90,11 +91,11 @@ class SnakeWorld(AbstractGridGraph):
         self.width = width
         self.height = height
         self.initial_n_food = n_food
-        self.initial_agents: list[AbstractSnakeAgent] = []
 
         self.obstacle_count = np.zeros((self.width, self.height), dtype=np.uint8)
         self.food_pos: set[Position] = set()
         self.alive_agents: list[AbstractSnakeAgent] = []
+        self.dead_agents: deque[AbstractSnakeAgent] = deque()
 
     def __repr__(self) -> str:
         repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
@@ -181,16 +182,20 @@ class SnakeWorld(AbstractGridGraph):
 
     def iter_food(self) -> Iterator[Position]:
         """Iterates over each food position of the world."""
-        yield from self.food_pos
+        return iter(self.food_pos)
 
 
-    def attach_agent(self, agent: AbstractSnakeAgent) -> None:
-        agent.set_id(len(self.initial_agents))
-        self.initial_agents.append(agent)
+    def attach_agent(self, agent: AbstractSnakeAgent, alive: bool=True) -> None:
+        """Adds a new agent in the world."""
+        agent.set_id(len(self.alive_agents) + len(self.dead_agents))
+        if alive:
+            self.alive_agents.append(agent)
+        else:
+            self.dead_agents.append(agent)
 
-    def get_alive_agents(self) -> Sequence[AbstractSnakeAgent]:
-        """Returns the agents of the world which are still alive"""
-        return self.alive_agents
+    def iter_alive_agents(self) -> Iterator[AbstractSnakeAgent]:
+        """Returns the agents of the world which are still alive."""
+        return iter(self.alive_agents)
 
 
     def reset(self) -> None:
@@ -200,10 +205,10 @@ class SnakeWorld(AbstractGridGraph):
         self.food_pos.clear()
         self._spawn_missing_food()
 
-        self.alive_agents.clear()
-        for agent in self.initial_agents:
+        self.alive_agents.extend(self.dead_agents)
+        self.dead_agents.clear()
+        for agent in self.alive_agents:
             agent.reset()
-            self.alive_agents.append(agent)
             for pos in agent.iter_cells():
                 self.obstacle_count[pos] += 1
 
@@ -242,6 +247,7 @@ class SnakeWorld(AbstractGridGraph):
                 deads.append(agent)
         for agent in deads:
             self.alive_agents.remove(agent)
+            self.dead_agents.append(agent)
 
         # respawn the foods which has been eaten
         self._spawn_missing_food()

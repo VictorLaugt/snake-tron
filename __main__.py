@@ -1,12 +1,24 @@
 #Pydroid should import tkinter
+from __future__ import annotations
+
 from itertools import chain
 
 from front import SnakeGameWindow, MobileSnakeGameWindow
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,  ManhattanDistanceHeuristic
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Sequence
+    from agent import AbstractAISnakeAgent
 
-def build_game(height: int, width: int, n_food: int, n_players: int=1) -> SnakeWorld:
+
+def build_game(
+    height: int,
+    width: int,
+    n_food: int,
+    n_players: int=1
+) -> tuple[SnakeWorld, Sequence[PlayerSnakeAgent], Sequence[AbstractAISnakeAgent]]:
     dx = int(0.2 * width)
     dy = 1
     init_length = int(0.36 * height)
@@ -80,12 +92,14 @@ def build_game(height: int, width: int, n_food: int, n_players: int=1) -> SnakeW
 height, width = 20, 20
 world, player_agents, ai_agents = build_game(height, width, n_food=2, n_players=1)
 
-gui = MobileSnakeGameWindow(
+gui = SnakeGameWindow(
+# gui = MobileSnakeGameWindow(
     world,
     player_agents=player_agents,
     ai_agents=ai_agents,
     explain_ai=False,
-    ui_size_coeff=1000/max(height, width),
+    # ui_size_coeff=1000/max(height, width),
+    ui_size_coeff=500/max(height, width),
     # time_step=100
     time_step=150
     # time_step=200
