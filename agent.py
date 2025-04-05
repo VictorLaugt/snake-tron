@@ -45,11 +45,14 @@ class AbstractSnakeAgent(ABC):
         """Iterates over the snake's cells from the head to the tail."""
         return reversed(self.pos)
 
-    def reset(self) -> None:
+    def reset(self, pos: Optional[Sequence[Position]]=None) -> None:
         """Reset the snake agent to make it ready to start a new game."""
         self.alive = True
         self.pos.clear()
-        self.pos.extendleft(self.initial_pos)
+        if pos is None:
+            self.pos.extendleft(self.initial_pos)
+        else:
+            self.pos.extendleft(pos)
 
     def move(self, d: Direction) -> None:
         """Moves once the snake in the direction `d`."""
@@ -116,9 +119,12 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
         self.dir = initial_dir
         self.dir_requests: deque[Direction] = deque((), maxlen=5)
 
-    def reset(self) -> None:
-        super().reset()
-        self.dir = self.initial_dir
+    def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
+        super().reset(pos)
+        if d is None:
+            self.dir = self.initial_dir
+        else:
+            self.dir = d
         self.dir_requests.clear()
 
     def decide_direction(self) -> None:
@@ -163,12 +169,15 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         self.latency = latency
         self.cooldown = 0
 
-    def reset(self) -> None:
-        super().reset()
+    def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
+        super().reset(pos)
         self.x_path.clear()
         self.y_path.clear()
         self.dir_path.clear()
-        self.dir = self.initial_dir
+        if d is None:
+            self.dir = self.initial_dir
+        else:
+            self.dir = d
         self.cooldown = 0
 
     def die(self) -> None:
@@ -306,8 +315,8 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
     def add_opponent(self, opponent: AbstractAISnakeAgent) -> None:
         self.opponents.append(opponent)
 
-    def reset(self) -> None:
-        super().reset()
+    def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
+        super().reset(pos, d)
         self.target = None
 
     def compute_attack_path(self, potential_targets: Sequence[AbstractSnakeAgent]) -> bool:
