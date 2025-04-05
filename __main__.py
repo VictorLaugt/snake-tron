@@ -102,14 +102,14 @@ world, player_agents, ai_agents = build_game(
     respawn_cooldown=15
 )
 
-# gui = SnakeGameWindow(
-gui = MobileSnakeGameWindow(
+gui = SnakeGameWindow(
+# gui = MobileSnakeGameWindow(
     world,
     player_agents=player_agents,
     ai_agents=ai_agents,
     explain_ai=False,
-    ui_size_coeff=1000/max(height, width),
-    # ui_size_coeff=500/max(height, width),
+    # ui_size_coeff=1000/max(height, width),
+    ui_size_coeff=500/max(height, width),
     # time_step=100
     time_step=150
     # time_step=200
