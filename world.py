@@ -5,6 +5,9 @@ from random import randrange
 import numpy as np
 from collections import deque
 
+from direction import UP, DOWN, LEFT, RIGHT, toward_center
+from voronoi import furthest_voronoi_vertex
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator, Sequence, Optional
@@ -72,28 +75,29 @@ class EuclidianDistancePeriodicHeuristic(AbstractHeuristic):
         return dx*dx + dy*dy
 
 
-
-UP: Direction = (0,-1)
-DOWN: Direction = (0,1)
-LEFT: Direction = (-1,0)
-RIGHT: Direction = (1,0)
-
-
-def oposite_dir(d: Direction) -> Direction:
-    return (-d[0], -d[1])
-
-
 class SnakeWorld(AbstractGridGraph):
-    def __init__(self, width: int, height: int, n_food: int) -> None:
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        n_food: int,
+        respawn_cooldown: Optional[int]=None
+    ) -> None:
         assert width > 0 and height > 0
         assert n_food >= 0
+        assert respawn_cooldown is None or respawn_cooldown >= 0
 
         self.width = width
         self.height = height
         self.initial_n_food = n_food
+        if respawn_cooldown is None:
+            self.initial_respawn_cooldown = float('+inf')
+        else:
+            self.initial_respawn_cooldown = respawn_cooldown
 
         self.obstacle_count = np.zeros((self.width, self.height), dtype=np.uint8)
         self.food_pos: set[Position] = set()
+        self.respawn_cooldown = self.initial_respawn_cooldown
         self.alive_agents: list[AbstractSnakeAgent] = []
         self.dead_agents: deque[AbstractSnakeAgent] = deque()
 
@@ -136,6 +140,44 @@ class SnakeWorld(AbstractGridGraph):
             if pos is None:
                 break
             self.food_pos.add(pos)
+
+
+    def _kill_agents(self, deads: Sequence[AbstractSnakeAgent]) -> None:
+        for agent in deads:
+            self.alive_agents.remove(agent)
+            self.dead_agents.append(agent)
+
+    def _find_agent_spawn_pos(self) -> Optional[Position]:
+        """Tries to find a position to spawn an agent and returns it if found."""
+        repellent_pos = []
+        for agent in self.alive_agents:
+            repellent_pos.extend(agent.iter_cells())
+        (x, y), _ = furthest_voronoi_vertex(np.array(repellent_pos), self.width, self.height)
+
+        spawn_pos = (int(x), int(y))
+        if self.obstacle_count[spawn_pos] == 0:
+            return spawn_pos
+
+    def _respawn_dead_agent(self) -> None:
+        if len(self.dead_agents) == 0:
+            return
+
+        if self.respawn_cooldown > 0:
+            self.respawn_cooldown -= 1
+            return
+
+        spawn_pos = self._find_agent_spawn_pos()
+        if spawn_pos is None:
+            return
+
+        agent = self.dead_agents.popleft()
+        spawn_length = agent.get_initial_length()
+        spawn_dir = toward_center(*spawn_pos, self.width, self.height)
+
+        agent.reset([spawn_pos] * spawn_length, spawn_dir)
+        self.alive_agents.append(agent)
+        self.obstacle_count[spawn_pos] += spawn_length
+        self.respawn_cooldown += self.initial_respawn_cooldown
 
 
     # ---- public
@@ -205,6 +247,7 @@ class SnakeWorld(AbstractGridGraph):
         self.food_pos.clear()
         self._spawn_missing_food()
 
+        self.respawn_cooldown = self.initial_respawn_cooldown
         self.alive_agents.extend(self.dead_agents)
         self.dead_agents.clear()
         for agent in self.alive_agents:
@@ -245,11 +288,13 @@ class SnakeWorld(AbstractGridGraph):
             if agent.collides_another():
                 agent.die()
                 deads.append(agent)
-        for agent in deads:
-            self.alive_agents.remove(agent)
-            self.dead_agents.append(agent)
+        self._kill_agents(deads)
 
-        # respawn the foods which has been eaten
+        # respawns the foods which has been eaten
         self._spawn_missing_food()
+
+        # respawns dead snakes
+        self._respawn_dead_agent()
+
 
         return deads

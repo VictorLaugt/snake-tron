@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 
 from a_star import shortest_path
-from world import oposite_dir, UP, DOWN, LEFT, RIGHT
+from direction import opposite_dir
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -33,6 +33,10 @@ class AbstractSnakeAgent(ABC):
         """Returns the world in which the snake evolves."""
         return self.world
 
+    def get_initial_length(self) -> int:
+        """Returns the length of the snake it spawns in the world."""
+        return len(self.initial_pos)
+
     def __len__(self) -> int:
         """Returns the length of the snake."""
         return len(self.pos)
@@ -45,8 +49,8 @@ class AbstractSnakeAgent(ABC):
         """Iterates over the snake's cells from the head to the tail."""
         return reversed(self.pos)
 
-    def reset(self, pos: Optional[Sequence[Position]]=None) -> None:
-        """Reset the snake agent to make it ready to start a new game."""
+    def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
+        """Resets the snake to make it ready to spawn in the world."""
         self.alive = True
         self.pos.clear()
         if pos is None:
@@ -113,7 +117,6 @@ class AbstractSnakeAgent(ABC):
 class PlayerSnakeAgent(AbstractSnakeAgent):
     """Implements a snake agent which can be controlled by a request queuing system."""
     def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
-        assert initial_dir in (UP, DOWN, LEFT, RIGHT)
         super().__init__(world, initial_pos)
         self.initial_dir = initial_dir
         self.dir = initial_dir
@@ -141,7 +144,7 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
                 last_dir = self.dir_requests[-1]
             else:
                 last_dir = self.dir
-            if request != oposite_dir(last_dir):
+            if request != opposite_dir(last_dir):
                 self.dir_requests.append(request)
 
 
@@ -154,7 +157,6 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         heuristic_type: Type[AbstractHeuristic],
         latency: int=0
     ) -> None:
-        assert initial_dir in (UP, DOWN, LEFT, RIGHT)
         assert latency >= 0
         super().__init__(world, initial_pos)
 

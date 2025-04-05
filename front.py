@@ -5,7 +5,7 @@ import tkinter as tk
 from itertools import chain
 from dataclasses import dataclass
 
-from world import UP, DOWN, LEFT, RIGHT
+from direction import UP, DOWN, LEFT, RIGHT, away_from_center
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -272,17 +272,7 @@ class DirectionalCross(tk.Canvas):
         self.bind('<B1-Motion>', self.on_drag)
 
     def on_drag(self, event) -> None:
-        x, y = event.x, event.y
-        above_diag_0 = (y > (self.height/self.width * x))
-        above_diag_1 = (y > (-self.height/self.width * (x-self.width)))
-        if above_diag_0 and above_diag_1:
-            d = DOWN
-        elif above_diag_0 and not above_diag_1:
-            d = LEFT
-        elif not above_diag_0 and above_diag_1:
-            d = RIGHT
-        elif not above_diag_0 and not above_diag_1:
-            d = UP
+        d = away_from_center(event.x, event.y, self.width, self.height)
         if d != self.last_dir:
             self.snake.add_dir_request(d)
             self.last_dir = d

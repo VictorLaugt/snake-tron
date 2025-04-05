@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from world import oposite_dir
+from direction import opposite_dir
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ def _get_path(graph: AbstractGridGraph, src: Position, dst: Position, parents: n
         path_x.append(x)
         path_y.append(y)
         path_dir.append(direction)
-        x, y = graph.get_neighbor((x, y), oposite_dir(direction))
+        x, y = graph.get_neighbor((x, y), opposite_dir(direction))
     return path_x, path_y, path_dir
 
 
