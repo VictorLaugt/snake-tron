@@ -254,10 +254,10 @@ class SnakeGameWindow(AbstractGameWindow):
         for snake, control_set in zip(self.player_snakes, self.CONTROL_SETS):
             self.bind_user_inputs(snake, control_set)
 
-        tk.Button(text="pause", command=self.toggle_pause).grid(row=2, column=1)
-        tk.Button(text="reset", command=self.reset_game).grid(row=2, column=0)
-        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=2, column=2)
-        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=2, column=3)
+        tk.Button(self, text="reset", command=self.reset_game).grid(row=2, column=0)
+        tk.Button(self, text="pause", command=self.toggle_pause).grid(row=2, column=1)
+        tk.Button(self, text="explain ai", command=self.toggle_ai_explanation).grid(row=2, column=2)
+        tk.Button(self, text='full speed', command=self.toggle_fullspeed).grid(row=2, column=3)
 
 
 class DirectionalCross(tk.Canvas):
@@ -293,7 +293,7 @@ class MobileSnakeGameWindow(AbstractGameWindow):
                 directional_cross.grid(row=0, column=i)
             controller_frame.grid(row=2, column=0, columnspan=4)
 
-        tk.Button(text="pause", command=self.toggle_pause).grid(row=3, column=1)
-        tk.Button(text="reset", command=self.reset_game).grid(row=3, column=0)
-        tk.Button(text="explain ai", command=self.toggle_ai_explanation).grid(row=3, column=2)
-        tk.Button(text='full speed', command=self.toggle_fullspeed).grid(row=3, column=3)
+        tk.Button(self, text="reset", command=self.reset_game).grid(row=3, column=0)
+        tk.Button(self, text="pause", command=self.toggle_pause).grid(row=3, column=1)
+        tk.Button(self, text="explain ai", command=self.toggle_ai_explanation).grid(row=3, column=2)
+        tk.Button(self, text='full speed', command=self.toggle_fullspeed).grid(row=3, column=3)
