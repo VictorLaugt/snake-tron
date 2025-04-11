@@ -152,11 +152,13 @@ class SnakeWorld(AbstractGridGraph):
         repellent_pos = []
         for agent in self.alive_agents:
             repellent_pos.extend(agent.iter_cells())
-        (x, y), _ = furthest_voronoi_vertex(np.array(repellent_pos), self.width, self.height)
 
-        spawn_pos = (int(x), int(y))
-        if self.obstacle_count[spawn_pos] == 0:
-            return spawn_pos
+        vertex = furthest_voronoi_vertex(np.array(repellent_pos), self.width, self.height)
+        if vertex is not None:
+            x, y = vertex
+            spawn_pos = (int(x), int(y))
+            if self.obstacle_count[spawn_pos] == 0:
+                return spawn_pos
 
     def _respawn_dead_agent(self) -> None:
         if len(self.dead_agents) == 0:

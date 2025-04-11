@@ -49,7 +49,8 @@ def build_game(
     else:
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, blue_init_pos, blue_init_dir,
-            EuclidianDistancePeriodicHeuristic,
+            # EuclidianDistancePeriodicHeuristic,
+            EuclidianDistanceHeuristic,
             latency=0, caution=1, attack_anticipation=attack_anticipation
         ))
 
@@ -58,7 +59,8 @@ def build_game(
     else:
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, yellow_init_pos, yellow_init_dir,
-            EuclidianDistancePeriodicHeuristic,
+            # EuclidianDistancePeriodicHeuristic,
+            EuclidianDistanceHeuristic,
             latency=0, caution=1, attack_anticipation=attack_anticipation
         ))
 
@@ -90,16 +92,19 @@ def build_game(
     return world, player_agents, ai_agents
 
 
+# height, width = 20, 20
+height, width = 21, 21
+# height, width = 23, 23
 # height, width = 25, 25
-height, width = 20, 20
 # height, width = 30, 30
 # height, width = 40, 40
 world, player_agents, ai_agents = build_game(
     height,
     width,
-    n_food=2,
+    # n_food=2,
+    n_food=3,
     n_players=1,
-    respawn_cooldown=15
+    respawn_cooldown=10
 )
 
 # gui = SnakeGameWindow(

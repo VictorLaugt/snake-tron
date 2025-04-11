@@ -6,10 +6,11 @@ from scipy.spatial import Voronoi
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeAlias, Literal
+    Point: TypeAlias = np.ndarray[tuple[Literal[2]], float]
     PointArray: TypeAlias = np.ndarray[tuple[int, Literal[2]], float]
 
 
-def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> tuple[float, float]:
+def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> Optional[Point]:
     vor = Voronoi(points)
     n_vertices = vor.vertices.shape[0]
 
@@ -26,6 +27,6 @@ def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> t
     )
     candidates = vor.vertices[candidate_mask]
     candidate_squared_radius = vertex_squared_radius[candidate_mask]
-    furthest_candidate_idx = np.argmax(candidate_squared_radius)
 
-    return candidates[furthest_candidate_idx], candidate_squared_radius[furthest_candidate_idx]
+    if candidate_squared_radius.shape[0] > 0:
+        return candidates[np.argmax(candidate_squared_radius)]
