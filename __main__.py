@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from itertools import chain
+import argparse
 
 from front import SnakeGameWindow, MobileSnakeGameWindow
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
@@ -90,6 +91,12 @@ def build_game(
     return world, player_agents, ai_agents
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--players', type=int, default=1, help='number of players')
+parser.add_argument('--food', type=int, default=2, help='number of food')
+parser.add_argument('--respawn-cooldown', type=int, default=15, help='')
+args = parser.parse_args()
+
 # height, width = 25, 25
 height, width = 20, 20
 # height, width = 30, 30
@@ -97,9 +104,9 @@ height, width = 20, 20
 world, player_agents, ai_agents = build_game(
     height,
     width,
-    n_food=2,
-    n_players=1,
-    respawn_cooldown=15
+    n_food=args.food,
+    n_players=args.players,
+    respawn_cooldown=args.respawn_cooldown
 )
 
 gui = SnakeGameWindow(
