@@ -6,13 +6,29 @@ import argparse
 
 from front import SnakeGameWindow, MobileSnakeGameWindow
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
-from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,  ManhattanDistanceHeuristic
+from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic, ManhattanDistanceHeuristic
 from direction import UP, DOWN, LEFT, RIGHT
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Sequence
     from agent import AbstractAISnakeAgent
+
+
+def define_opponents(
+    player_agents: list[PlayerSnakeAgent],
+    ai_agents: list[AStarOffensiveSnakeAgent]
+) -> None:
+    if len(player_agents) >= 1:
+        for ai in ai_agents:
+            for player in player_agents:
+                ai.add_opponent(player)
+
+    else:
+        half = len(ai_agents) // 2
+        for agent in ai_agents[half:]:
+            for opponent in ai_agents[:half]:
+                agent.add_opponent(opponent)
 
 
 def build_game(
@@ -81,9 +97,7 @@ def build_game(
             latency=0, caution=3, attack_anticipation=attack_anticipation
         ))
 
-    for ai in ai_agents:
-        for player in player_agents:
-            ai.add_opponent(player)
+    define_opponents(player_agents, ai_agents)
 
     for agent in chain(player_agents, ai_agents):
         world.attach_agent(agent)
@@ -92,15 +106,19 @@ def build_game(
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--height', type=int, default=20, help='height of the world')
+parser.add_argument('--width', type=int, default=20, help='width of the world')
 parser.add_argument('--players', type=int, default=1, help='number of players')
 parser.add_argument('--food', type=int, default=2, help='number of food')
-parser.add_argument('--respawn-cooldown', type=int, default=15, help='')
+parser.add_argument('--respawn-cooldown', type=int, default=15, help='number of game steps before respawn')
+parser.add_argument('--time-step', type=int, default=150, help='number of milliseconds between each time step')
 args = parser.parse_args()
 
 # height, width = 25, 25
-height, width = 20, 20
+# height, width = 20, 20
 # height, width = 30, 30
 # height, width = 40, 40
+height, width = args.height, args.width
 world, player_agents, ai_agents = build_game(
     height,
     width,
@@ -118,8 +136,9 @@ gui = SnakeGameWindow(
     # ui_size_coeff=1000/max(height, width),
     ui_size_coeff=500/max(height, width),
     # time_step=100
-    time_step=150
+    # time_step=150
     # time_step=200
     # time_step=250
+    time_step=args.time_step
 )
 gui.mainloop()
