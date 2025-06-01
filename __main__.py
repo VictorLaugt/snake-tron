@@ -92,7 +92,6 @@ def build_game(
     return world, player_agents, ai_agents
 
 
-# height, width = 20, 20
 height, width = 21, 21
 # height, width = 23, 23
 # height, width = 25, 25
