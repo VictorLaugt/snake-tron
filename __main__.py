@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from itertools import chain
 
-from front import SnakeGameWindow, MobileSnakeGameWindow
+# from front import SnakeGameWindow, MobileSnakeGameWindow  # tkinter
+from front_kivy import SnakeApp as MobileSnakeGameWindow  # kivy
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,  ManhattanDistanceHeuristic
 from direction import UP, DOWN, LEFT, RIGHT
@@ -112,11 +113,14 @@ gui = MobileSnakeGameWindow(
     player_agents=player_agents,
     ai_agents=ai_agents,
     explain_ai=False,
-    ui_size_coeff=1000/max(height, width),
+    ui_size_coeff=51/max(height, width),
+    # ui_size_coeff=1000/max(height, width),
     # ui_size_coeff=500/max(height, width),
     # time_step=100
-    time_step=150
-    # time_step=200
+    # time_step=150
+    time_step=200
     # time_step=250
+    # time_step=300
 )
-gui.mainloop()
+# gui.mainloop()  # tkinter
+gui.run()  # kivy
