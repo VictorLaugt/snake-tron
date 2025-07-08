@@ -9,6 +9,14 @@ from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,  ManhattanDistanceHeuristic
 from direction import UP, DOWN, LEFT, RIGHT
 
+"""
+TODO:
+ - contrôles tactiles par swipes pour plusieurs joueurs
+ - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions d'affilé sans lever le doigt
+ - interface back-front orientée évènements pour que le front n'ai pas besoin de redessiner l'entièreté du monde à chaque étape de jeu
+ - étudier la possibilité de ne pas recalculer les chemins les plus courts à chaque étape mais de les conserver dans un cache
+"""
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Sequence
