@@ -11,6 +11,7 @@ from direction import UP, DOWN, LEFT, RIGHT
 
 """
 TODO:
+ - update the requirements.txt file
  - contrôles tactiles par swipes pour plusieurs joueurs
  - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions d'affilé sans lever le doigt
  - interface back-front orientée évènements pour que le front n'ai pas besoin de redessiner l'entièreté du monde à chaque étape de jeu
