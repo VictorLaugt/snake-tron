@@ -8,3 +8,6 @@ __pycache__
 .spyproject
 .vscode
 .idea
+
+# makefile
+.imagebuilt

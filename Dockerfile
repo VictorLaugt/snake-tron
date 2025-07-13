@@ -28,4 +28,4 @@ COPY requirements.txt /app
 RUN python -m pip install --upgrade pip
 RUN pip install -r /app/requirements.txt
 
-CMD python snaketron; bash
+CMD python snaketron
