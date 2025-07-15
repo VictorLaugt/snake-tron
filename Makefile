@@ -1,8 +1,8 @@
+CONTEXT_DIR = .
+DOCKERFILE = $(CONTEXT_DIR)/Dockerfile
+SOURCE_DIR = $(CONTEXT_DIR)/snaketron
 IMAGENAME = snaketron-dev-env
-DOCKERFILE_DIR = .
-DOCKERFILE = $(DOCKERFILE_DIR)/Dockerfile
-IMAGEBUILT = .imagebuilt
-
+IMAGEBUILT = .imagebuilt  # file to indicate that the docker image has been built
 
 run: $(DOCKERFILE) $(IMAGEBUILT)
 	@echo "Running the app in a container using image: $(IMAGENAME)" && \
@@ -11,13 +11,14 @@ run: $(DOCKERFILE) $(IMAGEBUILT)
 	sudo docker run --rm -it \
 		-e DISPLAY=$$DISPLAY \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
+		-v "$(realpath $(SOURCE_DIR)):/app/snaketron" \
 		"$(IMAGENAME)"
 
 build: $(IMAGEBUILT)
 
 $(IMAGEBUILT): $(DOCKERFILE)
 	@echo "Building image: $(IMAGENAME)"
-	@sudo docker build -t "$(IMAGENAME)" "$(DOCKERFILE_DIR)"
+	@sudo docker build -t "$(IMAGENAME)" "$(CONTEXT_DIR)"
 	@echo $(IMAGENAME) > $(IMAGEBUILT)
 
 clean:
