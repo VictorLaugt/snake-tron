@@ -62,7 +62,6 @@ class WorldDisplay(FloatLayout):
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
         explain_ai: bool,
-        square_size: float,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -76,7 +75,7 @@ class WorldDisplay(FloatLayout):
         self.explain_ai = explain_ai
 
         # snake colors
-        self.square_size = square_size
+        self.square_size = self.compute_square_size()
         self.snake_colors: list[SnakeColors] = [None] * (len(player_agents) + len(ai_agents))
         for snake in chain(player_agents, ai_agents):
             color_idx = min(snake.get_id(), len(self.HEAD_COLORS)-1)
@@ -90,6 +89,12 @@ class WorldDisplay(FloatLayout):
         self.draw_instr = InstructionGroup()
         self.canvas.add(self.draw_instr)
         self.bind(pos=self.redraw, size=self.redraw)
+
+    def compute_square_size(self) -> float:
+        return min(
+            self.width / self.world.get_width(),
+            self.height / self.world.get_height()
+        )
 
     def toggle_ai_explanation(self) -> None:
         self.explain_ai = not self.explain_ai
@@ -109,6 +114,7 @@ class WorldDisplay(FloatLayout):
         )
 
     def redraw(self, *args) -> None:
+        self.square_size = self.compute_square_size()
         self.draw_instr.clear()
         self.draw(())
 
@@ -214,8 +220,10 @@ class MobileSnakeGameWindow(BoxLayout):
 
         # world display
         self.canvas_widget = WorldDisplay(
-            self.world, self.player_snakes, self.ai_snakes, explain_ai,
-            square_size=int(20 * ui_size_coeff),
+            self.world,
+            self.player_snakes,
+            self.ai_snakes,
+            explain_ai,
             size=Window.size,
         )
         self.add_widget(self.canvas_widget)
