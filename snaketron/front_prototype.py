@@ -6,6 +6,8 @@ Config.set('graphics', 'height', '891')
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.event import EventDispatcher
 from kivy.graphics import Rectangle, Color, Line, Ellipse, InstructionGroup
 from kivy.lang import Builder
 from kivy.properties import NumericProperty, ListProperty
@@ -20,14 +22,17 @@ from kivy.utils import get_color_from_hex
 
 from dataclasses import dataclass
 
+from direction import UP, DOWN, LEFT, RIGHT
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from snaketron.world import SnakeWorld
-    from snaketron.agent import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
+    from world import SnakeWorld
+    from agent import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
 
     from kivy.clock import ClockEvent
+    from kivy.core.window import WindowBase
 
-    from typing import TypeAlias, Sequence, Iterable
+    from typing import TypeAlias, Sequence, Iterable, Optional
     from type_hints import Position
     Coordinate: TypeAlias = tuple[float, float]
     ColorValue: TypeAlias = tuple[float, float, float, float]
@@ -217,9 +222,37 @@ class ScoreBoard(BoxLayout):
             self.labels[snake.get_id()].text = str(len(snake))
 
 
+class KeyBoardControls(EventDispatcher):
+    player: PlayerSnakeAgent
+
+    def __init__(self, player: PlayerSnakeAgent) -> None:
+        super().__init__()
+        self.player = player
+        Window.bind(on_key_down=self.on_key_down)
+
+    def on_key_down(
+        self,
+        window: WindowBase,
+        key: int,
+        scancode: int,
+        codepoint: Optional[str],
+        modifiers: Sequence[str]
+    ) -> None:
+        if key == 273:
+            self.player.add_dir_request(UP)
+        elif key == 274:
+            self.player.add_dir_request(DOWN)
+        elif key == 275:
+            self.player.add_dir_request(RIGHT)
+        elif key == 276:
+            self.player.add_dir_request(LEFT)
+
+
 class SnakeTronWindow(BoxLayout):
     world: SnakeWorld
+    player_agents: Sequence[PlayerSnakeAgent]
     swipe_zones: list[SwipeControlZone]
+    keyboard_controls: KeyBoardControls
     paused: bool
     full_speed: bool
     ai_explanations: bool
@@ -243,6 +276,7 @@ class SnakeTronWindow(BoxLayout):
     ) -> None:
         # link to the backend
         self.world = world
+        self.player_agents = player_agents
         self.world.reset()
 
         # game speed
@@ -277,7 +311,10 @@ class SnakeTronWindow(BoxLayout):
         self.ids.score_board.init_logic(agents, agent_colors)
 
         # player inputs
-        # TODO: init swipe zones (use agent_colors)
+        if len(player_agents) >= 1:
+            self.keyboard_controls = KeyBoardControls(player_agents[0])
+        # TODO: dispatch players into the swipe zones and color each swipe zone
+        # in its player color
 
         self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
 
