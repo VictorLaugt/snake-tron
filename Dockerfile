@@ -27,5 +27,7 @@ COPY requirements.txt /app
 RUN python -m pip install --upgrade pip
 RUN pip install -r /app/requirements.txt
 
-CMD python snaketron; bash
-# CMD ["python", "snaketron"]
+# for debug
+RUN pip install ipython
+
+CMD python snaketron/front_prototype.py; bash

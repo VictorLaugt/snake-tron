@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from kivy.config import Config
-Config.set('graphics', 'width', '800')
-Config.set('graphics', 'height', '800')
+Config.set('graphics', 'width', '432')
+Config.set('graphics', 'height', '891')
 
 from kivy.app import App
+from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.clock import Clock
 
@@ -18,10 +19,10 @@ from kivy.uix.button import Button
 from kivy.graphics import Rectangle, Color, Line, Ellipse, InstructionGroup
 from kivy.utils import get_color_from_hex
 
-from direction import UP, DOWN, LEFT, RIGHT, away_from_center
-
 from itertools import chain
 from dataclasses import dataclass
+
+from direction import UP, DOWN, LEFT, RIGHT, away_from_center
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -56,25 +57,41 @@ class WorldDisplay(FloatLayout):
     GRIDLINE_COLOR = get_color_from_hex('#000090')
     GRIDBORDER_COLOR = get_color_from_hex("#005690")
 
-    def __init__(
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.draw_instr = InstructionGroup()
+        self.canvas.add(self.draw_instr)
+
+        # display of the world
+        self.draw_instr = InstructionGroup()
+        self.canvas.add(self.draw_instr)
+        self.bind
+
+        # interface with the backend
+        self.world: SnakeWorld
+        self.player_snakes: Sequence[PlayerSnakeAgent]
+        self.ai_snakes: Sequence[AbstractAISnakeAgent]
+
+        # ai inspection
+        self.explain_ai: bool
+
+        # snake appearence
+        self.square_size: float
+        self.snake_colors: list[SnakeColors]
+
+    def logic_init(
         self,
         snake_world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
         explain_ai: bool,
-        **kwargs
     ) -> None:
-        super().__init__(**kwargs)
-
-        # interface with the backend
-        self.world = snake_world
+        self.snake_world = snake_world
         self.player_snakes = player_agents
         self.ai_snakes = ai_agents
 
-        # ai inspection
         self.explain_ai = explain_ai
 
-        # snake colors
         self.square_size = self.compute_square_size()
         self.snake_colors: list[SnakeColors] = [None] * (len(player_agents) + len(ai_agents))
         for snake in chain(player_agents, ai_agents):
@@ -86,9 +103,6 @@ class WorldDisplay(FloatLayout):
                 self.INSPECT_COLOR
             )
 
-        self.draw_instr = InstructionGroup()
-        self.canvas.add(self.draw_instr)
-        self.bind(pos=self.redraw, size=self.redraw)
 
     def compute_square_size(self) -> float:
         return min(
@@ -96,8 +110,12 @@ class WorldDisplay(FloatLayout):
             self.height / self.world.get_height()
         )
 
-    def toggle_ai_explanation(self) -> None:
-        self.explain_ai = not self.explain_ai
+    def pos_to_coord(self, pos: Position) -> Coordinate:
+        return (
+            self.x + pos[0] * self.square_size,
+            self.y + (self.world.get_height() - 1 - pos[1]) * self.square_size
+        )
+
 
     def draw_square(self, x: float, y: float, c: ColorValue) -> None:
         self.draw_instr.add(Color(*c))
@@ -107,27 +125,7 @@ class WorldDisplay(FloatLayout):
         self.draw_instr.add(Color(*c))
         self.draw_instr.add(Ellipse(pos=(x, y), size=(self.square_size, self.square_size)))
 
-    def pos_to_coord(self, pos: Position) -> Coordinate:
-        return (
-            self.x + pos[0] * self.square_size,
-            self.y + (self.world.get_height() - 1 - pos[1]) * self.square_size
-        )
-
-    def redraw(self, *args) -> None:
-        self.square_size = self.compute_square_size()
-        self.draw_instr.clear()
-        self.draw(())
-
-    def draw(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
-        self.draw_instr.clear()
-        self.draw_world()
-        if self.explain_ai:
-            self.draw_ai_inspection()
-        self.draw_alive_snakes()
-        self.draw_food()
-        self.draw_killed_snakes(dead_snakes)
-
-    def draw_world(self) -> None:
+    def _draw_world(self) -> None:
         h, w = self.world.get_height(), self.world.get_width()
 
         # background
@@ -166,14 +164,14 @@ class WorldDisplay(FloatLayout):
             self.x + w*self.square_size, self.y + h*self.square_size
         )))
 
-    def draw_ai_inspection(self) -> None:
+    def _draw_ai_inspection(self) -> None:
         for snake in self.ai_snakes:
             color = self.snake_colors[snake.get_id()].inspect_color
             for pos in snake.inspect():
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, color)
 
-    def draw_alive_snakes(self) -> None:
+    def _draw_alive_snakes(self) -> None:
         for snake in self.world.iter_alive_agents():
             colors = self.snake_colors[snake.get_id()]
             cells = list(snake.iter_cells())
@@ -181,17 +179,34 @@ class WorldDisplay(FloatLayout):
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, colors.head_color if i == 0 else colors.tail_color)
 
-    def draw_food(self) -> None:
+    def _draw_food(self) -> None:
         for food in self.world.iter_food():
             x, y = self.pos_to_coord(food)
             self.draw_circle(x, y, self.FOOD_COLOR)
 
-    def draw_killed_snakes(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
+    def _draw_killed_snakes(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         for snake in dead_snakes:
             color = self.snake_colors[snake.get_id()].dead_color
             for pos in snake.iter_cells():
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, color)
+
+
+    def toggle_ai_explanation(self) -> None:
+        self.explain_ai = not self.explain_ai
+
+    def draw(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
+        self.draw_instr.clear()
+        self._draw_world()
+        if self.explain_ai:
+            self._draw_ai_inspection()
+        self._draw_alive_snakes()
+        self._draw_food()
+        self._draw_killed_snakes(dead_snakes)
+
+    def change_size(self, *args) -> None:
+        self.square_size = self.compute_square_size()
+        self.draw(())
 
 
 class MobileSnakeGameWindow(BoxLayout):
@@ -228,15 +243,6 @@ class MobileSnakeGameWindow(BoxLayout):
         )
         self.add_widget(self.canvas_widget)
 
-        # scoreboard
-        self.score_labels = {}
-        scoreboard = BoxLayout(size_hint_y=0.05)
-        for snake in chain(self.player_snakes, self.ai_snakes):
-            label = Label(text=f"{snake.get_id()}: 0", color=(1,1,1,1), size_hint_x=None, width=100)
-            scoreboard.add_widget(label)
-            self.score_labels[snake.get_id()] = label
-        self.add_widget(scoreboard)
-
         # snake controls
         self.swipe_controls = [SwipeControlWidget(snake) for snake in self.player_snakes]
         swipe_container = BoxLayout(size_hint_y=0.2)
@@ -245,11 +251,20 @@ class MobileSnakeGameWindow(BoxLayout):
         self.add_widget(swipe_container)
 
         # buttons
-        button_bar = BoxLayout(size_hint_y=0.1)
+        button_bar = BoxLayout(size_hint_y=0.04)
         button_bar.add_widget(Button(text='Pause', on_press=self.toggle_pause))
         button_bar.add_widget(Button(text='AI Explain', on_press=self.toggle_ai))
         button_bar.add_widget(Button(text='Full Speed', on_press=self.toggle_fullspeed))
         self.add_widget(button_bar)
+
+        # scoreboard
+        self.score_labels = {}
+        scoreboard = BoxLayout(size_hint_y=0.05)
+        for snake in chain(self.player_snakes, self.ai_snakes):
+            label = Label(text=f"{snake.get_id()}: 0", color=(1,1,1,1), size_hint_x=None, width=100)
+            scoreboard.add_widget(label)
+            self.score_labels[snake.get_id()] = label
+        self.add_widget(scoreboard)
 
         self.event = Clock.schedule_interval(self.step, self.time_step)
 
@@ -300,18 +315,19 @@ class SwipeControlWidget(Widget):
         return True
 
 
-class SnakeApp(App):
+class SnakeTronApp(App):
     def __init__(self, snake_world, player_agents, ai_agents, explain_ai, ui_size_coeff, time_step, **kwargs):
+        super().__init__(**kwargs)
         self.snake_world = snake_world
         self.players = player_agents
         self.ai_agents = ai_agents
         self.explain_ai = explain_ai
         self.ui_size_coeff = ui_size_coeff
         self.time_step = time_step
-        super().__init__(**kwargs)
 
     def build(self):
         self.snake_world.reset()
+        Builder.load_file('mobile_layout.kv')
         return MobileSnakeGameWindow(
             self.snake_world,
             self.players,
@@ -320,6 +336,3 @@ class SnakeApp(App):
             self.ui_size_coeff,
             self.time_step
         )
-
-# Exemple d'utilisation:
-# SnakeApp(snake_world, players, ai_agents, explain_ai=False, ui_size_coeff=1.0, time_step=0.1).run()

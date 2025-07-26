@@ -1,0 +1,49 @@
+<ColoredLabel>:
+    canvas.before:
+        Color:
+            rgba: self.box_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+
+<SnakeTronWindow>:
+    id: game_window
+    orientation: "vertical"
+
+    SwipeControlZone:
+        orientation: "horizontal"
+        size_hint_y: 0.2
+
+    ScoreBoard:
+        id: score_board
+        orientation: "horizontal"
+        size_hint_y: 0.05
+        spacing: 5
+
+    WorldDisplay:
+        id: world_display
+        on_pos: self.recompute_square_size()
+        on_size: self.recompute_square_size()
+        size_hint_y: 0.5
+
+    BoxLayout:
+        orientation: "horizontal"
+        size_hint_y: 0.05
+        spacing: 5
+
+        Button:
+            text: "Pause"
+            on_press: game_window.toggle_pause()
+
+        Button:
+            text: "Explain AIs"
+            on_press: game_window.toggle_ai_explanations()
+
+        Button:
+            text: "Full speed"
+            on_press: game_window.toggle_fullspeed()
+
+    SwipeControlZone:
+        orientation: "horizontal"
+        size_hint_y: 0.2
