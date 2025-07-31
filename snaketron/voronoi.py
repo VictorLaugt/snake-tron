@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.spatial import Voronoi
+from scipy.spatial import Voronoi, QhullError
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import TypeAlias, Literal
+    from typing import TypeAlias, Literal, Optional
     Point: TypeAlias = np.ndarray[tuple[Literal[2]], float]
     PointArray: TypeAlias = np.ndarray[tuple[int, Literal[2]], float]
 
 
 def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> Optional[Point]:
-    vor = Voronoi(points)
-    n_vertices = vor.vertices.shape[0]
+    try:
+        vor = Voronoi(points)
+    except QhullError:
+        return
 
+    n_vertices = vor.vertices.shape[0]
     vertex_nearest_point = np.empty(n_vertices+1, dtype=np.int32)
     for point_idx, region_idx in enumerate(vor.point_region):
         vertice_idx = vor.regions[region_idx]
