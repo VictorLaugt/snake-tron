@@ -11,6 +11,9 @@ if TYPE_CHECKING:
 
 
 def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> Optional[Point]:
+    if points.shape[0] == 0:
+        return
+
     try:
         vor = Voronoi(points)
     except QhullError:
@@ -29,7 +32,8 @@ def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> O
         (vor.vertices[:, 1] >= 0) & (vor.vertices[:, 1] < y_lim)
     )
     candidates = vor.vertices[candidate_mask]
-    candidate_squared_radius = vertex_squared_radius[candidate_mask]
+    if candidates.shape[0] == 0:
+        return
 
-    if candidate_squared_radius.shape[0] > 0:
-        return candidates[np.argmax(candidate_squared_radius)]
+    candidate_squared_radius = vertex_squared_radius[candidate_mask]
+    return candidates[np.argmax(candidate_squared_radius)]

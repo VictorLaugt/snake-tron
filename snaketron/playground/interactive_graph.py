@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import tkinter as tk
+import numpy as np
+
 from world import SnakeWorld, EuclidianDistanceHeuristic
 from a_star import shortest_path
+from voronoi import furthest_voronoi_vertex
 import abc
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeAlias, Optional
     from type_hints import Position
-    from world import AbstractGridGraph
     Coordinate: TypeAlias = tuple[float, float]
 
 
 class InteractiveGrid(tk.Tk, abc.ABC):
     def __init__(
         self,
-        graph: AbstractGridGraph,
+        graph: SnakeWorld,
         square_size: int,
     ) -> None:
         super().__init__()
@@ -104,7 +106,7 @@ class InteractiveGrid(tk.Tk, abc.ABC):
 class AStarInteractiveTester(InteractiveGrid):
     def __init__(
         self,
-        graph: AbstractGridGraph,
+        graph: SnakeWorld,
         square_size: int,
         default_src: Optional[Position]=None,
         default_dst: Optional[Position]=None
@@ -116,6 +118,9 @@ class AStarInteractiveTester(InteractiveGrid):
 
     def init_widget_creation(self) -> None:
         super().init_widget_creation()
+        self.set_src(*self.src)
+        self.set_dst(*self.dst)
+
         self.button_set_src = tk.Button(
             self,
             text='Set source (S)',
@@ -141,8 +146,6 @@ class AStarInteractiveTester(InteractiveGrid):
             text='Clear obstacles (Suppr)',
             command=self.command_clear_obstacles
         )
-        self.set_src(*self.src)
-        self.set_dst(*self.dst)
 
     def init_bindings(self) -> None:
         super().init_bindings()
@@ -153,7 +156,6 @@ class AStarInteractiveTester(InteractiveGrid):
         self.bind('<Delete>', lambda _: self.command_clear_obstacles())
 
     def init_widget_position(self) -> None:
-        super().init_widget_position()
         self.canvas.grid(row=0, column=0, columnspan=5)
         self.button_set_src.grid(row=1, column=0)
         self.button_set_dst.grid(row=1, column=1)
@@ -214,26 +216,76 @@ class AStarInteractiveTester(InteractiveGrid):
         self.click_method = self.commute
 
 
-class InteractiveVoronoiTester(InteractiveGrid):
+class VoronoiInteractiveTester(InteractiveGrid):
     def __init__(
         self,
-        graph: AbstractGridGraph,
+        graph: SnakeWorld,
         square_size: int,
     ) -> None:
         super().__init__(graph, square_size)
-        self.canvas.pack()
 
+    def init_widget_creation(self) -> None:
+        super().init_widget_creation()
+        self.button_compute_vertex = tk.Button(
+            self,
+            text='Compute futhest Voronoï vertex',
+            command=self.command_compute_vertex
+        )
+        self.button_clear = tk.Button(
+            self,
+            text='Clear',
+            command=self.command_clear
+        )
+
+    def init_widget_position(self) -> None:
+        self.canvas.grid(row=0, column=0, columnspan=2)
+        self.button_compute_vertex.grid(row=1, column=0)
+        self.button_clear.grid(row=1, column=1)
+
+    def init_bindings(self):
+        super().init_bindings()
+        self.bind('<Return>', lambda _: self.command_compute_vertex())
+        self.bind('<Delete>', lambda _: self.command_clear())
+
+
+    # ---- event handlers
     def on_click(self, u: int, v: int) -> None:
         self.commute(u, v)
 
-    ... # TODO: InteractiveVoronoiTester
+    def command_clear(self) -> None:
+        self.canvas.delete('vertex')
+        self.canvas.delete('obstacle')
+        for u, v in self.obstacles:
+            self.graph.pop_obstacle((u, v))
+        self.obstacles.clear()
+
+    def command_compute_vertex(self) -> None:
+        self.canvas.delete('vertex')
+
+        vertex = furthest_voronoi_vertex(
+            np.array([(u, v) for u, v in self.obstacles]),
+            self.graph.get_width(),
+            self.graph.get_height()
+        )
+        print(f'{vertex=}')
+        if vertex is not None:
+            position = (int(vertex[0]), int(vertex[1]))
+            print(f'{position=}')
+            self.draw_square(*position, 'red', other_tag='vertex')
+
 
 
 if __name__ == '__main__':
-    app = AStarInteractiveTester(
+    # app = AStarInteractiveTester(
+    #     SnakeWorld(20, 20, 0),
+    #     square_size=40,
+    #     default_src=(5, 9),
+    #     default_dst=(14, 9)
+    # )
+    # app.mainloop()
+
+    app = VoronoiInteractiveTester(
         SnakeWorld(20, 20, 0),
-        square_size=40,
-        default_src=(5, 9),
-        default_dst=(14, 9)
+        square_size=40
     )
     app.mainloop()

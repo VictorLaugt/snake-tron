@@ -152,6 +152,12 @@ class SnakeWorld(AbstractGridGraph):
         repellent_pos = []
         for agent in self.alive_agents:
             repellent_pos.extend(agent.iter_cells())
+        if len(self.alive_agents) <= 2:
+            max_x, max_y = self.width - 1., self.height - 1.
+            half_x, half_y = .5 * max_x, .5 * max_y
+            repellent_pos.extend((
+                (half_x, 0.), (half_x, max_y), (0., half_y), (max_x, half_y)
+            ))
 
         vertex = furthest_voronoi_vertex(np.array(repellent_pos), self.width, self.height)
         if vertex is not None:
