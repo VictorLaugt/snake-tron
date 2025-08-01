@@ -187,7 +187,14 @@ class WorldDisplay(FloatLayout):
 
 
 class SwipeControlZone(Widget):
-    ...
+    player: PlayerSnakeAgent
+    colors: SnakeColors
+    
+    ...  # TODO: SwipeControlZone
+    
+    def init_logic(self, player: PlayerSnakeAgent, colors: SnakeColors) -> None:
+        self.player = player
+        self.colors = colors
 
 
 class ColoredLabel(Label):
@@ -313,8 +320,11 @@ class SnakeTronWindow(BoxLayout):
         # player inputs
         if len(player_agents) >= 1:
             self.keyboard_controls = KeyBoardControls(player_agents[0])
-        # TODO: dispatch players into the swipe zones and color each swipe zone
-        # in its player color
+        for i, player in enumerate(player_agents):
+            self.swipe_zones[i%len(player_agents)].init_logic(
+                player,
+                agent_colors[player.get_id()]
+            )
 
         self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
 

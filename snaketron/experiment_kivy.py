@@ -64,7 +64,7 @@ class SwipeControlWidget(Widget):
         return True
 
     def on_touch_up(self, touch):
-        start_pos = self.touch_starts.get(touch.uid)
+        start_pos = self.touch_starts.pop(touch.uid, None)
         if start_pos is None:
             return False
 
@@ -77,7 +77,7 @@ class SwipeControlWidget(Widget):
             direction = UP if dy > 0 else DOWN
 
         direction_name = {RIGHT: 'RIGHT', LEFT: 'LEFT', UP: 'UP', DOWN: 'DOWN'}
-        self.label.text = direction_name[direction]
+        self.label.text = f"{direction_name[direction]}, {len(self.touch_starts) = }"
         print(f"[{touch.uid}] swipe: {direction_name[direction]}")
 
         return True
