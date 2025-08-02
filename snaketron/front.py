@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from kivy.config import Config
-Config.set('graphics', 'width', '432')
-Config.set('graphics', 'height', '891')
+from kivy.utils import platform
+if platform in ('linux', 'win', 'macosx'):
+    Config.set('graphics', 'width', '432')
+    Config.set('graphics', 'height', '891')
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -189,6 +191,7 @@ class WorldDisplay(FloatLayout):
 
 
 class PlayerSwipeControl(Widget):
+    background_color = ListProperty(get_color_from_hex('#FFFFFF00'))
     border_color = ListProperty(get_color_from_hex('#FFFFFF00'))
 
     draw_instr: InstructionGroup
@@ -201,10 +204,11 @@ class PlayerSwipeControl(Widget):
         self.canvas.add(self.draw_instr)
         self.touch_starts = {}
 
-    def init_logic(self, player: PlayerSnakeAgent, colors: SnakeColors) -> None:
+    def init_logic(self, player: PlayerSnakeAgent, colors: SnakeColors, background_color: ColorValue) -> None:
         self.player = player
         self.colors = colors
         self.border_color = self.colors.head
+        self.background_color = background_color
 
     def on_touch_down(self, touch: MotionEvent) -> bool:
         if not self.collide_point(touch.x, touch.y):
@@ -361,6 +365,7 @@ class SnakeTronWindow(BoxLayout):
 
         # colors
         agent_colors = {}
+        swipe_zone_bg_color = '#000000'
         head_color_wheel = ('#0066CC', '#D19300', '#9400D3', '#008000')
         tail_color_wheel = ('#0088EE', '#F3B500', '#EE82EE', '#006400')
         agents: list[AbstractSnakeAgent] = list(chain(player_agents, ai_agents))
@@ -401,7 +406,7 @@ class SnakeTronWindow(BoxLayout):
         for i, p in enumerate(player_agents):
             player_id = p.get_id()
             swipe_controls = PlayerSwipeControl()
-            swipe_controls.init_logic(p, agent_colors[player_id])
+            swipe_controls.init_logic(p, agent_colors[player_id], get_color_from_hex(swipe_zone_bg_color))
             control_zones[i%len(self.swipe_zones)].append(swipe_controls)
             self.swipe_controls.append(swipe_controls)
         for i in range(len(self.swipe_zones)):
