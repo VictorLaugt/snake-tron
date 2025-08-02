@@ -1,7 +1,13 @@
 # python
 __pycache__
 
+# frontend configuration
+.kivy
+
 # editors
 .spyproject
 .vscode
 .idea
+
+# makefile
+.imagebuilt
