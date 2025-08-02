@@ -251,7 +251,7 @@ class PlayerSwipeControl(Widget):
         else:
             return
 
-        self.draw_instr.add(Color(rgba=self.colors.head))
+        self.draw_instr.add(Color(rgba=self.colors.tail))
         self.draw_instr.add(Line(points=points, width=2, cap='round', joint='round'))
 
 

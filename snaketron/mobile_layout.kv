@@ -15,6 +15,9 @@
             rectangle: self.x, self.y, self.width, self.height
             width: 2
 
+    on_size: self.update_direction_display()
+    on_pos: self.update_direction_display()
+
 
 <SnakeTronWindow>:
     id: game_window
