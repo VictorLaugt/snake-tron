@@ -41,9 +41,15 @@ def build_game(
     height: int,
     width: int,
     n_food: int,
+    n_snakes: int,
     n_players: int,
     respawn_cooldown: int
 ) -> tuple[SnakeWorld, Sequence[PlayerSnakeAgent], Sequence[AbstractAISnakeAgent]]:
+    if not (0 <= n_snakes <= 4):
+        raise ValueError("Too many snakes")
+    if not (0 <= n_players <= n_snakes):
+        raise ValueError("Too many players")
+    
     dx = int(0.2 * width)
     dy = 1
     init_length = int(0.36 * height)
@@ -69,7 +75,7 @@ def build_game(
 
     if n_players >= 1:
         player_agents.append(PlayerSnakeAgent(world, blue_init_pos, blue_init_dir))
-    else:
+    elif n_snakes >= 1:
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, blue_init_pos, blue_init_dir,
             # EuclidianDistancePeriodicHeuristic,
@@ -79,7 +85,7 @@ def build_game(
 
     if n_players >= 2:
         player_agents.append(PlayerSnakeAgent(world, yellow_init_pos, yellow_init_dir))
-    else:
+    elif n_snakes >= 2:
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, yellow_init_pos, yellow_init_dir,
             # EuclidianDistancePeriodicHeuristic,
@@ -89,7 +95,7 @@ def build_game(
 
     if n_players >= 3:
         player_agents.append(PlayerSnakeAgent(world, purple_init_pos, purple_init_dir))
-    else:
+    elif n_snakes >= 3:
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, purple_init_pos, purple_init_dir,
             EuclidianDistanceHeuristic,
@@ -98,7 +104,7 @@ def build_game(
 
     if n_players >= 4:
         player_agents.append(PlayerSnakeAgent(world, green_init_pos, green_init_dir))
-    else:
+    elif n_snakes >= 4:
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, green_init_pos, green_init_dir,
             ManhattanDistanceHeuristic,
@@ -118,22 +124,24 @@ height, width = 21, 21
 # height, width = 25, 25
 # height, width = 30, 30
 # height, width = 40, 40
-world, player_agents, ai_agents = build_game(
-    height,
-    width,
-    # n_food=2,
-    n_food=3,
-    n_players=2,
-    respawn_cooldown=10
-)
 
+n_snakes = 4
+n_players = 2
+respawn_cooldown = 10
+n_food = n_snakes - 1
+
+# time_step = 0.2
+# time_step = 0.25
+time_step = 0.3
+
+
+world, player_agents, ai_agents = build_game(
+    height, width,
+    n_food, n_snakes, n_players,
+    respawn_cooldown
+)
 gui = SnakeTronApp(
-    world,
-    player_agents,
-    ai_agents,
-    # time_step=0.2,
-    # time_step=0.25,
-    time_step=0.3,
-    ai_explanations=False
+    world, player_agents, ai_agents,
+    time_step, ai_explanations=False
 )
 gui.run()
