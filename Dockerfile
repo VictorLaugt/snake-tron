@@ -30,4 +30,4 @@ RUN pip install -r /app/requirements.txt
 # for debug
 RUN pip install ipython
 
-CMD python snaketron/front_prototype.py; bash
+CMD python snaketron/; bash

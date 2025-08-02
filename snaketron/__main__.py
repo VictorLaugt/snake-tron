@@ -1,17 +1,15 @@
-#Pydroid should import tkinter
+#Pydroid should import kivy
 from __future__ import annotations
 
 from itertools import chain
 
-# from front import SnakeGameWindow, MobileSnakeGameWindow  # tkinter
-from front_kivy import SnakeTronApp as MobileSnakeGameWindow  # kivy
+from front import SnakeTronApp
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,  ManhattanDistanceHeuristic
 from direction import UP, DOWN, LEFT, RIGHT
 
 """
 TODO:
- - contrôles tactiles par swipes pour plusieurs joueurs
  - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions d'affilé sans lever le doigt
  - interface back-front orientée évènements pour que le front n'ai pas besoin de redessiner l'entièreté du monde à chaque étape de jeu
  - étudier la possibilité de ne pas recalculer les chemins les plus courts à chaque étape mais de les conserver dans un cache
@@ -111,25 +109,17 @@ world, player_agents, ai_agents = build_game(
     width,
     # n_food=2,
     n_food=3,
-    n_players=1,
+    n_players=2,
     respawn_cooldown=10
 )
 
-# gui = SnakeGameWindow(
-gui = MobileSnakeGameWindow(
+gui = SnakeTronApp(
     world,
-    player_agents=player_agents,
-    ai_agents=ai_agents,
-    explain_ai=False,
-    ui_size_coeff=20/max(height, width),
-    # ui_size_coeff=51/max(height, width),
-    # ui_size_coeff=1000/max(height, width),
-    # ui_size_coeff=500/max(height, width),
-    # time_step=100
-    # time_step=150
-    time_step=200
-    # time_step=250
-    # time_step=300
+    player_agents,
+    ai_agents,
+    # time_step=0.2,
+    # time_step=0.25,
+    time_step=0.3,
+    ai_explanations=False
 )
-# gui.mainloop()  # tkinter
-gui.run()  # kivy
+gui.run()

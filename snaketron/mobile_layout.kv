@@ -7,10 +7,10 @@
             size: self.size
 
 
-<SwipeControlZone>:
+<PlayerSwipeControl>:
     canvas.before:
         Color:
-            rgba: 1, 0, 0, 1
+            rgba: self.border_color
         Line:
             rectangle: self.x, self.y, self.width, self.height
             width: 2
@@ -23,6 +23,7 @@
     SwipeControlZone:
         orientation: "horizontal"
         size_hint_y: 0.2
+        spacing: 5
 
     ScoreBoard:
         id: score_board
@@ -56,3 +57,4 @@
     SwipeControlZone:
         orientation: "horizontal"
         size_hint_y: 0.2
+        spacing: 5
