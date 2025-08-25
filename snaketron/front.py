@@ -15,6 +15,7 @@ from kivy.utils import get_color_from_hex, platform
 
 from dataclasses import dataclass
 from itertools import chain
+import json
 
 from direction import UP, DOWN, LEFT, RIGHT
 
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from kivy.clock import ClockEvent
     from kivy.core.window import WindowBase
     from kivy.input import MotionEvent
+    from pathlib import Path
 
     from typing import TypeAlias, Sequence, Iterable, Optional
     from type_hints import Position, Direction
@@ -316,6 +318,8 @@ class KeyBoardControls(EventDispatcher):
 
 
 class SnakeTronWindow(BoxLayout):
+    app_background_color = ListProperty(get_color_from_hex('#000000'))
+
     world: SnakeWorld
     player_agents: Sequence[PlayerSnakeAgent]
     swipe_zones: list[SwipeControlZone]
@@ -349,7 +353,8 @@ class SnakeTronWindow(BoxLayout):
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
         time_step: float,
-        ai_explanations: bool
+        ai_explanations: bool,
+        colors: dict
     ) -> None:
         # link to the backend
         self.world = world
@@ -364,26 +369,28 @@ class SnakeTronWindow(BoxLayout):
         self.time_step = time_step
 
         # colors
+        self.app_background_color = get_color_from_hex(colors['ui']['background'])
+        swipe_zone_bg_color = get_color_from_hex(colors['ui']['swipe_zone_bg_color'])
+
         agent_colors = {}
-        swipe_zone_bg_color = '#000000'
-        head_color_wheel = ('#0066CC', '#D19300', '#9400D3', '#008000')
-        tail_color_wheel = ('#0088EE', '#F3B500', '#EE82EE', '#006400')
+        head_color_wheel = colors['snakes']['head_color_wheel']
+        tail_color_wheel = colors['snakes']['tail_color_wheel']
         agents: list[AbstractSnakeAgent] = list(chain(player_agents, ai_agents))
         for a in agents:
             agent_id = a.get_id()
             agent_colors[agent_id] = SnakeColors(
                 head=get_color_from_hex(head_color_wheel[agent_id % len(head_color_wheel)]),
                 tail=get_color_from_hex(tail_color_wheel[agent_id % len(tail_color_wheel)]),
-                dead=get_color_from_hex('#8B0000'),
-                inspect=get_color_from_hex('#000060')
+                dead=get_color_from_hex(colors['snakes']['dead']),
+                inspect=get_color_from_hex(colors['snakes']['inspect'])
             )
 
         world_colors = WorldColors(
-            food_outline=get_color_from_hex('#FF6666'),
-            food=get_color_from_hex('#FF0000'),
-            background=get_color_from_hex('#000030'),
-            gridline=get_color_from_hex('#000090'),
-            gridborder=get_color_from_hex('#005690')
+            food_outline=get_color_from_hex(colors['world']['food_outline']),
+            food=get_color_from_hex(colors['world']['food']),
+            background=get_color_from_hex(colors['world']['background']),
+            gridline=get_color_from_hex(colors['world']['gridline']),
+            gridborder=get_color_from_hex(colors['world']['gridborder'])
         )
         self.ids.world_display.init_logic(world, ai_agents, world_colors, agent_colors)
         self.ids.score_board.init_logic(agents, agent_colors)
@@ -406,7 +413,7 @@ class SnakeTronWindow(BoxLayout):
         for i, p in enumerate(player_agents):
             player_id = p.get_id()
             swipe_controls = PlayerSwipeControl()
-            swipe_controls.init_logic(p, agent_colors[player_id], get_color_from_hex(swipe_zone_bg_color))
+            swipe_controls.init_logic(p, agent_colors[player_id], swipe_zone_bg_color)
             control_zones[i%len(self.swipe_zones)].append(swipe_controls)
             self.swipe_controls.append(swipe_controls)
         for i in range(len(self.swipe_zones)):
@@ -453,6 +460,8 @@ class SnakeTronApp(App):
         ai_agents: Sequence[AbstractAISnakeAgent],
         time_step: float,
         ai_explanations: bool,
+        layout_file: Path,
+        color_file: Path,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -461,15 +470,21 @@ class SnakeTronApp(App):
         self.ai_agents = ai_agents
         self.time_step = time_step
         self.ai_explanations = ai_explanations
+        self.layout_file = layout_file
+        self.color_file = color_file
 
     def build(self) -> None:
-        Builder.load_file('mobile_layout.kv')
+        Builder.load_file(str(self.layout_file))
+        with self.color_file.open(mode='r') as fp:
+            colors = json.load(fp)
+
         window = SnakeTronWindow()
         window.init_logic(
             self.world,
             self.player_agents,
             self.ai_agents,
             self.time_step,
-            self.ai_explanations
+            self.ai_explanations,
+            colors
         )
         return window

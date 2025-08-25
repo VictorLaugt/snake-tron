@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from itertools import chain
+from pathlib import Path
 
 from front import SnakeTronApp
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
@@ -49,7 +50,7 @@ def build_game(
         raise ValueError("Too many snakes")
     if not (0 <= n_players <= n_snakes):
         raise ValueError("Too many players")
-    
+
     dx = int(0.2 * width)
     dy = 1
     init_length = int(0.36 * height)
@@ -142,6 +143,8 @@ world, player_agents, ai_agents = build_game(
 )
 gui = SnakeTronApp(
     world, player_agents, ai_agents,
-    time_step, ai_explanations=False
+    time_step, ai_explanations=False,
+    layout_file=Path('mobile_layout.kv'),
+    color_file=Path('colors', 'dark.json')
 )
 gui.run()

@@ -1,0 +1,19 @@
+{
+    "ui": {
+        "swipe_zone_bg_color": "#000000",
+        "background": "#000000"
+    },
+    "world": {
+        "food_outline": "#FF6666",
+        "food": "#FF0000",
+        "background": "#000030",
+        "gridline": "#000090",
+        "gridborder": "#005690"
+    },
+    "snakes": {
+        "head_color_wheel": ["#0066CC", "#D19300", "#9400D3", "#008000"],
+        "tail_color_wheel": ["#0088EE", "#F3B500", "#EE82EE", "#006400"],
+        "dead": "#8B0000",
+        "inspect": "#000060"
+    }
+}

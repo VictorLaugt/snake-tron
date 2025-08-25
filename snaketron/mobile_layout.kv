@@ -29,6 +29,13 @@
     id: game_window
     orientation: "vertical"
 
+    canvas.before:
+        Color:
+            rgba: self.app_background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
     SwipeControlZone:
         orientation: "horizontal"
         size_hint_y: 0.2
