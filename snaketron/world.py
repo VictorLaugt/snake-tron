@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from random import randrange
+from random import randrange, shuffle
 import numpy as np
 from collections import deque
 
@@ -296,6 +296,7 @@ class SnakeWorld(AbstractGridGraph):
             if agent.collides_another():
                 agent.die()
                 deads.append(agent)
+        shuffle(deads)
         self._kill_agents(deads)
 
         # respawns the foods which has been eaten
