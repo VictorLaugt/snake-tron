@@ -10,7 +10,8 @@ from direction import UP, DOWN, LEFT, RIGHT
 
 """
 TODO:
- - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions d'affilé sans lever le doigt
+ - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions à la suite sans lever le doigt
+ - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
  - interface back-front orientée évènements pour que le front n'ai pas besoin de redessiner l'entièreté du monde à chaque étape de jeu
  - étudier la possibilité de ne pas recalculer les chemins les plus courts à chaque étape mais de les conserver dans un cache
 """
@@ -67,7 +68,7 @@ def build_game(
     purple_init_dir = DOWN
     green_init_dir = DOWN
 
-    attack_anticipation = int(0.3*(height + width))
+    attack_anticipation = int(0.15*(height + width))
 
     world = SnakeWorld(width, height, n_food, respawn_cooldown)
     player_agents: list[PlayerSnakeAgent] = []
@@ -126,13 +127,13 @@ height, width = 21, 21
 # height, width = 40, 40
 
 n_snakes = 4
-n_players = 2
+n_players = 1
 respawn_cooldown = 10
 n_food = n_snakes - 1
 
-# time_step = 0.2
+time_step = 0.2
 # time_step = 0.25
-time_step = 0.3
+# time_step = 0.3
 
 
 world, player_agents, ai_agents = build_game(
