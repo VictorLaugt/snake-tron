@@ -1,26 +1,17 @@
 from __future__ import annotations
 
-from kivy.config import Config
-from kivy.utils import platform
-if platform in ('linux', 'win', 'macosx'):
-    Config.set('graphics', 'width', '432')
-    Config.set('graphics', 'height', '891')
-
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window, Keyboard
 from kivy.event import EventDispatcher
 from kivy.graphics import Rectangle, Color, Line, Ellipse, InstructionGroup
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ListProperty, ObjectProperty
-
+from kivy.properties import NumericProperty, ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
-
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
-
-from kivy.utils import get_color_from_hex
+from kivy.utils import get_color_from_hex, platform
 
 from dataclasses import dataclass
 from itertools import chain
@@ -342,6 +333,15 @@ class SnakeTronWindow(BoxLayout):
         for child in self.children:
             if isinstance(child, SwipeControlZone):
                 self.swipe_zones.append(child)
+
+        if platform in ('linux', 'win', 'macosx'):
+            screen_width, screen_height = Window.system_size
+            width, height = int(432/891 * screen_height), screen_height
+            scale = screen_width / width
+            if scale < 1:
+                width, height = int(width * scale), int(height * scale)
+            Window.size = (width, height)
+
 
     def init_logic(
         self,
