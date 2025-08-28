@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import numpy as np
-from scipy.spatial import Voronoi, QhullError
-
 from typing import TYPE_CHECKING
+
+import numpy as np
+from scipy.spatial import QhullError, Voronoi
+
 if TYPE_CHECKING:
-    from typing import TypeAlias, Literal, Optional
+    from typing import Literal, Optional, TypeAlias
     Point: TypeAlias = np.ndarray[tuple[Literal[2]], float]
     PointArray: TypeAlias = np.ndarray[tuple[int, Literal[2]], float]
 

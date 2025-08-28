@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from random import randrange, shuffle
-import numpy as np
 from collections import deque
+from random import randrange, shuffle
+from typing import TYPE_CHECKING
 
-from back.direction import UP, DOWN, LEFT, RIGHT, toward_center
+import numpy as np
+from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
 from back.voronoi import furthest_voronoi_vertex
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Iterator, Sequence, Optional
-    from back.type_hints import Position, Direction
+    from typing import Iterator, Optional, Sequence
+
     from back.agent import AbstractSnakeAgent
+    from back.type_hints import Direction, Position
 
 
 class AbstractGridGraph(ABC):

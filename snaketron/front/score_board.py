@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.utils import get_color_from_hex
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from typing import Sequence
+
     from back.agent import AbstractSnakeAgent
     from front.world_display import SnakeColors
-
-    from typing import Sequence
 
 
 class ColoredLabel(Label):

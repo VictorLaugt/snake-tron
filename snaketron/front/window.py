@@ -1,24 +1,25 @@
 from __future__ import annotations
 
-from kivy.core.window import Window
-from kivy.clock import Clock
-from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import ListProperty
-from kivy.utils import get_color_from_hex, platform
 from itertools import chain
-
-from front.controls import SwipeControlZone, KeyBoardControls, PlayerSwipeControl
-from front.world_display import SnakeColors, WorldColors
-
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from back.world import SnakeWorld
-    from back.agent import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
 
+from front.controls import (KeyBoardControls, PlayerSwipeControl,
+                            SwipeControlZone)
+from front.world_display import SnakeColors, WorldColors
+from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.properties import ListProperty
+from kivy.uix.boxlayout import BoxLayout
+from kivy.utils import get_color_from_hex, platform
+
+if TYPE_CHECKING:
+    from typing import Sequence
+
+    from back.agent import (AbstractAISnakeAgent, AbstractSnakeAgent,
+                            PlayerSnakeAgent)
+    from back.world import SnakeWorld
     from kivy.clock import ClockEvent
     from kivy.uix.widget import Widget
-
-    from typing import Sequence
 
 
 MINIMAL_TIME_STEP = 0.01

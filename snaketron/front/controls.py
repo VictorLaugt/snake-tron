@@ -1,29 +1,26 @@
 from __future__ import annotations
 
-from kivy.core.window import Window, Keyboard
-from kivy.event import EventDispatcher
-from kivy.uix.widget import Widget
-from kivy.properties import ListProperty
-from kivy.graphics import Color, Line, InstructionGroup
-from kivy.utils import get_color_from_hex
-from kivy.uix.boxlayout import BoxLayout
-
 from itertools import chain
-
-from back.direction import UP, DOWN, LEFT, RIGHT
-
-
 from typing import TYPE_CHECKING
+
+from back.direction import DOWN, LEFT, RIGHT, UP
+from kivy.core.window import Keyboard, Window
+from kivy.event import EventDispatcher
+from kivy.graphics import Color, InstructionGroup, Line
+from kivy.properties import ListProperty
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.widget import Widget
+from kivy.utils import get_color_from_hex
+
 if TYPE_CHECKING:
+    from typing import Iterable, Optional, Sequence
+
     from back.agent import PlayerSnakeAgent
-    from front.world_display import SnakeColors
-
-    from kivy.core.window import WindowBase
-    from kivy.input import MotionEvent
-
-    from typing import Sequence, Iterable, Optional
     from back.type_hints import Direction
     from front.type_hints import ColorValue
+    from front.world_display import SnakeColors
+    from kivy.core.window import WindowBase
+    from kivy.input import MotionEvent
 
 
 class PlayerSwipeControl(Widget):

@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from kivy.graphics import Rectangle, Color, Line, Ellipse, InstructionGroup
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
 
-from dataclasses import dataclass
-
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from back.world import SnakeWorld
-    from back.agent import AbstractSnakeAgent, AbstractAISnakeAgent
+    from typing import Iterable, Sequence
 
-    from typing import Sequence, Iterable
+    from back.agent import AbstractAISnakeAgent, AbstractSnakeAgent
     from back.type_hints import Position
+    from back.world import SnakeWorld
     from front.type_hints import ColorValue, Coordinate
 
 
