@@ -131,7 +131,7 @@ class SnakeTronWindow(BoxLayout):
 
     def game_step(self, dt: float) -> None:
         deads = self.world.simulate()
-        self.ids.world_display.draw(deads, self.ai_explanations)
+        self.ids.world_display.update_draw(deads, self.ai_explanations)
         self.ids.score_board.update_scores()
         for controller in self.swipe_controls:
             controller.update_direction_display()

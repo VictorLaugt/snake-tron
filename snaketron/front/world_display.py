@@ -37,15 +37,18 @@ class SnakeColors:
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
-    draw_instr: InstructionGroup
+    instr_arena: InstructionGroup
+    instr_objs: InstructionGroup
     world: SnakeWorld
     ai_snakes: Sequence[AbstractAISnakeAgent]
     world_colors: WorldColors
     snake_colors: dict[int, SnakeColors]
 
     def on_kv_post(self, base_widget: Widget) -> None:
-        self.draw_instr = InstructionGroup()
-        self.canvas.add(self.draw_instr)
+        self.instr_arena = InstructionGroup()
+        self.instr_objs = InstructionGroup()
+        self.canvas.add(self.instr_arena)
+        self.canvas.add(self.instr_objs)
 
     def init_logic(
         self,
@@ -58,6 +61,7 @@ class WorldDisplay(FloatLayout):
         self.ai_snakes = ai_snakes
         self.world_colors = world_colors
         self.snake_colors = snake_colors
+        self.draw_arena()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (
@@ -66,48 +70,49 @@ class WorldDisplay(FloatLayout):
         )
 
     def draw_square(self, x: float, y: float, c: ColorValue) -> None:
-        self.draw_instr.add(Color(*c))
-        self.draw_instr.add(Rectangle(pos=(x, y), size=(self.square_size, self.square_size)))
+        self.instr_objs.add(Color(*c))
+        self.instr_objs.add(Rectangle(pos=(x, y), size=(self.square_size, self.square_size)))
 
     def draw_circle(self, x: float, y: float, c: ColorValue) -> None:
-        self.draw_instr.add(Color(*c))
-        self.draw_instr.add(Ellipse(pos=(x, y), size=(self.square_size, self.square_size)))
+        self.instr_objs.add(Color(*c))
+        self.instr_objs.add(Ellipse(pos=(x, y), size=(self.square_size, self.square_size)))
 
-    def draw_world(self) -> None:
+    def draw_arena(self) -> None:
+        self.instr_arena.clear()
         h, w = self.world.get_height(), self.world.get_width()
 
         # background
-        self.draw_instr.add(Color(*self.world_colors.background))
-        self.draw_instr.add(Rectangle(pos=self.pos, size=(w*self.square_size, h*self.square_size)))
+        self.instr_arena.add(Color(*self.world_colors.background))
+        self.instr_arena.add(Rectangle(pos=self.pos, size=(w*self.square_size, h*self.square_size)))
 
         # grid lines every 3 cells
-        self.draw_instr.add(Color(*self.world_colors.gridline))
+        self.instr_arena.add(Color(*self.world_colors.gridline))
         for u in range(3, w, 3):
             x = self.x + u*self.square_size
             y0 = self.y
             y1 = self.y + h*self.square_size
-            self.draw_instr.add(Line(points=(x, y0, x, y1)))
+            self.instr_arena.add(Line(points=(x, y0, x, y1)))
         for v in range(3, h, 3):
             y = self.y + (h-v)*self.square_size
             x0 = self.x
             x1 = self.x + w*self.square_size
-            self.draw_instr.add(Line(points=(x0, y, x1, y)))
+            self.instr_arena.add(Line(points=(x0, y, x1, y)))
 
         # grid border
-        self.draw_instr.add(Color(*self.world_colors.gridborder))
-        self.draw_instr.add(Line(points=(
+        self.instr_arena.add(Color(*self.world_colors.gridborder))
+        self.instr_arena.add(Line(points=(
             self.x, self.y,
             self.x + w*self.square_size, self.y
         )))
-        self.draw_instr.add(Line(points=(
+        self.instr_arena.add(Line(points=(
             self.x, self.y + h*self.square_size,
             self.x + w*self.square_size, self.y + h*self.square_size
         )))
-        self.draw_instr.add(Line(points=(
+        self.instr_arena.add(Line(points=(
             self.x, self.y,
             self.x, self.y + h*self.square_size
         )))
-        self.draw_instr.add(Line(points=(
+        self.instr_arena.add(Line(points=(
             self.x + w*self.square_size, self.y,
             self.x + w*self.square_size, self.y + h*self.square_size
         )))
@@ -146,15 +151,15 @@ class WorldDisplay(FloatLayout):
         )
 
     def on_square_size(self, instance: Widget, value: float) -> None:
-        self.draw()
+        self.draw_arena()
+        self.update_draw()
 
-    def draw(
+    def update_draw(
         self,
         dead_snakes: Iterable[AbstractSnakeAgent]=(),
         ai_explanations: bool=False
     ) -> None:
-        self.draw_instr.clear()
-        self.draw_world()
+        self.instr_objs.clear()
         if ai_explanations:
             self.draw_ai_inspection()
         self.draw_alive_snakes()
