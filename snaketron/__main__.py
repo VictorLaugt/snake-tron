@@ -4,7 +4,7 @@ from __future__ import annotations
 from itertools import chain
 from pathlib import Path
 
-from front import SnakeTronApp
+from front.app import SnakeTronApp
 from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
 from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic, ManhattanDistanceHeuristic
 from direction import UP, DOWN, LEFT, RIGHT
@@ -146,7 +146,7 @@ world, player_agents, ai_agents = build_game(
 gui = SnakeTronApp(
     world, player_agents, ai_agents,
     time_step, ai_explanations=False,
-    layout_file=Path('mobile_layout.kv'),
-    color_file=Path('colors', 'dark.json')
+    layout_file=Path('front', 'mobile_layout.kv'),
+    color_file=Path('front', 'colors', 'dark.json')
 )
 gui.run()

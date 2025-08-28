@@ -30,4 +30,4 @@ RUN pip install -r /app/requirements.txt
 # for debug
 RUN pip install ipython
 
-CMD cd snaketron/; python .; bash
+CMD cd snaketron/; python __main__.py; bash
