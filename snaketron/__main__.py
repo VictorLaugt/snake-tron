@@ -129,11 +129,12 @@ height, width = 21, 21
 
 n_snakes = 4
 n_players = 1
+
 respawn_cooldown = 10
 n_food = n_snakes - 1
 
-time_step = 0.2
-# time_step = 0.25
+# time_step = 0.2
+time_step = 0.25
 # time_step = 0.3
 
 
