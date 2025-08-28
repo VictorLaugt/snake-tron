@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import numpy as np
-from direction import opposite_dir
-
 from typing import TYPE_CHECKING
+
+import numpy as np
+from back.direction import opposite_dir
+
 if TYPE_CHECKING:
-    from type_hints import Position, Path
-    from world import AbstractGridGraph, AbstractHeuristic
+    from back.type_hints import Path, Position
+    from back.world import AbstractGridGraph, AbstractHeuristic
 
 
 NO_PATH_FOUND = (None, None)

@@ -5,9 +5,9 @@ from itertools import chain
 from pathlib import Path
 
 from front.app import SnakeTronApp
-from agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
-from world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic, ManhattanDistanceHeuristic
-from direction import UP, DOWN, LEFT, RIGHT
+from back.agent import PlayerSnakeAgent, AStarSnakeAgent, AStarOffensiveSnakeAgent
+from back.world import SnakeWorld, EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic, ManhattanDistanceHeuristic
+from back.direction import UP, DOWN, LEFT, RIGHT
 
 """
 TODO:
@@ -20,7 +20,7 @@ TODO:
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Sequence
-    from agent import AbstractAISnakeAgent
+    from back.agent import AbstractAISnakeAgent
 
 
 def define_opponents(

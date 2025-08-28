@@ -10,19 +10,19 @@ from kivy.uix.boxlayout import BoxLayout
 
 from itertools import chain
 
-from direction import UP, DOWN, LEFT, RIGHT
+from back.direction import UP, DOWN, LEFT, RIGHT
 
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from agent import PlayerSnakeAgent
+    from back.agent import PlayerSnakeAgent
     from front.world_display import SnakeColors
 
     from kivy.core.window import WindowBase
     from kivy.input import MotionEvent
 
     from typing import Sequence, Iterable, Optional
-    from type_hints import Direction
+    from back.type_hints import Direction
     from front.type_hints import ColorValue
 
 

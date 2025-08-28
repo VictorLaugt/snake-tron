@@ -3,15 +3,15 @@ from __future__ import annotations
 import tkinter as tk
 import numpy as np
 
-from world import SnakeWorld, EuclidianDistanceHeuristic
-from a_star import shortest_path
-from voronoi import furthest_voronoi_vertex
+from back.world import SnakeWorld, EuclidianDistanceHeuristic
+from back.a_star import shortest_path
+from back.voronoi import furthest_voronoi_vertex
 import abc
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeAlias, Optional
-    from type_hints import Position
+    from back.type_hints import Position
     Coordinate: TypeAlias = tuple[float, float]
 
 

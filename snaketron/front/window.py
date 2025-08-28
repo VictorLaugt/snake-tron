@@ -12,8 +12,8 @@ from front.world_display import SnakeColors, WorldColors
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from world import SnakeWorld
-    from agent import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
+    from back.world import SnakeWorld
+    from back.agent import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
 
     from kivy.clock import ClockEvent
     from kivy.uix.widget import Widget

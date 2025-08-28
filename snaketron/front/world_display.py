@@ -9,11 +9,11 @@ from dataclasses import dataclass
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from world import SnakeWorld
-    from agent import AbstractSnakeAgent, AbstractAISnakeAgent
+    from back.world import SnakeWorld
+    from back.agent import AbstractSnakeAgent, AbstractAISnakeAgent
 
     from typing import Sequence, Iterable
-    from type_hints import Position
+    from back.type_hints import Position
     from front.type_hints import ColorValue, Coordinate
 
 

@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
-
-from a_star import shortest_path
-from direction import opposite_dir
-
 from typing import TYPE_CHECKING
+
+from back.a_star import shortest_path
+from back.direction import opposite_dir
+
 if TYPE_CHECKING:
-    from typing import Sequence, Iterable, Iterator, Type, Optional
-    from type_hints import Position, Direction
-    from world import SnakeWorld, AbstractHeuristic
+    from typing import Iterable, Iterator, Optional, Sequence, Type
+
+    from back.type_hints import Direction, Position
+    from back.world import AbstractHeuristic, SnakeWorld
 
 
 class AbstractSnakeAgent(ABC):

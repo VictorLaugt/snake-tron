@@ -12,8 +12,8 @@ from front.world_display import *
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from world import SnakeWorld
-    from agent import AbstractAISnakeAgent, PlayerSnakeAgent
+    from back.world import SnakeWorld
+    from back.agent import AbstractAISnakeAgent, PlayerSnakeAgent
 
     from pathlib import Path
 

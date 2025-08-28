@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from type_hints import Direction
+from back.type_hints import Direction
 if TYPE_CHECKING:
-    from type_hints import Direction
+    from back.type_hints import Direction
     from typing import TypeAlias
     Real: TypeAlias = int|float
 

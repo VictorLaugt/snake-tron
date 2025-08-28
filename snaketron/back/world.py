@@ -5,14 +5,14 @@ from random import randrange, shuffle
 import numpy as np
 from collections import deque
 
-from direction import UP, DOWN, LEFT, RIGHT, toward_center
-from voronoi import furthest_voronoi_vertex
+from back.direction import UP, DOWN, LEFT, RIGHT, toward_center
+from back.voronoi import furthest_voronoi_vertex
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator, Sequence, Optional
-    from type_hints import Position, Direction
-    from agent import AbstractSnakeAgent
+    from back.type_hints import Position, Direction
+    from back.agent import AbstractSnakeAgent
 
 
 class AbstractGridGraph(ABC):
