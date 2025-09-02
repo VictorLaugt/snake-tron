@@ -22,7 +22,7 @@ class AgentUpdate:
     death: bool
 
 
-class EventSender:
+class EventSender:  # TODO: use in the backend class: SnakeWorld
     def __init__(
         self,
         arena_events: list[FoodUpdate],
@@ -38,7 +38,7 @@ class EventSender:
         self.agent_events[agent_id] = event
 
 
-class EventReceiver:
+class EventReceiver:  # TODO: use in the frontend
     def __init__(
         self,
         arena_events: list[FoodUpdate],
@@ -55,7 +55,7 @@ class EventReceiver:
             yield self.agent_events.popitem()
 
 
-def new_event_pipe() -> tuple[EventSender, EventReceiver]:
+def new_event_pipe() -> tuple[EventSender, EventReceiver]:  # TODO: use in the __main__.py to link backend and frontend together
     arena_events = []
     agent_events = {}
     sender = EventSender(arena_events, agent_events)
