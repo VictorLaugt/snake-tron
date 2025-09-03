@@ -27,7 +27,7 @@ class AbstractSnakeAgent(ABC):
         self.alive = alive
         self.initial_pos = initial_pos
         self.pos = deque(initial_pos)
-        self.last_tail_pos = None
+        self.last_tail_pos = self.pos[0]
 
     def get_id(self) -> int:
         return self.agent_id
@@ -82,18 +82,15 @@ class AbstractSnakeAgent(ABC):
         return 0
 
     def cut(self, cut_length: int) -> None:
-        """Removes the `cut_length` last cells from the snake."""
+        """Removes the `cut_length` last cells from the snake (`cut_length > 0`)."""
         for _ in range(cut_length):
             self.world.incr_obstacle_count(self.pos.popleft(), -1)
 
-    def grow(self, growth: int) -> bool:
-        """Adds `growth` cells at the end of the snake's tail."""
-        if self.last_tail_pos is not None:
+    def grow(self, growth: int) -> None:
+        """Adds `growth` cells at the end of the snake's tail (`growth > 0`)."""
+        for _ in range(growth):
             self.pos.appendleft(self.last_tail_pos)
-            self.world.incr_obstacle_count(self.last_tail_pos, 1)
-            self.last_tail_pos = None
-            return True
-        return False
+        self.world.incr_obstacle_count(self.last_tail_pos, growth)
 
     def collides_another(self) -> Optional[AbstractSnakeAgent]:
         """Checks whether the snake collides with another snake of the world.
@@ -116,12 +113,14 @@ class AbstractSnakeAgent(ABC):
         return self.alive
 
     @abstractmethod
-    def decide_direction(self) -> None:
-        """Makes the snake decide its next direction."""
+    def decide_direction(self) -> Direction:
+        """Makes the snake decide in which direction it want to move,
+        and returns it.
+        """
 
     @abstractmethod
     def get_direction(self) -> Direction:
-        """Returns the direction in which the snake want to move."""
+        """Returns the direction in which the snake wants to move."""
 
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
@@ -146,9 +145,10 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
             self.dir = d
         self.dir_requests.clear()
 
-    def decide_direction(self) -> None:
+    def decide_direction(self) -> Direction:
         if len(self.dir_requests) > 0:
             self.dir = self.dir_requests.popleft()
+        return self.dir
 
     def get_direction(self) -> Direction:
         return self.dir
@@ -205,7 +205,7 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         self.y_path.clear()
         self.dir_path.clear()
 
-    def decide_direction(self) -> None:
+    def decide_direction(self) -> Direction:
         if self.cooldown == 0 or len(self.dir_path) == 0:
             self.update_path()
             self.cooldown = self.latency
@@ -216,6 +216,7 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
             self.x_path.pop()
             self.y_path.pop()
             self.dir = self.dir_path.pop()
+        return self.dir
 
     def get_direction(self) -> Direction:
         return self.dir
