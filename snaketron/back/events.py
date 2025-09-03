@@ -30,7 +30,7 @@ class AgentUpdated:
     death: bool
 
 
-class EventSender:  # TODO: use in the backend class: SnakeWorld
+class EventSender:
     def __init__(
         self,
         arena_events: list[ArenaEvent],
@@ -48,7 +48,7 @@ class EventSender:  # TODO: use in the backend class: SnakeWorld
         self.agent_events[agent_id] = event
 
 
-class EventReceiver:  # TODO: use in the frontend
+class EventReceiver:  # TODO: use in the frontend to update the world display
     def __init__(
         self,
         arena_events: list[ArenaEvent],
