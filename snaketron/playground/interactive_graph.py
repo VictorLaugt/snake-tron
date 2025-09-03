@@ -94,12 +94,12 @@ class InteractiveGrid(tk.Tk, abc.ABC):
 
     # ---- graph setters
     def commute(self, u: int, v: int) -> None:
-        if self.graph.pos_is_free((u, v)):
-            self.graph.add_obstacle((u, v))
+        if self.graph.get_obstacle_count((u, v)) == 0:
+            self.graph.incr_obstacle_count((u, v), 1)
             self.obstacles.add((u, v))
             self.draw_square(u, v, 'black', other_tag='obstacle')
         else:
-            self.graph.pop_obstacle((u, v))
+            self.graph.incr_obstacle_count((u, v), -1)
             self.obstacles.remove((u, v))
             self.canvas.delete((u, v))
 
@@ -181,7 +181,7 @@ class AStarInteractiveTester(InteractiveGrid):
     def command_clear_obstacles(self) -> None:
         self.canvas.delete('obstacle')
         for u, v in self.obstacles:
-            self.graph.pop_obstacle((u, v))
+            self.graph.incr_obstacle_count((u, v), -1)
         self.obstacles.clear()
 
     def command_compute_path(self) -> None:
@@ -257,7 +257,7 @@ class VoronoiInteractiveTester(InteractiveGrid):
         self.canvas.delete('vertex')
         self.canvas.delete('obstacle')
         for u, v in self.obstacles:
-            self.graph.pop_obstacle((u, v))
+            self.graph.incr_obstacle_count((u, v), -1)
         self.obstacles.clear()
 
     def command_compute_vertex(self) -> None:

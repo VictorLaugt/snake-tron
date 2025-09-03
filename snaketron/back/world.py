@@ -204,18 +204,15 @@ class SnakeWorld(AbstractGridGraph):
         return self.height
 
 
-    def pop_obstacle(self, p: Position) -> None:
-        """Removes an obstacle from the position `p`."""
-        assert self.obstacle_count[p] > 0
-        self.obstacle_count[p] -= 1
+    def incr_obstacle_count(self, p: Position, n: int) -> None:
+        """Increments by `n` the obstacle count at position `p`."""
+        self.obstacle_count[p] += n
 
-    def add_obstacle(self, p: Position) -> None:
-        """Puts an obstacle on the position `p`."""
-        self.obstacle_count[p] += 1
-
-    def pos_is_free(self, p: Position) -> bool:
-        """Returns True if there is no obstacle on the position `p`, False otherwise."""
-        return self.obstacle_count[p] == 0
+    def get_obstacle_count(self, p: Position) -> int:
+        """Returns the number of obstacle on the position `p`. The position `p`
+        is free iff its obstacle count is zero.
+        """
+        return self.obstacle_count[p]
 
 
     def get_neighbor(self, p: Position, d: Direction) -> Position:

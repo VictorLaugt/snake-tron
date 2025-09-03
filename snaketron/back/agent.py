@@ -67,45 +67,49 @@ class AbstractSnakeAgent(ABC):
     def move(self, d: Direction) -> None:
         """Moves once the snake in the direction `d`."""
         new_head = self.world.get_neighbor(self.pos[-1], d)
-        self.world.add_obstacle(new_head)
+        self.world.incr_obstacle_count(new_head, 1)
         self.pos.append(new_head)
         self.last_tail_pos = self.pos.popleft()
-        self.world.pop_obstacle(self.last_tail_pos)
+        self.world.incr_obstacle_count(self.last_tail_pos, -1)
 
     def check_self_collision(self) -> int:
         """Returns the length which should be cutted from the snake's tail if it
-        collides with its head. Else, returns 0.
+        collides with its head, 0 otherwise.
         """
-        return (self.pos.index(self.pos[-1]) + 1) % len(self.pos)
+        head = self.pos[-1]
+        if self.world.get_obstacle_count(head) > 1:
+            return (self.pos.index(head) + 1) % len(self.pos)
+        return 0
 
     def cut(self, cut_length: int) -> None:
         """Removes the `cut_length` last cells from the snake."""
         for _ in range(cut_length):
-            self.world.pop_obstacle(self.pos.popleft())
+            self.world.incr_obstacle_count(self.pos.popleft(), -1)
 
-    def grow(self) -> bool:
-        """Adds a cell at the end of the snake's tail."""
+    def grow(self, growth: int) -> bool:
+        """Adds `growth` cells at the end of the snake's tail."""
         if self.last_tail_pos is not None:
             self.pos.appendleft(self.last_tail_pos)
-            self.world.add_obstacle(self.last_tail_pos)
+            self.world.incr_obstacle_count(self.last_tail_pos, 1)
             self.last_tail_pos = None
             return True
         return False
 
-    def collides_another(self) -> bool:
-        """Returns True if the snake collides another snake of the world, False
-        otherwise.
+    def collides_another(self) -> Optional[AbstractSnakeAgent]:
+        """Checks whether the snake collides with another snake of the world.
+        Returns the collided snake if found, otherwise None.
         """
-        for other in self.world.iter_alive_agents():
-            if self is not other and self.pos[-1] in other.pos:
-                return True
-        return False
+        head = self.pos[-1]
+        if self.world.get_obstacle_count(head) > 1:
+            for other in self.world.iter_alive_agents():
+                if self is not other and head in other.pos:
+                    return other
 
     def die(self) -> None:
         """Kills the snake."""
         self.alive = False
         for p in self.pos:
-            self.world.pop_obstacle(p)
+            self.world.incr_obstacle_count(p, -1)
 
     def is_alive(self) -> bool:
         """Returns True if the snake is alive, False otherwise."""
@@ -239,7 +243,7 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         path_len = 0
 
         for i, dst in enumerate(destinations):
-            if self.world.pos_is_free(dst):
+            if self.world.get_obstacle_count(dst) == 0:
                 heuristic = self.heuristic_type(self.get_world(), dst[0], dst[1])
                 x_path, y_path, dir_path = shortest_path(self.world, head, dst, heuristic, max_iteraton=450)
                 path_len = len(dir_path)
@@ -285,7 +289,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
                 new_layer = []
                 for position in layer:
                     for neighbor, direction in self.world.iter_free_neighbors(position):
-                        self.world.add_obstacle(neighbor)
+                        self.world.incr_obstacle_count(neighbor, 1)
                         new_layer.append(neighbor)
                 danger_layers.append(new_layer)
                 layer = new_layer
@@ -295,7 +299,7 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         """Removes the virtual obstacles from the world."""
         for layer in danger_layers:
             for position in layer:
-                self.world.pop_obstacle(position)
+                self.world.incr_obstacle_count(position, -1)
 
     def compute_path_to_nearest_food(self) -> bool:
         """Tries to compute the shortest path to the nearest food.
@@ -349,7 +353,7 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
             new_impact_positions: list[Position] = []
             for agent, pos in zip(potential_targets, impact_positions):
                 pos = self.world.get_neighbor(pos, agent.get_direction())
-                if self.world.pos_is_free(pos):
+                if self.world.get_obstacle_count(pos) == 0:
                     new_impact_positions.append(pos)
                     new_potential_targets.append(agent)
             potential_targets = new_potential_targets
