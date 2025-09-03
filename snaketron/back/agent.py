@@ -15,11 +15,16 @@ if TYPE_CHECKING:
 
 
 class AbstractSnakeAgent(ABC):
-    def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position]) -> None:
+    def __init__(
+        self,
+        world: SnakeWorld,
+        initial_pos: Sequence[Position],
+        alive: bool
+    ) -> None:
         assert len(initial_pos) > 0
         self.agent_id = -1
         self.world = world
-        self.alive = True
+        self.alive = alive
         self.initial_pos = initial_pos
         self.pos = deque(initial_pos)
         self.last_tail_pos = None
@@ -117,8 +122,14 @@ class AbstractSnakeAgent(ABC):
 
 class PlayerSnakeAgent(AbstractSnakeAgent):
     """Implements a snake agent which can be controlled by a request queuing system."""
-    def __init__(self, world: SnakeWorld, initial_pos: Sequence[Position], initial_dir: Direction) -> None:
-        super().__init__(world, initial_pos)
+    def __init__(
+        self,
+        world: SnakeWorld,
+        initial_pos: Sequence[Position],
+        initial_dir: Direction,
+        alive: bool=True
+    ) -> None:
+        super().__init__(world, initial_pos, alive)
         self.initial_dir = initial_dir
         self.dir = initial_dir
         self.dir_requests: deque[Direction] = deque((), maxlen=5)
@@ -156,10 +167,11 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         initial_pos: Sequence[Position],
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic],
-        latency: int=0
+        latency: int=0,
+        alive: bool=True
     ) -> None:
         assert latency >= 0
-        super().__init__(world, initial_pos)
+        super().__init__(world, initial_pos, alive)
 
         self.initial_dir = initial_dir
         self.x_path: list[int] = []
@@ -255,10 +267,11 @@ class AStarSnakeAgent(AbstractAISnakeAgent):
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic],
         latency: int=0,
-        caution: int=0
+        caution: int=0,
+        alive: bool=True
     ) -> None:
         assert caution >= 0
-        super().__init__(world, initial_pos, initial_dir, heuristic_type, latency)
+        super().__init__(world, initial_pos, initial_dir, heuristic_type, latency, alive)
         self.caution_radius = caution
 
     def start_avoid(self, dangerous_agents: Iterable[AbstractSnakeAgent]) -> list[list[Position]]:
@@ -308,9 +321,10 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
         heuristic_type: Type[AbstractHeuristic],
         latency: int=0,
         caution: int=0,
-        attack_anticipation: int=15
+        attack_anticipation: int=15,
+        alive: bool=True
     ) -> None:
-        super().__init__(world, initial_pos, initial_dir, heuristic_type, latency, caution)
+        super().__init__(world, initial_pos, initial_dir, heuristic_type, latency, caution, alive)
         self.attack_anticipation = attack_anticipation
         self.target: Optional[AbstractSnakeAgent] = None
         self.opponents: list[AbstractSnakeAgent] = []

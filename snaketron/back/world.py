@@ -236,10 +236,10 @@ class SnakeWorld(AbstractGridGraph):
         return iter(self.food_pos)
 
 
-    def attach_agent(self, agent: AbstractSnakeAgent, alive: bool=True) -> None:
+    def attach_agent(self, agent: AbstractSnakeAgent) -> None:
         """Adds a new agent in the world."""
         agent.set_id(len(self.alive_agents) + len(self.dead_agents))
-        if alive:
+        if agent.is_alive():
             self.alive_agents.append(agent)
         else:
             self.dead_agents.append(agent)
