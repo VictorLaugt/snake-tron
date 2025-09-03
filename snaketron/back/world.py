@@ -8,11 +8,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
 from back.voronoi import furthest_voronoi_vertex
+from back.events import FoodCreated, FoodConsumed, AgentUpdate
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional, Sequence
 
     from back.agent import AbstractSnakeAgent
+    from back.events import EventSender
     from back.type_hints import Direction, Position
 
 
@@ -82,7 +84,8 @@ class SnakeWorld(AbstractGridGraph):
         width: int,
         height: int,
         n_food: int,
-        respawn_cooldown: Optional[int]=None
+        respawn_cooldown: Optional[int]=None,
+        event_sender: Optional[EventSender]=None
     ) -> None:
         assert width > 0 and height > 0
         assert n_food >= 0
@@ -102,6 +105,8 @@ class SnakeWorld(AbstractGridGraph):
         self.alive_agents: list[AbstractSnakeAgent] = []
         self.dead_agents: deque[AbstractSnakeAgent] = deque()
 
+        self.event_sender = event_sender
+
     def __repr__(self) -> str:
         repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
         for y in range(self.height):
@@ -120,6 +125,7 @@ class SnakeWorld(AbstractGridGraph):
             head_count = sum((agent.get_head() == p) for agent in self.alive_agents)
             if head_count == 1:
                 self.food_pos.remove(p)
+                self.event_sender.send_arena_event(FoodConsumed(p))
                 return True
         return False
 
@@ -141,6 +147,7 @@ class SnakeWorld(AbstractGridGraph):
             if pos is None:
                 break
             self.food_pos.add(pos)
+            self.event_sender.send_arena_event(FoodCreated(pos))
 
 
     def _kill_agents(self, deads: Sequence[AbstractSnakeAgent]) -> None:

@@ -15,12 +15,14 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agent import AbstractAISnakeAgent, PlayerSnakeAgent
+    from back.events import EventReceiver
     from back.world import SnakeWorld
 
 
 class SnakeTronApp(App):
     def __init__(
         self,
+        event_receiver: EventReceiver,
         world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],

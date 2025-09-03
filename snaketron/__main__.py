@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from back.agent import (AStarOffensiveSnakeAgent, AStarSnakeAgent,
                         PlayerSnakeAgent)
 from back.direction import DOWN, LEFT, RIGHT, UP
+from back.events import build_event_pipe
 from back.world import (EuclidianDistanceHeuristic,
                         EuclidianDistancePeriodicHeuristic,
                         ManhattanDistanceHeuristic, SnakeWorld)
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agent import AbstractAISnakeAgent
+    from back.events import EventSender
 
 """
 TODO:
@@ -44,6 +46,7 @@ def define_opponents(
 
 
 def build_game(
+    event_sender: EventSender,
     height: int,
     width: int,
     n_food: int,
@@ -75,7 +78,7 @@ def build_game(
 
     attack_anticipation = int(0.15*(height + width))
 
-    world = SnakeWorld(width, height, n_food, respawn_cooldown)
+    world = SnakeWorld(width, height, n_food, respawn_cooldown, event_sender)
     player_agents: list[PlayerSnakeAgent] = []
     ai_agents: list[AStarOffensiveSnakeAgent] = []
 
@@ -141,13 +144,15 @@ n_food = n_snakes - 1
 time_step = 0.25
 # time_step = 0.3
 
-
+event_sender, event_receiver = build_event_pipe()
 world, player_agents, ai_agents = build_game(
+    event_sender,
     height, width,
     n_food, n_snakes, n_players,
     respawn_cooldown
 )
 gui = SnakeTronApp(
+    event_receiver,
     world, player_agents, ai_agents,
     time_step, ai_explanations=False,
     layout_file=Path('front', 'mobile_layout.kv'),
