@@ -138,7 +138,7 @@ n_snakes = 4
 n_players = 1
 
 respawn_cooldown = 10
-n_food = n_snakes - 1
+n_food = max(n_snakes - 1, 1)
 
 # time_step = 0.2
 time_step = 0.25
