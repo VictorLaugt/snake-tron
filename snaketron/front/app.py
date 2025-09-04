@@ -41,7 +41,7 @@ class SnakeTronApp(App):
         self.layout_file = layout_file
         self.color_file = color_file
 
-    def build(self) -> None:
+    def build(self) -> SnakeTronWindow:
         with self.layout_file.open(mode='r') as fp:
             layout_string = fp.read()
         Builder.load_string(layout_string)

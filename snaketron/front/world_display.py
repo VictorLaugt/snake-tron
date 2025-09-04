@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.widget import Widget
 
 if TYPE_CHECKING:
     from typing import Iterable, Sequence
@@ -15,6 +14,7 @@ if TYPE_CHECKING:
     from back.type_hints import Position
     from back.world import SnakeWorld
     from front.type_hints import ColorValue, Coordinate
+    from kivy.uix.widget import Widget
 
 
 @dataclass
