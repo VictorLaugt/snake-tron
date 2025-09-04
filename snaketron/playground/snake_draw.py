@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections import deque
 from typing import TYPE_CHECKING
 
 from back.direction import DOWN, LEFT, RIGHT, UP
+from back.events import AgentUpdated, FoodConsumed, FoodCreated
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Keyboard, Window, WindowBase
@@ -12,7 +14,7 @@ from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
 if TYPE_CHECKING:
-    from typing import Optional, Sequence
+    from typing import Iterable, Optional, Sequence
 
     from back.agent import PlayerSnakeAgent
     from back.events import EventReceiver
@@ -49,7 +51,7 @@ class MinimalistSnakeTronApp(App):
         Builder.load_string(KV)
 
         window = MinimalistWorldDisplay()
-        window.init_logic(self.world, self.player, self.time_step)
+        window.init_logic(self.event_receiver, self.world, self.player, self.time_step)
         return window
 
 
@@ -57,22 +59,24 @@ class MinimalistWorldDisplay(FloatLayout):
     square_size = NumericProperty(10.)
 
     instr_arena: InstructionGroup
-    instr: InstructionGroup
     world: SnakeWorld
     player: PlayerSnakeAgent
 
     def on_kv_post(self, base_widget: Widget) -> None:
         self.instr_arena = InstructionGroup()
-        self.instr = InstructionGroup()
         self.canvas.add(self.instr_arena)
-        self.canvas.add(self.instr)
+
+        self.food_drawer = FoodDrawer(self)
+        self.snake_drawer = SnakeDrawer(self)
 
     def init_logic(
         self,
+        event_receiver: EventReceiver,
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float
     ) -> None:
+        self.event_receiver = event_receiver
         self.world = world
         self.player = player
         self.time_step = time_step
@@ -106,7 +110,7 @@ class MinimalistWorldDisplay(FloatLayout):
         )
 
     def on_square_size(self, instance: Widget, value: float) -> None:
-        self.draw_arena()
+        self.redraw()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (
@@ -131,28 +135,118 @@ class MinimalistWorldDisplay(FloatLayout):
             self.instr_arena.add(Line(points=(x0, y, x1, y)))
 
     def draw_world(self) -> None:
-        self.instr.clear()
+        for event in self.event_receiver.recv_arena_events():
+            if isinstance(event, FoodCreated):
+                self.food_drawer.draw_food(event.pos)
+            elif isinstance(event, FoodConsumed):
+                self.food_drawer.remove_food(event.pos)
 
-        def square(x: float, y: float) -> Rectangle:
-            return Rectangle(pos=(x, y), size=(self.square_size, self.square_size))
+        # self.snake_drawer.reset(self.player.iter_cells())
+        for agent_id, event in self.event_receiver.recv_agent_events():
+            if agent_id == player.get_id():
+                self.snake_drawer.update_draw(event.new_head_pos, event.growth)
 
-        def circle(x: float, y: float) -> Ellipse:
-            return Ellipse(pos=(x, y), size=(self.square_size, self.square_size))
-
-        for food in self.world.iter_food():
-            x, y = self.pos_to_coord(food)
-            self.instr.add(Color(0, 1, 0))
-            self.instr.add(circle(x, y))
-
-        for snake in self.world.iter_alive_agents():
-            self.instr.add(Color(1, 1, 1))
-            for cell in snake.iter_cells():
-                x, y = self.pos_to_coord(cell)
-                self.instr.add(square(x, y))
+    def redraw(self) -> None:
+        self.draw_arena()
+        self.food_drawer.reset()
+        self.snake_drawer.reset(self.player.iter_cells())
 
     def game_step(self, dt: float) -> None:
         self.world.simulate()
         self.draw_world()
+
+
+class FoodDrawer:
+    food_color = (0., 1., 0.)
+
+    def __init__(self, world_display: MinimalistWorldDisplay) -> None:
+        self.display = world_display
+        self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
+        self.foods: dict[int, Ellipse] = {}
+
+    def reset(self) -> None:
+        self.instr.clear()
+        for pos in self.foods.keys():
+            self.draw_food(pos)
+
+    def draw_food(self, pos: Position) -> None:
+        x, y = self.display.pos_to_coord(pos)
+        s = self.display.square_size
+        self.instr.add(Color(*self.food_color))
+        circle = Ellipse(pos=(x, y), size=(s, s))
+        self.instr.add(circle)
+        self.foods[pos] = circle
+
+    def remove_food(self, pos: Position) -> None:
+        circle = self.foods.pop(pos)
+        self.instr.remove(circle)
+
+
+class SnakeDrawer:
+    head_color = (1., 1., 1.)
+    tail_color = (.7, .7, .7)
+
+    def __init__(self, world_display: MinimalistWorldDisplay) -> None:
+        self.display = world_display
+        self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
+
+        self.head_square: Rectangle = None
+        self.head_pos: Position = None
+
+        # [bout de queue <----> 1 avant la tête]
+        self.tail_squares: deque[Rectangle] = deque()
+        self.tail_pos: deque[Position] = deque()
+
+        self.reserve = 0
+
+    def _square(self, pos: Position) -> Rectangle:
+        x, y = self.display.pos_to_coord(pos)
+        s = self.display.square_size
+        return Rectangle(pos=(x, y), size=(s, s))
+
+    def reset(self, cells: Iterable[Position]) -> None:
+        self.instr.clear()
+        self.tail_squares.clear()
+        self.tail_pos.clear()
+
+        cells = iter(cells)
+        self.head_pos = next(cells)
+        self.head_square = self._square(self.head_pos)
+        self.instr.add(Color(*self.head_color))
+        self.instr.add(self.head_square)
+
+        self.instr.add(Color(*self.tail_color))
+        for pos in cells:
+            sqr = self._square(pos)
+            self.tail_squares.appendleft(sqr)
+            self.tail_pos.appendleft(pos)
+            self.instr.add(sqr)
+
+    def update_draw(self, new_head_pos: Position, growth: int) -> None:
+        # creates a tail square at the previous position of the head
+        sqr = self._square(self.head_pos)
+        self.tail_pos.append(self.head_pos)
+        self.tail_squares.append(sqr)
+        self.instr.add(Color(*self.tail_color))
+        self.instr.add(sqr)
+
+        # removes the previous head square
+        self.head_pos = new_head_pos
+        self.instr.remove(self.head_square)
+
+        # creates the head square at the new position of the head
+        self.head_square = self._square(self.head_pos)
+        self.instr.add(Color(*self.head_color))
+        self.instr.add(self.head_square)
+
+        if growth <= 0:  # TODO: handle case where growth >= 2 i.e the snake grows of multiple cells at the same time
+            # removes squares at the end of the tail
+            for _ in range(1-growth):
+                sqr = self.tail_squares.popleft()
+                self.instr.remove(sqr)
+                self.tail_pos.popleft()
 
 
 if __name__ == '__main__':

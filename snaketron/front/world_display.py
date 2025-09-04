@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -165,3 +166,102 @@ class WorldDisplay(FloatLayout):
         self.draw_alive_snakes()
         self.draw_food()
         self.draw_killed_snakes(dead_snakes)
+
+
+class FoodDrawer:
+    def __init__(
+        self,
+        world_display: WorldDisplay,
+        colors: WorldColors
+    ) -> None:
+        self.colors = colors
+        self.display = world_display
+        self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
+
+        self.foods: dict[int, Ellipse] = {}
+
+    def reset(self) -> None:
+        self.instr.clear()
+        for pos in self.foods.keys():
+            self.draw_food(pos)
+
+    def draw_food(self, pos: Position) -> None:
+        x, y = self.display.pos_to_coord(pos)
+        s = self.display.square_size
+        self.instr.add(Color(*self.colors.food))
+        circle = Ellipse(pos=(x, y), size=(s, s))
+        self.instr.add(circle)
+        self.foods[pos] = circle
+
+    def remove_food(self, pos: Position) -> None:
+        circle = self.foods.pop(pos)
+        self.instr.remove(circle)
+
+
+class SnakeDrawer:
+    def __init__(
+        self,
+        world_display: WorldDisplay,
+        colors: SnakeColors
+    ) -> None:
+        self.colors = colors
+        self.display = world_display
+        self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
+
+        self.head_square: Rectangle = None
+        self.tail_squares: deque[Rectangle] = deque()
+
+        self.head_pos: Position = None
+        self.tail_pos: deque[Position] = deque()
+
+    def _square(self, pos: Position) -> Rectangle:
+        x, y = self.display.pos_to_coord(pos)
+        s = self.display.square_size
+        return Rectangle(pos=(x, y), size=(s, s))
+
+    def reset(self, cells: Iterable[Position]) -> None:
+        self.instr.clear()
+        self.tail_squares.clear()
+        self.tail_pos.clear()
+
+        # draws the head
+        cells = iter(cells)
+        self.head_pos = next(cells)
+        self.head_square = self._square(self.head_pos)
+        self.instr.add(Color(*self.colors.head))
+        self.instr.add(self.head_square)
+
+        # draws the tail
+        self.instr.add(Color(*self.colors.tail))
+        for pos in cells:
+            sqr = self._square(pos)
+            self.tail_squares.appendleft(sqr)
+            self.tail_pos.appendleft(pos)
+            self.instr.add(sqr)
+
+    # TODO: snake death
+    def update_draw(self, new_head_pos: Position, growth: int, death: bool) -> None:
+        # creates a tail square at the previous position of the head
+        sqr = self._square(self.head_pos)
+        self.tail_pos.append(self.head_pos)
+        self.tail_squares.append(sqr)
+        self.instr.add(Color(*self.colors.tail))
+        self.instr.add(sqr)
+
+        # removes the previous head square
+        self.head_pos = new_head_pos
+        self.instr.remove(self.head_square)
+
+        # creates the head square at the new position of the head
+        self.head_square = self._square(self.head_pos)
+        self.instr.add(Color(*self.colors.head))
+        self.instr.add(self.head_square)
+
+        if growth <= 0:  # TODO: handle case where growth >= 2 i.e the snake grows of multiple cells at the same time
+            # removes squares at the end of the tail
+            for _ in range(1-growth):
+                sqr = self.tail_squares.popleft()
+                self.instr.remove(sqr)
+                self.tail_pos.popleft()
