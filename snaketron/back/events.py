@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -33,7 +34,7 @@ class AgentUpdated:
 class EventSender:
     def __init__(
         self,
-        arena_events: list[ArenaEvent],
+        arena_events: deque[ArenaEvent],
         agent_events: dict[int, AgentUpdated]
     ) -> None:
         self.arena_events = arena_events
@@ -51,14 +52,15 @@ class EventSender:
 class EventReceiver:  # TODO: use in the frontend to update the world display
     def __init__(
         self,
-        arena_events: list[ArenaEvent],
+        arena_events: deque[ArenaEvent],
         agent_events: dict[int, AgentUpdated]
     ) -> None:
         self.arena_events = arena_events
         self.agent_events = agent_events
 
     def recv_arena_events(self) -> Iterator[ArenaEvent]:
-        return iter(self.arena_events)
+        while self.arena_events:
+            yield self.arena_events.popleft()
 
     def recv_agent_events(self) -> Iterator[tuple[int, AgentUpdated]]:
         while self.agent_events:
@@ -66,7 +68,7 @@ class EventReceiver:  # TODO: use in the frontend to update the world display
 
 
 def build_event_pipe() -> tuple[EventSender, EventReceiver]:
-    arena_events = []
+    arena_events = deque()
     agent_events = {}
     sender = EventSender(arena_events, agent_events)
     receiver = EventReceiver(arena_events, agent_events)
