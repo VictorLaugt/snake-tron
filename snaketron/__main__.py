@@ -151,11 +151,11 @@ world, player_agents, ai_agents = build_game(
     n_food, n_snakes, n_players,
     respawn_cooldown
 )
-gui = SnakeTronApp(
+app = SnakeTronApp(
     event_receiver,
     world, player_agents, ai_agents,
     time_step, ai_explanations=False,
     layout_file=Path('front', 'mobile_layout.kv'),
     color_file=Path('front', 'colors', 'dark.json')
 )
-gui.run()
+app.run()

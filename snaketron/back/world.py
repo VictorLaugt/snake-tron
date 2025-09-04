@@ -88,7 +88,7 @@ class SnakeWorld(AbstractGridGraph):
         height: int,
         n_food: int,
         respawn_cooldown: Optional[int]=None,
-        event_sender: Optional[EventSender]=None
+        event_sender: Optional[EventSender]=None  # FIXME: event_sender should not be optional
     ) -> None:
         assert width > 0 and height > 0
         assert n_food >= 0
