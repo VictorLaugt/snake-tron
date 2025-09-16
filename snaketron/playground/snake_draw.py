@@ -199,8 +199,6 @@ class SnakeDrawer:
         self.tail_squares: deque[Rectangle] = deque()
         self.tail_pos: deque[Position] = deque()
 
-        self.reserve = 0
-
     def _square(self, pos: Position) -> Rectangle:
         x, y = self.display.pos_to_coord(pos)
         s = self.display.square_size
