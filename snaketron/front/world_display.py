@@ -241,8 +241,8 @@ class SnakeDrawer:
             self.tail_pos.appendleft(pos)
             self.instr.add(sqr)
 
-    # TODO: snake death
     def update_draw(self, new_head_pos: Position, growth: int, death: bool) -> None:
+        # TODO: draw snake death
         # creates a tail square at the previous position of the head
         sqr = self._square(self.head_pos)
         self.tail_pos.append(self.head_pos)
@@ -259,9 +259,19 @@ class SnakeDrawer:
         self.instr.add(Color(*self.colors.head))
         self.instr.add(self.head_square)
 
-        if growth <= 0:  # TODO: handle case where growth >= 2 i.e the snake grows of multiple cells at the same time
+        if growth <= 0:
             # removes squares at the end of the tail
             for _ in range(1-growth):
                 sqr = self.tail_squares.popleft()
                 self.instr.remove(sqr)
                 self.tail_pos.popleft()
+
+        elif growth >= 2:
+            # adds squares at the end of the tail
+            for _ in range(growth-1):
+                pos = self.tail_pos[0]
+                self.tail_pos.appendleft(pos)
+                sqr = self._square(pos)
+                self.tail_squares.appendleft(sqr)
+                self.instr.add(Color(*self.tail_color))
+                self.instr.add(sqr)

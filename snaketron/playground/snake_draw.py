@@ -146,6 +146,8 @@ class MinimalistWorldDisplay(FloatLayout):
             if agent_id == player.get_id():
                 self.snake_drawer.update_draw(event.new_head_pos, event.growth)
 
+        print(f"\nDEBUG:\n{self.world}")
+
     def redraw(self) -> None:
         self.draw_arena()
         self.food_drawer.reset()
@@ -239,12 +241,22 @@ class SnakeDrawer:
         self.instr.add(Color(*self.head_color))
         self.instr.add(self.head_square)
 
-        if growth <= 0:  # TODO: handle case where growth >= 2 i.e the snake grows of multiple cells at the same time
+        if growth <= 0:
             # removes squares at the end of the tail
             for _ in range(1-growth):
                 sqr = self.tail_squares.popleft()
                 self.instr.remove(sqr)
                 self.tail_pos.popleft()
+
+        elif growth >= 2:
+            # adds squares at the end of the tail
+            for _ in range(growth-1):
+                pos = self.tail_pos[0]
+                self.tail_pos.appendleft(pos)
+                sqr = self._square(pos)
+                self.tail_squares.appendleft(sqr)
+                self.instr.add(Color(*self.tail_color))
+                self.instr.add(sqr)
 
 
 if __name__ == '__main__':
@@ -257,7 +269,7 @@ if __name__ == '__main__':
     init_pos = [(2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7)]
     init_dir = (0, -1)
 
-    world = SnakeWorld(width=10, height=10, n_food=1, event_sender=sender)
+    world = SnakeWorld(width=15, height=15, n_food=1, event_sender=sender)
     player = PlayerSnakeAgent(world, init_pos, init_dir)
     world.attach_agent(player)
 
