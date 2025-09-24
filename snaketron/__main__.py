@@ -135,14 +135,14 @@ height, width = 21, 21
 # height, width = 40, 40
 
 n_snakes = 4
-n_players = 1
+n_players = 2
 
 respawn_cooldown = 10
 n_food = max(n_snakes - 1, 1)
 
 # time_step = 0.2
-time_step = 0.25
-# time_step = 0.3
+# time_step = 0.25
+time_step = 0.3
 
 event_sender, event_receiver = build_event_pipe()
 world, player_agents, ai_agents = build_game(
