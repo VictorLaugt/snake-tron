@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+ARG UID=1000
+ARG GID=1000
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
@@ -19,7 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsdl2-image-dev \
     libsdl2-mixer-dev \
     libsdl2-ttf-dev \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g ${GID} appgroup && \
+    useradd -m -u ${UID} -g ${GID} appuser && \
+    echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 WORKDIR /app
 COPY requirements.txt /app
@@ -30,4 +38,5 @@ RUN pip install -r /app/requirements.txt
 # for debug
 RUN pip install ipython
 
-CMD cd snaketron/; python __main__.py
+USER appuser
+CMD cd snaketron/ && python __main__.py

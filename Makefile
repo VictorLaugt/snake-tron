@@ -29,7 +29,9 @@ build: $(IMAGEBUILT)
 
 $(IMAGEBUILT): $(DOCKERFILE)
 	@echo "Building image: $(IMAGENAME)"
-	@sudo docker build -t "$(IMAGENAME)" "$(CONTEXT_DIR)"
+	@sudo bash -c 'docker build \
+		-t "$(IMAGENAME)" "$(CONTEXT_DIR)" \
+		--build-arg UID=$$SUDO_UID --build-arg GID=$$SUDO_GID'
 	@echo $(IMAGENAME) > $(IMAGEBUILT)
 
 clean:
@@ -41,5 +43,8 @@ clean:
 		sudo docker rmi -f $$image || true; \
 	done < $(IMAGEBUILT);
 	@rm $(IMAGEBUILT)
+
+	@echo "Removing python app cache"
+	@find . -mindepth 1 -type d -name __pycache__ -exec rm -r {} +
 
 .PHONY: run build clean
