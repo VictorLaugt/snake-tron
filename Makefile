@@ -19,6 +19,7 @@ debug: $(DOCKERFILE) $(IMAGEBUILT)
 	xhost +local:docker && \
 	trap 'xhost -local:docker' INT TERM EXIT && \
 	sudo docker run --rm -it \
+		--device /dev/snd \
 		-e DISPLAY=$$DISPLAY \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
 		-v "$(realpath $(SOURCE_DIR)):/app/snaketron" \
