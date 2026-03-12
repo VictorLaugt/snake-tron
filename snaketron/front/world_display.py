@@ -33,7 +33,6 @@ class SnakeColors:
     tail: ColorValue
     decay_first: ColorValue
     decay_final: ColorValue
-    # dead: ColorValue  # TODO: allow the death color gradient animation by separating the attribute dead into decay_first and decay_final
     inspect: ColorValue
 
 
