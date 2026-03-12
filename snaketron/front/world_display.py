@@ -31,7 +31,9 @@ class WorldColors:
 class SnakeColors:
     head: ColorValue
     tail: ColorValue
-    dead: ColorValue  # TODO: allow the death color gradient animation by separating the attribute dead into decay_first and decay_final
+    decay_first: ColorValue
+    decay_final: ColorValue
+    # dead: ColorValue  # TODO: allow the death color gradient animation by separating the attribute dead into decay_first and decay_final
     inspect: ColorValue
 
 
@@ -140,7 +142,7 @@ class WorldDisplay(FloatLayout):
 
     def draw_killed_snakes(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         for snake in dead_snakes:
-            color = self.snake_colors[snake.get_id()].dead
+            color = self.snake_colors[snake.get_id()].decay_first
             for pos in snake.iter_cells():
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, color)

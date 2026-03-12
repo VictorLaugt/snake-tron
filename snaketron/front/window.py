@@ -89,7 +89,8 @@ class SnakeTronWindow(BoxLayout):
             agent_colors[agent_id] = SnakeColors(
                 head=get_color_from_hex(head_color_wheel[agent_id % len(head_color_wheel)]),
                 tail=get_color_from_hex(tail_color_wheel[agent_id % len(tail_color_wheel)]),
-                dead=get_color_from_hex(colors['snakes']['dead']),
+                decay_first=get_color_from_hex(colors['snakes']['decay_first']),
+                decay_final=get_color_from_hex(colors['snakes']['decay_final']),
                 inspect=get_color_from_hex(colors['snakes']['inspect'])
             )
 
