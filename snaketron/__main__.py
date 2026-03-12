@@ -78,7 +78,7 @@ def build_game(
 
     attack_anticipation = int(0.15*(height + width))
 
-    world = SnakeWorld(width, height, n_food, respawn_cooldown, event_sender)
+    world = SnakeWorld(width, height, n_food, event_sender, respawn_cooldown)
     player_agents: list[PlayerSnakeAgent] = []
     ai_agents: list[AStarOffensiveSnakeAgent] = []
 
