@@ -31,7 +31,7 @@ class WorldColors:
 class SnakeColors:
     head: ColorValue
     tail: ColorValue
-    dead: ColorValue
+    dead: ColorValue  # TODO: allow the death color gradient animation by separating the attribute dead into decay_first and decay_final
     inspect: ColorValue
 
 
@@ -199,7 +199,7 @@ class FoodDrawer:
         self.instr.remove(circle)
 
 
-class SnakeDrawer:
+class SnakeDrawer:  # TODO: implement the SnakeDrawer class from the test playground, which works totally fine
     def __init__(
         self,
         world_display: WorldDisplay,
@@ -211,10 +211,12 @@ class SnakeDrawer:
         self.display.canvas.add(self.instr)
 
         self.head_square: Rectangle = None
-        self.tail_squares: deque[Rectangle] = deque()
-
         self.head_pos: Position = None
+
+        # [end of tail, ..., 1 square before head]
+        self.tail_squares: deque[Rectangle] = deque()
         self.tail_pos: deque[Position] = deque()
+
 
     def _square(self, pos: Position) -> Rectangle:
         x, y = self.display.pos_to_coord(pos)
@@ -242,7 +244,6 @@ class SnakeDrawer:
             self.instr.add(sqr)
 
     def update_draw(self, new_head_pos: Position, growth: int, death: bool) -> None:
-        # TODO: draw snake death
         # creates a tail square at the previous position of the head
         sqr = self._square(self.head_pos)
         self.tail_pos.append(self.head_pos)
