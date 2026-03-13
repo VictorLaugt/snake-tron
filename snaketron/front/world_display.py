@@ -340,6 +340,7 @@ class SnakeDrawer:
             # snake dies
             if event.death:
                 self.alive = False
+                self._move_snake(event.new_head_pos, event.growth)
                 self._init_decay()
                 self._decay()
 
