@@ -48,20 +48,16 @@ class WorldDisplay(FloatLayout):
 
     event_receiver: EventReceiver
     world: SnakeWorld
-    ai_snakes: Sequence[AbstractAISnakeAgent]
     ai_explanations: bool
 
-    instr_arena: InstructionGroup
-    food_drawer: FoodDrawer
-    snake_drawers: dict[int, SnakeDrawer]
+    arena_drawer: ArenaDrawer
+    ai_inspection_drawers: list[AiInspectionDrawer]
+    food_draw_updater: FoodDrawUpdater
+    snake_draw_updaters: dict[int, SnakeDrawUpdater]
     snake_updates: dict[int, AgentUpdated]
 
     world_colors: WorldColors
     snake_colors: SnakeColors
-
-    def on_kv_post(self, base_widget: Widget) -> None:
-        self.instr_arena = InstructionGroup()
-        self.canvas.add(self.instr_arena)
 
     def init_logic(
         self,
@@ -73,77 +69,35 @@ class WorldDisplay(FloatLayout):
     ) -> None:
         self.event_receiver = event_receiver
         self.world = world
-        self.ai_snakes = ai_snakes
         self.ai_explanations = False
 
-        self.food_drawer = FoodDrawer(self, world_colors)
+        self.arena_drawer = ArenaDrawer(self, world, world_colors)
+
+        self.ai_inspection_drawers = []
+        for snake in ai_snakes:
+            self.ai_inspection_drawers.append(AiInspectionDrawer(
+                self, snake, snake_colors[snake.get_id()]
+            ))
+
+        self.food_draw_updater = FoodDrawUpdater(self, world_colors)
+
         self.snake_updates = {}
-        self.snake_drawers = {}
+        self.snake_draw_updaters = {}
         for snake in itertools.chain(world.iter_alive_agents(), world.iter_dead_agents()):
             snake_id = snake.get_id()
-            self.snake_drawers[snake_id] = SnakeDrawer(
+            self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(
                 self, snake, snake_colors[snake_id], n_decay_steps=4
             )
 
         self.world_colors = world_colors
         self.snake_colors = snake_colors
-        self.draw_arena()
+        self.arena_drawer.erase_and_draw()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (
             self.x + pos[0] * self.square_size,
             self.y + (self.world.get_height() - 1 - pos[1]) * self.square_size
         )
-
-    def draw_arena(self) -> None:
-        self.instr_arena.clear()
-        h, w = self.world.get_height(), self.world.get_width()
-
-        # background
-        self.instr_arena.add(Color(*self.world_colors.background))
-        self.instr_arena.add(Rectangle(pos=self.pos, size=(w*self.square_size, h*self.square_size)))
-
-        # grid lines every 3 cells
-        self.instr_arena.add(Color(*self.world_colors.gridline))
-        for u in range(3, w, 3):
-            x = self.x + u*self.square_size
-            y0 = self.y
-            y1 = self.y + h*self.square_size
-            self.instr_arena.add(Line(points=(x, y0, x, y1)))
-        for v in range(3, h, 3):
-            y = self.y + (h-v)*self.square_size
-            x0 = self.x
-            x1 = self.x + w*self.square_size
-            self.instr_arena.add(Line(points=(x0, y, x1, y)))
-
-        # grid border
-        self.instr_arena.add(Color(*self.world_colors.gridborder))
-        self.instr_arena.add(Line(points=(
-            self.x, self.y,
-            self.x + w*self.square_size, self.y
-        )))
-        self.instr_arena.add(Line(points=(
-            self.x, self.y + h*self.square_size,
-            self.x + w*self.square_size, self.y + h*self.square_size
-        )))
-        self.instr_arena.add(Line(points=(
-            self.x, self.y,
-            self.x, self.y + h*self.square_size
-        )))
-        self.instr_arena.add(Line(points=(
-            self.x + w*self.square_size, self.y,
-            self.x + w*self.square_size, self.y + h*self.square_size
-        )))
-
-    def draw_ai_inspection(self) -> None:
-        for snake in self.ai_snakes:
-            color = self.snake_colors[snake.get_id()].inspect
-            for pos in snake.inspect():
-                x, y = self.pos_to_coord(pos)
-                self.draw_square(x, y, color)
-
-    def toggle_ai_explanations(self) -> None:
-        self.ai_explanations = not self.ai_explanations
 
     def recompute_square_size(self) -> None:
         self.square_size = min(
@@ -152,18 +106,33 @@ class WorldDisplay(FloatLayout):
         )
 
     def on_square_size(self, instance: Widget, value: float) -> None:
-        self.draw_arena()
-        self.food_drawer.reset()
-        for snake_drawer in self.snake_drawers.values():
-            snake_drawer.reset()
+        self.arena_drawer.erase_and_draw()
 
-    def update_draw(self) -> None:
+        if self.ai_explanations:
+            for ai_inspection_drawer in self.ai_inspection_drawers:
+                ai_inspection_drawer.erase_and_draw()
+
+        self.food_draw_updater.reset()
+        for snake_draw_updater in self.snake_draw_updaters.values():
+            snake_draw_updater.reset()
+
+    def toggle_ai_explanations(self) -> None:
+        self.ai_explanations = not self.ai_explanations
+        if self.ai_explanations:
+            self.update_draw()
+        else:
+            for ai_inspection_drawer in self.ai_inspection_drawers:
+                ai_inspection_drawer.erase()
+
+
+    def _draw_arena_events(self) -> None:
         for event in self.event_receiver.recv_arena_events():
             if isinstance(event, FoodCreated):
-                self.food_drawer.draw_food(event)
+                self.food_draw_updater.draw_food(event)
             elif isinstance(event, FoodConsumed):
-                self.food_drawer.remove_food(event)
+                self.food_draw_updater.erase_food(event)
 
+    def _draw_agent_events(self) -> None:
         for snake_id, event in self.event_receiver.recv_agent_events():
             if isinstance(event, AgentUpdated):
                 self.snake_updates[snake_id] = event
@@ -174,23 +143,114 @@ class WorldDisplay(FloatLayout):
         ):
             snake_id = snake.get_id()
             event = self.snake_updates.pop(snake_id, None)
-            self.snake_drawers[snake_id].update_draw(event)
+            self.snake_draw_updaters[snake_id].update_draw(event)
+
+    def update_draw(self) -> None:
+        if self.ai_explanations:
+            for ai_inspection_drawer in self.ai_inspection_drawers:
+                ai_inspection_drawer.erase_and_draw()
+
+        self._draw_arena_events()
+        self._draw_agent_events()
 
 
-class FoodDrawer:
+class AiInspectionDrawer:
+    def __init__(
+        self,
+        world_display: WorldDisplay,
+        snake: AbstractAISnakeAgent,
+        colors: SnakeColors
+    ) -> None:
+        self.display = world_display
+        self.snake = snake
+
+        self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
+        self.color_values = colors
+
+    def erase(self) -> None:
+        self.instr.clear()
+
+    def erase_and_draw(self) -> None:
+        self.instr.clear()
+        self.instr.add(Color(*self.color_values.inspect))
+        s = self.display.square_size
+        for pos in self.snake.inspect():
+            x, y = self.display.pos_to_coord(pos)
+            self.instr.add(Rectangle(pos=(x, y), size=(s, s)))
+
+
+class ArenaDrawer:
+    def __init__(
+        self,
+        world_display: WorldDisplay,
+        world: SnakeWorld,
+        colors: WorldColors
+    ) -> None:
+        self.display = world_display
+        self.world = world
+
+        self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
+        self.color_values = colors
+
+    def erase_and_draw(self) -> None:
+        self.instr.clear()
+        h, w = self.world.get_height(), self.world.get_width()
+        display_x, display_y = self.display.pos
+        display_s = self.display.square_size
+
+        # background
+        self.instr.add(Color(*self.color_values.background))
+        self.instr.add(Rectangle(pos=(display_x, display_y), size=(w*display_s, h*display_s)))
+
+        # grid lines every 3 cells
+        self.instr.add(Color(*self.color_values.gridline))
+        for u in range(3, w, 3):
+            x = display_x + u*display_s
+            y0 = display_y
+            y1 = display_y + h*display_s
+            self.instr.add(Line(points=(x, y0, x, y1)))
+        for v in range(3, h, 3):
+            y = display_y + (h-v)*display_s
+            x0 = display_x
+            x1 = display_x + w*display_s
+            self.instr.add(Line(points=(x0, y, x1, y)))
+
+        # grid border
+        self.instr.add(Color(*self.color_values.gridborder))
+        self.instr.add(Line(points=(
+            display_x, display_y,
+            display_x + w*display_s, display_y
+        )))
+        self.instr.add(Line(points=(
+            display_x, display_y + h*display_s,
+            display_x + w*display_s, display_y + h*display_s
+        )))
+        self.instr.add(Line(points=(
+            display_x, display_y,
+            display_x, display_y + h*display_s
+        )))
+        self.instr.add(Line(points=(
+            display_x + w*display_s, display_y,
+            display_x + w*display_s, display_y + h*display_s
+        )))
+
+
+class FoodDrawUpdater:
     def __init__(
         self,
         world_display: WorldDisplay,
         colors: WorldColors
     ) -> None:
         self.display = world_display
+
         self.instr = InstructionGroup()
+        self.display.canvas.add(self.instr)
         self.food_color = Color(*colors.food)
 
-        self.display.canvas.add(self.instr)
-        self.instr.add(self.food_color)
-
         self.foods: dict[Position, Ellipse] = {}
+
 
     def _circle(self, pos: Position) -> None:
         x, y = self.display.pos_to_coord(pos)
@@ -210,12 +270,12 @@ class FoodDrawer:
         self.instr.add(circle)
         self.foods[event.pos] = circle
 
-    def remove_food(self, event: FoodConsumed) -> None:
+    def erase_food(self, event: FoodConsumed) -> None:
         circle = self.foods.pop(event.pos)
         self.instr.remove(circle)
 
 
-class SnakeDrawer:
+class SnakeDrawUpdater:
     def __init__(
         self,
         world_display: WorldDisplay,
@@ -226,7 +286,7 @@ class SnakeDrawer:
         self.display = world_display
         self.snake = snake
 
-        self.colors = colors
+        self.color_values = colors
         self.instr = InstructionGroup()
         self.display.canvas.add(self.instr)
 
@@ -236,16 +296,16 @@ class SnakeDrawer:
         # head of the snake
         self.head_square: Rectangle = None
         self.head_pos: Position = None
-        self.head_color = Color(colors.head)
+        self.head_color = Color(*colors.head)
 
         # tail of the snake [end of tail, ..., 1 square before head]
         self.tail_squares: deque[Rectangle] = deque()
         self.tail_pos: deque[Position] = deque()
-        self.tail_color = Color(colors.tail)
+        self.tail_color = Color(*colors.tail)
 
         # decay animation at the snake death
         self.n_decay_steps = n_decay_steps
-        self.decay_step = 0
+        self.decay_step = -1
         self.head_decay_rgb_grad = np.linspace(
             colors.head_decay_first, colors.head_decay_final, n_decay_steps
         )
@@ -260,26 +320,33 @@ class SnakeDrawer:
         return Rectangle(pos=(x, y), size=(s, s))
 
     def reset(self) -> None:
+        decay_in_progress = (0 <= self.decay_step < self.n_decay_steps)
+        if decay_in_progress:
+            self.head_color.rgb = self.head_decay_rgb_grad[self.decay_step]
+            self.tail_color.rgb = self.tail_decay_rgb_grad[self.decay_step]
+        else:
+            self.head_color.rgb = self.color_values.head
+            self.tail_color.rgb = self.color_values.tail
+
         self.instr.clear()
         self.tail_squares.clear()
         self.tail_pos.clear()
 
-        # draws the head
-        cells = self.snake.iter_cells()
-        self.head_pos = next(cells)
-        self.head_square = self._square(self.head_pos)
-        self.head_color.rgb = self.colors.head
-        self.instr.add(self.head_color)
-        self.instr.add(self.head_square)
+        if self.alive or decay_in_progress:
+            # draws the head
+            cells = self.snake.iter_cells()
+            self.head_pos = next(cells)
+            self.head_square = self._square(self.head_pos)
+            self.instr.add(self.head_color)
+            self.instr.add(self.head_square)
 
-        # draws the tail
-        self.tail_color.rgb = self.colors.tail
-        self.instr.add(self.tail_color)
-        for pos in cells:
-            sqr = self._square(pos)
-            self.tail_squares.appendleft(sqr)
-            self.tail_pos.appendleft(pos)
-            self.instr.add(sqr)
+            # draws the tail
+            self.instr.add(self.tail_color)
+            for pos in cells:
+                sqr = self._square(pos)
+                self.tail_squares.appendleft(sqr)
+                self.tail_pos.appendleft(pos)
+                self.instr.add(sqr)
 
     def _move_snake(self, new_head_pos: Position, growth: int) -> None:
         # creates a tail square at the previous position of the head
@@ -315,12 +382,16 @@ class SnakeDrawer:
                 self.instr.add(self.tail_color)
                 self.instr.add(sqr)
 
-    def _init_decay(self) -> None:
-        self.decay_step = 0
-        self.head_color.rgb = self.head_decay_rgb_grad[0]
-        self.tail_color.rgb = self.tail_decay_rgb_grad[0]
+    def _init_decay(self, decay_step: int) -> None:
+        self.decay_step = decay_step
+        self.head_color.rgb = self.head_decay_rgb_grad[decay_step]
+        self.tail_color.rgb = self.tail_decay_rgb_grad[decay_step]
 
     def _decay(self) -> None:
+        # do not decay
+        if self.decay_step < 0:
+            return
+
         # decay in progress
         if self.decay_step < self.n_decay_steps:
             self.head_color.rgb = self.head_decay_rgb_grad[self.decay_step]
@@ -329,6 +400,7 @@ class SnakeDrawer:
 
         # decay over: snake disappear
         else:
+            self.decay_step = -1
             self.instr.clear()
 
     def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
@@ -341,7 +413,7 @@ class SnakeDrawer:
             if event.death:
                 self.alive = False
                 self._move_snake(event.new_head_pos, event.growth)
-                self._init_decay()
+                self._init_decay(0)
                 self._decay()
 
             # snake respawns
