@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
     from back.agent import (AbstractAISnakeAgent, AbstractSnakeAgent,
                             PlayerSnakeAgent)
+    from back.events import EventReceiver
     from back.world import SnakeWorld
     from kivy.clock import ClockEvent
     from kivy.uix.widget import Widget
@@ -35,7 +36,6 @@ class SnakeTronWindow(BoxLayout):
     keyboard_controls: list[KeyBoardControls]
     paused: bool
     full_speed: bool
-    ai_explanations: bool
     regular_time_step: float
     time_step: float
     clock_event: ClockEvent
@@ -57,6 +57,7 @@ class SnakeTronWindow(BoxLayout):
 
     def init_logic(
         self,
+        event_receiver: EventReceiver,
         world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
@@ -72,11 +73,10 @@ class SnakeTronWindow(BoxLayout):
         # game speed
         self.paused = False
         self.full_speed = False
-        self.ai_explanations = ai_explanations
         self.regular_time_step = time_step
         self.time_step = time_step
 
-        # colors
+        # initialize word_display and score_board
         self.app_background_color = get_color_from_hex(colors['ui']['background'])
         swipe_zone_bg_color = get_color_from_hex(colors['ui']['swipe_zone_bg_color'])
 
@@ -103,8 +103,10 @@ class SnakeTronWindow(BoxLayout):
             gridline=get_color_from_hex(colors['world']['gridline']),
             gridborder=get_color_from_hex(colors['world']['gridborder'])
         )
-        self.ids.world_display.init_logic(world, ai_agents, world_colors, agent_colors)
+        self.ids.world_display.init_logic(event_receiver, world, ai_agents, world_colors, agent_colors)
         self.ids.score_board.init_logic(agents, agent_colors)
+        if ai_explanations:
+            self.ids.world_display.toggle_ai_explanation()
 
         # player keyboard inputs
         keyboard_control_sets = (
@@ -134,7 +136,7 @@ class SnakeTronWindow(BoxLayout):
 
     def game_step(self, dt: float) -> None:
         deads = self.world.simulate()
-        self.ids.world_display.update_draw(deads, self.ai_explanations)
+        self.ids.world_display.update_draw()
         self.ids.score_board.update_scores()
         for controller in self.swipe_controls:
             controller.update_direction_display()
@@ -160,4 +162,4 @@ class SnakeTronWindow(BoxLayout):
             self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
 
     def toggle_ai_explanations(self) -> None:
-        self.ai_explanations = not self.ai_explanations
+        self.ids.world_display.toggle_ai_explanations()

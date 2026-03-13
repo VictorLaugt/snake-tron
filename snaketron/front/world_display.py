@@ -2,19 +2,21 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import numpy as np
+import itertools
 from typing import TYPE_CHECKING
 
 from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-import numpy as np
+from back.events import FoodCreated, FoodConsumed, AgentUpdated
 
 if TYPE_CHECKING:
     from typing import Iterable, Sequence, Optional
 
     from back.agent import AbstractAISnakeAgent, AbstractSnakeAgent
-    from back.events import AgentUpdated
+    from back.events import EventReceiver
     from back.type_hints import Position
     from back.world import SnakeWorld
     from front.type_hints import ColorValue, Coordinate
@@ -44,28 +46,45 @@ class SnakeColors:
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
-    instr_arena: InstructionGroup
-    instr_objs: InstructionGroup
+    event_receiver: EventReceiver
     world: SnakeWorld
     ai_snakes: Sequence[AbstractAISnakeAgent]
+    ai_explanations: bool
+
+    instr_arena: InstructionGroup
+    food_drawer: FoodDrawer
+    snake_drawers: dict[int, SnakeDrawer]
+    snake_updates: dict[int, AgentUpdated]
+
     world_colors: WorldColors
-    snake_colors: dict[int, SnakeColors]
+    snake_colors: SnakeColors
 
     def on_kv_post(self, base_widget: Widget) -> None:
         self.instr_arena = InstructionGroup()
-        self.instr_objs = InstructionGroup()
         self.canvas.add(self.instr_arena)
-        self.canvas.add(self.instr_objs)
 
     def init_logic(
         self,
+        event_receiver: EventReceiver,
         world: SnakeWorld,
         ai_snakes: Sequence[AbstractAISnakeAgent],
         world_colors: WorldColors,
         snake_colors: dict[int, SnakeColors]
     ) -> None:
+        self.event_receiver = event_receiver
         self.world = world
         self.ai_snakes = ai_snakes
+        self.ai_explanations = False
+
+        self.food_drawer = FoodDrawer(self, world_colors)
+        self.snake_updates = {}
+        self.snake_drawers = {}
+        for snake in itertools.chain(world.iter_alive_agents(), world.iter_dead_agents()):
+            snake_id = snake.get_id()
+            self.snake_drawers[snake_id] = SnakeDrawer(
+                self, snake, snake_colors[snake_id], n_decay_steps=4
+            )
+
         self.world_colors = world_colors
         self.snake_colors = snake_colors
         self.draw_arena()
@@ -75,14 +94,6 @@ class WorldDisplay(FloatLayout):
             self.x + pos[0] * self.square_size,
             self.y + (self.world.get_height() - 1 - pos[1]) * self.square_size
         )
-
-    def draw_square(self, x: float, y: float, c: ColorValue) -> None:
-        self.instr_objs.add(Color(*c))
-        self.instr_objs.add(Rectangle(pos=(x, y), size=(self.square_size, self.square_size)))
-
-    def draw_circle(self, x: float, y: float, c: ColorValue) -> None:
-        self.instr_objs.add(Color(*c))
-        self.instr_objs.add(Ellipse(pos=(x, y), size=(self.square_size, self.square_size)))
 
     def draw_arena(self) -> None:
         self.instr_arena.clear()
@@ -131,25 +142,8 @@ class WorldDisplay(FloatLayout):
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, color)
 
-    def draw_alive_snakes(self) -> None:
-        for snake in self.world.iter_alive_agents():
-            colors = self.snake_colors[snake.get_id()]
-            cells = list(snake.iter_cells())
-            for i, pos in enumerate(cells):
-                x, y = self.pos_to_coord(pos)
-                self.draw_square(x, y, colors.head if i == 0 else colors.tail)
-
-    def draw_food(self) -> None:
-        for food in self.world.iter_food():
-            x, y = self.pos_to_coord(food)
-            self.draw_circle(x, y, self.world_colors.food)
-
-    def draw_killed_snakes(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
-        for snake in dead_snakes:
-            color = self.snake_colors[snake.get_id()].head_decay_first
-            for pos in snake.iter_cells():
-                x, y = self.pos_to_coord(pos)
-                self.draw_square(x, y, color)
+    def toggle_ai_explanations(self) -> None:
+        self.ai_explanations = not self.ai_explanations
 
     def recompute_square_size(self) -> None:
         self.square_size = min(
@@ -159,19 +153,28 @@ class WorldDisplay(FloatLayout):
 
     def on_square_size(self, instance: Widget, value: float) -> None:
         self.draw_arena()
-        self.update_draw()
+        self.food_drawer.reset()
+        for snake_drawer in self.snake_drawers.values():
+            snake_drawer.reset()
 
-    def update_draw(
-        self,
-        dead_snakes: Iterable[AbstractSnakeAgent]=(),
-        ai_explanations: bool=False
-    ) -> None:
-        self.instr_objs.clear()
-        if ai_explanations:
-            self.draw_ai_inspection()
-        self.draw_alive_snakes()
-        self.draw_food()
-        self.draw_killed_snakes(dead_snakes)
+    def update_draw(self) -> None:
+        for event in self.event_receiver.recv_arena_events():
+            if isinstance(event, FoodCreated):
+                self.food_drawer.draw_food(event)
+            elif isinstance(event, FoodConsumed):
+                self.food_drawer.remove_food(event)
+
+        for snake_id, event in self.event_receiver.recv_agent_events():
+            if isinstance(event, AgentUpdated):
+                self.snake_updates[snake_id] = event
+
+        for snake in itertools.chain(
+            self.world.iter_alive_agents(),
+            self.world.iter_dead_agents()
+        ):
+            snake_id = snake.get_id()
+            event = self.snake_updates.pop(snake_id, None)
+            self.snake_drawers[snake_id].update_draw(event)
 
 
 class FoodDrawer:
@@ -189,21 +192,26 @@ class FoodDrawer:
 
         self.foods: dict[Position, Ellipse] = {}
 
+    def _circle(self, pos: Position) -> None:
+        x, y = self.display.pos_to_coord(pos)
+        s = self.display.square_size
+        return Ellipse(pos=(x, y), size=(s, s))
+
     def reset(self) -> None:
         self.instr.clear()
         self.instr.add(self.food_color)
         for pos in self.foods.keys():
-            self.draw_food(pos)
+            circle = self._circle(pos)
+            self.instr.add(circle)
+            self.foods[pos] = circle
 
-    def draw_food(self, pos: Position) -> None:
-        x, y = self.display.pos_to_coord(pos)
-        s = self.display.square_size
-        circle = Ellipse(pos=(x, y), size=(s, s))
+    def draw_food(self, event: FoodCreated) -> None:
+        circle = self._circle(event.pos)
         self.instr.add(circle)
-        self.foods[pos] = circle
+        self.foods[event.pos] = circle
 
-    def remove_food(self, pos: Position) -> None:
-        circle = self.foods.pop(pos)
+    def remove_food(self, event: FoodConsumed) -> None:
+        circle = self.foods.pop(event.pos)
         self.instr.remove(circle)
 
 

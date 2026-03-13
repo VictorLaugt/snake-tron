@@ -33,6 +33,7 @@ class SnakeTronApp(App):
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
+        self.event_receiver = event_receiver
         self.world = world
         self.player_agents = player_agents
         self.ai_agents = ai_agents
@@ -51,6 +52,7 @@ class SnakeTronApp(App):
 
         window = SnakeTronWindow()
         window.init_logic(
+            self.event_receiver,
             self.world,
             self.player_agents,
             self.ai_agents,

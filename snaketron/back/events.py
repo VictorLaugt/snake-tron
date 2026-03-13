@@ -41,11 +41,11 @@ class EventSender:
         self.agent_events = agent_events
 
     def send_arena_event(self, event: ArenaEvent) -> None:
-        print(f"DEBUG: arena event: {event}")
+        # print(f"DEBUG: arena event: {event}")
         self.arena_events.append(event)
 
     def send_agent_event(self, agent_id: int, event: AgentUpdated) -> None:
-        print(f"DEBUG: agent {agent_id} event: {event}")
+        # print(f"DEBUG: agent {agent_id} event: {event}")
         self.agent_events[agent_id] = event
 
 
