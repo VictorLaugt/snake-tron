@@ -49,7 +49,7 @@ class EventSender:
         self.agent_events[agent_id] = event
 
 
-class EventReceiver:  # TODO: use in the frontend to update the world display
+class EventReceiver:
     def __init__(
         self,
         arena_events: deque[ArenaEvent],

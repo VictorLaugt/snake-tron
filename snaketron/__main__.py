@@ -24,8 +24,7 @@ if TYPE_CHECKING:
 TODO:
  - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions à la suite sans lever le doigt
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
- - interface back-front orientée évènements pour que le front n'ai pas besoin de redessiner l'entièreté du monde à chaque étape de jeu
- - étudier la possibilité de ne pas recalculer les chemins les plus courts à chaque étape mais de les conserver dans un cache
+ - optimiser le path finding
 """
 
 
