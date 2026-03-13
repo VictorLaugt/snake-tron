@@ -135,7 +135,7 @@ class SnakeTronWindow(BoxLayout):
         self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
 
     def game_step(self, dt: float) -> None:
-        deads = self.world.simulate()
+        self.world.simulate()
         self.ids.world_display.update_draw()
         self.ids.score_board.update_scores()
         for controller in self.swipe_controls:

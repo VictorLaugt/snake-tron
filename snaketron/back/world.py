@@ -348,5 +348,3 @@ class SnakeWorld(AbstractGridGraph):
         self._spawn_missing_food()
         self._respawn_dead_agent()
         self._send_agent_events()
-        return self.deaths  # TODO: change the simulate method signature so it returns nothing
-

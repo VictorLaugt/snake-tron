@@ -13,7 +13,7 @@ from kivy.uix.floatlayout import FloatLayout
 from back.events import FoodCreated, FoodConsumed, AgentUpdated
 
 if TYPE_CHECKING:
-    from typing import Iterable, Sequence, Optional
+    from typing import Sequence, Optional
 
     from back.agent import AbstractAISnakeAgent, AbstractSnakeAgent
     from back.events import EventReceiver
