@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 """
 TODO:
  - amélioration des contrôles par swipes pour qu'il soit possible d'entrer plusieurs directions à la suite sans lever le doigt
+ - animation de déplacement fluides
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
  - optimiser le path finding
 """
@@ -139,9 +140,9 @@ n_players = 2
 respawn_cooldown = 10
 n_food = max(n_snakes - 1, 1)
 
-# time_step = 0.2
+time_step = 0.2
 # time_step = 0.25
-time_step = 0.3
+# time_step = 0.3
 
 event_sender, event_receiver = build_event_pipe()
 world, player_agents, ai_agents = build_game(
