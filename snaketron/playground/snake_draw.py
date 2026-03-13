@@ -189,7 +189,7 @@ class FoodDrawer:
         self.display = world_display
         self.instr = InstructionGroup()
         self.display.canvas.add(self.instr)
-        self.foods: dict[int, Ellipse] = {}
+        self.foods: dict[Position, Ellipse] = {}
 
     def reset(self) -> None:
         self.instr.clear()

@@ -8,10 +8,13 @@ from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
+import numpy as np
+
 if TYPE_CHECKING:
-    from typing import Iterable, Sequence
+    from typing import Iterable, Sequence, Optional
 
     from back.agent import AbstractAISnakeAgent, AbstractSnakeAgent
+    from back.events import AgentUpdated
     from back.type_hints import Position
     from back.world import SnakeWorld
     from front.type_hints import ColorValue, Coordinate
@@ -31,8 +34,10 @@ class WorldColors:
 class SnakeColors:
     head: ColorValue
     tail: ColorValue
-    decay_first: ColorValue
-    decay_final: ColorValue
+    head_decay_first: ColorValue
+    head_decay_final: ColorValue
+    tail_decay_first: ColorValue
+    tail_decay_final: ColorValue
     inspect: ColorValue
 
 
@@ -141,7 +146,7 @@ class WorldDisplay(FloatLayout):
 
     def draw_killed_snakes(self, dead_snakes: Iterable[AbstractSnakeAgent]) -> None:
         for snake in dead_snakes:
-            color = self.snake_colors[snake.get_id()].decay_first
+            color = self.snake_colors[snake.get_id()].head_decay_first
             for pos in snake.iter_cells():
                 x, y = self.pos_to_coord(pos)
                 self.draw_square(x, y, color)
@@ -175,22 +180,24 @@ class FoodDrawer:
         world_display: WorldDisplay,
         colors: WorldColors
     ) -> None:
-        self.colors = colors
         self.display = world_display
         self.instr = InstructionGroup()
-        self.display.canvas.add(self.instr)
+        self.food_color = Color(*colors.food)
 
-        self.foods: dict[int, Ellipse] = {}
+        self.display.canvas.add(self.instr)
+        self.instr.add(self.food_color)
+
+        self.foods: dict[Position, Ellipse] = {}
 
     def reset(self) -> None:
         self.instr.clear()
+        self.instr.add(self.food_color)
         for pos in self.foods.keys():
             self.draw_food(pos)
 
     def draw_food(self, pos: Position) -> None:
         x, y = self.display.pos_to_coord(pos)
         s = self.display.square_size
-        self.instr.add(Color(*self.colors.food))
         circle = Ellipse(pos=(x, y), size=(s, s))
         self.instr.add(circle)
         self.foods[pos] = circle
@@ -200,23 +207,43 @@ class FoodDrawer:
         self.instr.remove(circle)
 
 
-class SnakeDrawer:  # TODO: implement the SnakeDrawer class from the test playground, which works totally fine
+class SnakeDrawer:
     def __init__(
         self,
         world_display: WorldDisplay,
-        colors: SnakeColors
+        snake: AbstractSnakeAgent,
+        colors: SnakeColors,
+        n_decay_steps: int
     ) -> None:
-        self.colors = colors
         self.display = world_display
+        self.snake = snake
+
+        self.colors = colors
         self.instr = InstructionGroup()
         self.display.canvas.add(self.instr)
 
+        # snake state
+        self.alive = snake.is_alive()
+
+        # head of the snake
         self.head_square: Rectangle = None
         self.head_pos: Position = None
+        self.head_color = Color(colors.head)
 
-        # [end of tail, ..., 1 square before head]
+        # tail of the snake [end of tail, ..., 1 square before head]
         self.tail_squares: deque[Rectangle] = deque()
         self.tail_pos: deque[Position] = deque()
+        self.tail_color = Color(colors.tail)
+
+        # decay animation at the snake death
+        self.n_decay_steps = n_decay_steps
+        self.decay_step = 0
+        self.head_decay_rgb_grad = np.linspace(
+            colors.head_decay_first, colors.head_decay_final, n_decay_steps
+        )
+        self.tail_decay_rgb_grad = np.linspace(
+            colors.tail_decay_first, colors.tail_decay_final, n_decay_steps
+        )
 
 
     def _square(self, pos: Position) -> Rectangle:
@@ -224,32 +251,34 @@ class SnakeDrawer:  # TODO: implement the SnakeDrawer class from the test playgr
         s = self.display.square_size
         return Rectangle(pos=(x, y), size=(s, s))
 
-    def reset(self, cells: Iterable[Position]) -> None:
+    def reset(self) -> None:
         self.instr.clear()
         self.tail_squares.clear()
         self.tail_pos.clear()
 
         # draws the head
-        cells = iter(cells)
+        cells = self.snake.iter_cells()
         self.head_pos = next(cells)
         self.head_square = self._square(self.head_pos)
-        self.instr.add(Color(*self.colors.head))
+        self.head_color.rgb = self.colors.head
+        self.instr.add(self.head_color)
         self.instr.add(self.head_square)
 
         # draws the tail
-        self.instr.add(Color(*self.colors.tail))
+        self.tail_color.rgb = self.colors.tail
+        self.instr.add(self.tail_color)
         for pos in cells:
             sqr = self._square(pos)
             self.tail_squares.appendleft(sqr)
             self.tail_pos.appendleft(pos)
             self.instr.add(sqr)
 
-    def update_draw(self, new_head_pos: Position, growth: int, death: bool) -> None:
+    def _move_snake(self, new_head_pos: Position, growth: int) -> None:
         # creates a tail square at the previous position of the head
         sqr = self._square(self.head_pos)
         self.tail_pos.append(self.head_pos)
         self.tail_squares.append(sqr)
-        self.instr.add(Color(*self.colors.tail))
+        self.instr.add(self.tail_color)
         self.instr.add(sqr)
 
         # removes the previous head square
@@ -258,7 +287,7 @@ class SnakeDrawer:  # TODO: implement the SnakeDrawer class from the test playgr
 
         # creates the head square at the new position of the head
         self.head_square = self._square(self.head_pos)
-        self.instr.add(Color(*self.colors.head))
+        self.instr.add(self.head_color)
         self.instr.add(self.head_square)
 
         if growth <= 0:
@@ -275,5 +304,42 @@ class SnakeDrawer:  # TODO: implement the SnakeDrawer class from the test playgr
                 self.tail_pos.appendleft(pos)
                 sqr = self._square(pos)
                 self.tail_squares.appendleft(sqr)
-                self.instr.add(Color(*self.tail_color))
+                self.instr.add(self.tail_color)
                 self.instr.add(sqr)
+
+    def _init_decay(self) -> None:
+        self.decay_step = 0
+        self.head_color.rgb = self.head_decay_rgb_grad[0]
+        self.tail_color.rgb = self.tail_decay_rgb_grad[0]
+
+    def _decay(self) -> None:
+        # decay in progress
+        if self.decay_step < self.n_decay_steps:
+            self.head_color.rgb = self.head_decay_rgb_grad[self.decay_step]
+            self.tail_color.rgb = self.tail_decay_rgb_grad[self.decay_step]
+            self.decay_step += 1
+
+        # decay over: snake disappear
+        else:
+            self.instr.clear()
+
+    def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
+        if event is None:
+            if not self.alive:
+                self._decay()
+
+        else:
+            # snake dies
+            if event.death:
+                self.alive = False
+                self._init_decay()
+                self._decay()
+
+            # snake respawns
+            elif not self.alive:
+                self.alive = True
+                self.reset()
+
+            # snake moves and potentialy grows or shrinks
+            else:
+                self._move_snake(event.new_head_pos, event.growth)

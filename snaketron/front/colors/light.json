@@ -13,8 +13,10 @@
     "snakes": {
         "head_color_wheel": ["#0066CC", "#D19300", "#9400D3", "#008000"],
         "tail_color_wheel": ["#0088EE", "#F3B500", "#E94EE9", "#006400"],
-        "decay_first": "#8B0000",
-        "decay_final": "#EC8C8C",
+        "tail_decay_first": "#8B0000",
+        "tail_decay_final": "#EC8C8C",
+        "head_decay_first": "#640000",
+        "head_decay_final": "#EC8C8C",
         "inspect": "#CCCCCC"
     }
 }
