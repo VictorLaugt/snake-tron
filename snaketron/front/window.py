@@ -63,7 +63,8 @@ class SnakeTronWindow(BoxLayout):
         ai_agents: Sequence[AbstractAISnakeAgent],
         time_step: float,
         ai_explanations: bool,
-        colors: dict
+        colors: dict,
+        input_sensitivity: float,
     ) -> None:
         # link to the backend
         self.world = world
@@ -126,7 +127,9 @@ class SnakeTronWindow(BoxLayout):
         for i, p in enumerate(player_agents):
             player_id = p.get_id()
             swipe_controls = PlayerSwipeControl()
-            swipe_controls.init_logic(p, agent_colors[player_id], swipe_zone_bg_color)
+            swipe_controls.init_logic(
+                p, agent_colors[player_id], swipe_zone_bg_color, 1/input_sensitivity
+            )
             control_zones[i%len(self.swipe_zones)].append(swipe_controls)
             self.swipe_controls.append(swipe_controls)
         for i in range(len(self.swipe_zones)):

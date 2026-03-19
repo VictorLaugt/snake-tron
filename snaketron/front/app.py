@@ -30,6 +30,7 @@ class SnakeTronApp(App):
         ai_explanations: bool,
         layout_file: Path,
         color_file: Path,
+        input_sensitivity: float,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -41,6 +42,7 @@ class SnakeTronApp(App):
         self.ai_explanations = ai_explanations
         self.layout_file = layout_file
         self.color_file = color_file
+        self.input_sensitivity = input_sensitivity
 
     def build(self) -> SnakeTronWindow:
         with self.layout_file.open(mode='r') as fp:
@@ -58,6 +60,7 @@ class SnakeTronApp(App):
             self.ai_agents,
             self.time_step,
             self.ai_explanations,
-            colors
+            colors,
+            self.input_sensitivity
         )
         return window

@@ -46,7 +46,7 @@ class PlayerSwipeControl(Widget):
         player: PlayerSnakeAgent,
         colors: SnakeColors,
         background_color: ColorValue,
-        min_seg_len: float=28.
+        min_seg_len: float
     ) -> None:
         self.player = player
 
