@@ -157,6 +157,6 @@ app = SnakeTronApp(
     time_step, ai_explanations=False,
     layout_file=Path('front', 'mobile_layout.kv'),
     color_file=Path('front', 'colors', 'dark.json'),
-    input_sensitivity=1/50
+    input_sensitivity=1/100
 )
 app.run()
