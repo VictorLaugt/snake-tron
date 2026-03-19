@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 """
 TODO:
  - déplacer tous les boutons dans un menu de pause qu'on active en cliquant une fois sur l'arène
- - amélioration des contrôles par swipes pour qu'il soit possible d'entrer jusqu'à trois directions à la suite sans lever le doigt
  - animation de déplacement fluides
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
  - optimiser le path finding

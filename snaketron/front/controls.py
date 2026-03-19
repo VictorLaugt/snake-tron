@@ -28,40 +28,73 @@ class PlayerSwipeControl(Widget):
     border_color = ListProperty(get_color_from_hex('#FFFFFF00'))
 
     draw_instr: InstructionGroup
-    touch_starts: dict[int, tuple[float, float]]
     player: PlayerSnakeAgent
     colors: SnakeColors
+
+    min_seg_sqr_len: float
+    touch_uid: Optional[int]
+    prev_pos: tuple[float, float]
+    prev_dir: Optional[Direction]
 
     def on_kv_post(self, base_widget: Widget) -> None:
         self.draw_instr = InstructionGroup()
         self.canvas.add(self.draw_instr)
         self.touch_starts = {}
 
-    def init_logic(self, player: PlayerSnakeAgent, colors: SnakeColors, background_color: ColorValue) -> None:
+    def init_logic(
+        self,
+        player: PlayerSnakeAgent,
+        colors: SnakeColors,
+        background_color: ColorValue,
+        min_seg_len: float=28.
+    ) -> None:
         self.player = player
+
         self.colors = colors
-        self.border_color = self.colors.head
         self.background_color = background_color
+        self.border_color = colors.head
+
+        self.min_seg_sqr_len = min_seg_len**2
+        self.touch_uid = None
+        self.prev_pos = (0., 0.)
+        self.prev_dir = None
 
     def on_touch_down(self, touch: MotionEvent) -> bool:
-        if not self.collide_point(touch.x, touch.y):
+        if self.touch_uid is not None or not self.collide_point(touch.x, touch.y):
             return False
 
-        self.touch_starts[touch.uid] = touch.pos
+        self.touch_uid = touch.uid
+        self.prev_pos = touch.pos
         return True
 
-    def on_touch_up(self, touch: MotionEvent) -> bool:
-        start_pos = self.touch_starts.pop(touch.uid, None)
-        if start_pos is None:
+    def on_touch_move(self, touch: MotionEvent) -> bool:
+        if touch.uid != self.touch_uid:
             return False
 
-        start_x, start_y = start_pos
-        dx, dy = touch.x - start_x, touch.y - start_y
+        x, y = touch.pos
+        prev_x, prev_y = self.prev_pos
+        dx, dy = x-prev_x, y-prev_y
+        if dx*dx + dy*dy < self.min_seg_sqr_len:
+            return True
+
         if abs(dx) > abs(dy):
             direction = RIGHT if dx > 0 else LEFT
         else:
             direction = UP if dy > 0 else DOWN
-        self.player.add_dir_request(direction)
+        if direction != self.prev_dir:
+            self.player.add_dir_request(direction)
+
+        self.prev_pos = touch.pos
+        self.prev_dir = direction
+        return True
+
+    def on_touch_up(self, touch: MotionEvent) -> bool:
+        if touch.uid != self.touch_uid:
+            return False
+
+        self.touch_uid = None
+        self.prev_pos = (0., 0.)
+        self.prev_dir = None
         return True
 
     def update_direction_display(self) -> None:
