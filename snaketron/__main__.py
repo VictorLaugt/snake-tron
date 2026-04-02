@@ -89,7 +89,7 @@ def build_game(
             world, blue_init_pos, blue_init_dir,
             # EuclidianDistancePeriodicHeuristic,
             EuclidianDistanceHeuristic,
-            latency=0, caution=1, attack_anticipation=attack_anticipation
+            latency=3, caution=4, attack_anticipation=attack_anticipation
         ))
 
     if n_players >= 2:
@@ -99,7 +99,7 @@ def build_game(
             world, yellow_init_pos, yellow_init_dir,
             # EuclidianDistancePeriodicHeuristic,
             EuclidianDistanceHeuristic,
-            latency=0, caution=1, attack_anticipation=attack_anticipation
+            latency=3, caution=4, attack_anticipation=attack_anticipation
         ))
 
     if n_players >= 3:
@@ -108,7 +108,7 @@ def build_game(
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, purple_init_pos, purple_init_dir,
             EuclidianDistanceHeuristic,
-            latency=0, caution=1, attack_anticipation=attack_anticipation
+            latency=3, caution=6, attack_anticipation=attack_anticipation
         ))
 
     if n_players >= 4:
@@ -117,7 +117,7 @@ def build_game(
         ai_agents.append(AStarOffensiveSnakeAgent(
             world, green_init_pos, green_init_dir,
             ManhattanDistanceHeuristic,
-            latency=0, caution=3, attack_anticipation=attack_anticipation
+            latency=3, caution=4, attack_anticipation=attack_anticipation
         ))
 
     define_opponents(player_agents, ai_agents)
