@@ -26,6 +26,10 @@ TODO:
  - animation de déplacement fluides
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
  - optimiser le path finding
+
+IDÉE DE GAMEPLAY:
+ - Dash utilisable au bout d'un certain nombre de nouriture mangée
+ - Apparition aléatoire de zones carrées 3x3 qui forcent à changer de direction
 """
 
 
