@@ -360,8 +360,10 @@ class AStarOffensiveSnakeAgent(AStarSnakeAgent):
             potential_targets = new_potential_targets
             impact_positions = new_impact_positions
 
-
             for agent in potential_targets:
+                # arriving before the target implies len(attack_path) < impact_delay
+                # not arriving too early implies len(attack_path) + len(self) > impact_delay
+                # the resulting criterion is impact_delay - len(self) < len(attack_path) < impact_delay
                 i = self.compute_shortest_path(impact_positions, impact_delay - len(self), impact_delay)
                 if i is not None:
                     self.target = potential_targets[i]
