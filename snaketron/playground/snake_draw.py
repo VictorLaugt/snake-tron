@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
-from back.agents.abstract_snake_agent import AbstractSnakeAgent
+from back.agents import AbstractSnakeAgent
 from back.direction import DOWN, LEFT, RIGHT, UP
 from back.events import AgentUpdated, FoodConsumed, FoodCreated
 
@@ -20,7 +20,7 @@ import numpy as np
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
-    from back.agents.player_snake_agent import PlayerSnakeAgent
+    from back.agents import PlayerSnakeAgent
     from back.events import EventReceiver, AgentUpdated
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
@@ -344,7 +344,7 @@ class SnakeDrawer:
 
 
 if __name__ == '__main__':
-    from back.agents.player_snake_agent import PlayerSnakeAgent
+    from back.agents import PlayerSnakeAgent
     from back.events import build_event_pipe
     from back.world import SnakeWorld
 

@@ -10,7 +10,7 @@ from kivy.utils import get_color_from_hex
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from back.agents.abstract_snake_agent import AbstractSnakeAgent
+    from back.agents import AbstractSnakeAgent
     from front.world_display import SnakeColors
 
 

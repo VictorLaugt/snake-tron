@@ -14,7 +14,7 @@ from back.voronoi import furthest_voronoi_vertex
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
-    from back.agents.abstract_snake_agent import AbstractSnakeAgent
+    from back.agents import AbstractSnakeAgent
     from back.events import EventSender
     from back.type_hints import Direction, Position
 

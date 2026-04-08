@@ -15,9 +15,7 @@ from kivy.utils import get_color_from_hex, platform
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from back.agents.abstract_snake_agent import AbstractSnakeAgent
-    from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
-    from back.agents.player_snake_agent import PlayerSnakeAgent
+    from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
     from back.events import EventReceiver
     from back.world import SnakeWorld
     from kivy.clock import ClockEvent

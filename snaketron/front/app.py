@@ -14,8 +14,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Sequence
 
-    from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
-    from back.agents.player_snake_agent import PlayerSnakeAgent
+    from back.agents import PlayerSnakeAgent, AbstractAISnakeAgent
     from back.events import EventReceiver
     from back.world import SnakeWorld
 

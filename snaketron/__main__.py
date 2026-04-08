@@ -5,8 +5,9 @@ from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from back.agents.player_snake_agent import PlayerSnakeAgent
-from back.agents.ai_snake_agent import OffensiveAISnakeAgent, PassiveAISnakeAgent
+from back.agents import (
+    PlayerSnakeAgent, OffensiveAISnakeAgent, PassiveAISnakeAgent
+)
 
 from back.direction import DOWN, LEFT, RIGHT, UP
 from back.events import build_event_pipe
@@ -19,7 +20,7 @@ from front.app import SnakeTronApp
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
+    from back.agents import AbstractAISnakeAgent
     from back.events import EventSender
 
 """
