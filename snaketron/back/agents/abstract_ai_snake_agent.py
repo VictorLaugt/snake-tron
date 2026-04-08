@@ -15,10 +15,7 @@ if TYPE_CHECKING:
 
 class AbstractAISnakeAgent(AbstractSnakeAgent):
     """
-    TODO: extract into a mixin
-    Mécanismes implémentés:
-    - toute l'interface de AbstractSnakeAgent
-    - constructor(latency), attributes(cooldown)
+    TODO: extract into a mixin: constructor(latency), attributes(latency, cooldown)
     """
     def __init__(
         self,
