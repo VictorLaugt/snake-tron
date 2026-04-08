@@ -14,9 +14,6 @@ if TYPE_CHECKING:
 
 
 class AbstractAISnakeAgent(AbstractSnakeAgent):
-    """
-    TODO: extract into a mixin: constructor(latency), attributes(latency, cooldown)
-    """
     def __init__(
         self,
         world: SnakeWorld,
@@ -57,6 +54,19 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         self.y_path.clear()
         self.dir_path.clear()
 
+    # TODO: move the latency/cooldown mechanism into the mixin level of the class inheritance
+    #
+    # impact on constructor arguments: latency
+    # impact on attributes: self.latency, self.cooldown
+    # impact on the reset method: self.cooldown
+    #
+    # def decide_direction(self) -> Direction:
+    #     self.update_path()  # the update_path method will be responsible to handle the cooldown mechanism
+    #     if len(self.dir_path) > 0:
+    #         self.x_path.pop()
+    #         self.y_path.pop()
+    #         self.dir = self.dir_path.pop()
+    #     return self.dir
     def decide_direction(self) -> Direction:
         if self.cooldown == 0 or len(self.dir_path) == 0:
             self.update_path()
