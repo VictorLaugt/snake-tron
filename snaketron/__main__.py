@@ -5,19 +5,21 @@ from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from back.agent import (AStarOffensiveSnakeAgent, AStarSnakeAgent,
-                        PlayerSnakeAgent)
+from back.agents.player_snake_agent import PlayerSnakeAgent
+from back.agents.ai_snake_agent import OffensiveAISnakeAgent, PassiveAISnakeAgent
+
 from back.direction import DOWN, LEFT, RIGHT, UP
 from back.events import build_event_pipe
-from back.world import (EuclidianDistanceHeuristic,
-                        EuclidianDistancePeriodicHeuristic,
-                        ManhattanDistanceHeuristic, SnakeWorld)
+from back.world import (
+    EuclidianDistanceHeuristic, EuclidianDistancePeriodicHeuristic,
+    ManhattanDistanceHeuristic, SnakeWorld
+)
 from front.app import SnakeTronApp
 
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from back.agent import AbstractAISnakeAgent
+    from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
     from back.events import EventSender
 
 """
@@ -35,7 +37,7 @@ IDÉE DE GAMEPLAY:
 
 def define_opponents(
     player_agents: list[PlayerSnakeAgent],
-    ai_agents: list[AStarOffensiveSnakeAgent]
+    ai_agents: list[OffensiveAISnakeAgent]
 ) -> None:
     if len(player_agents) >= 1:
         for ai in ai_agents:
@@ -84,12 +86,12 @@ def build_game(
 
     world = SnakeWorld(width, height, n_food, event_sender, respawn_cooldown)
     player_agents: list[PlayerSnakeAgent] = []
-    ai_agents: list[AStarOffensiveSnakeAgent] = []
+    ai_agents: list[OffensiveAISnakeAgent] = []
 
     if n_players >= 1:
         player_agents.append(PlayerSnakeAgent(world, blue_init_pos, blue_init_dir))
     elif n_snakes >= 1:
-        ai_agents.append(AStarOffensiveSnakeAgent(
+        ai_agents.append(OffensiveAISnakeAgent(
             world, blue_init_pos, blue_init_dir,
             # EuclidianDistancePeriodicHeuristic,
             EuclidianDistanceHeuristic,
@@ -99,7 +101,7 @@ def build_game(
     if n_players >= 2:
         player_agents.append(PlayerSnakeAgent(world, yellow_init_pos, yellow_init_dir))
     elif n_snakes >= 2:
-        ai_agents.append(AStarOffensiveSnakeAgent(
+        ai_agents.append(OffensiveAISnakeAgent(
             world, yellow_init_pos, yellow_init_dir,
             # EuclidianDistancePeriodicHeuristic,
             EuclidianDistanceHeuristic,
@@ -109,7 +111,7 @@ def build_game(
     if n_players >= 3:
         player_agents.append(PlayerSnakeAgent(world, purple_init_pos, purple_init_dir))
     elif n_snakes >= 3:
-        ai_agents.append(AStarOffensiveSnakeAgent(
+        ai_agents.append(OffensiveAISnakeAgent(
             world, purple_init_pos, purple_init_dir,
             EuclidianDistanceHeuristic,
             latency=3, caution=6, attack_anticipation=attack_anticipation
@@ -118,7 +120,7 @@ def build_game(
     if n_players >= 4:
         player_agents.append(PlayerSnakeAgent(world, green_init_pos, green_init_dir))
     elif n_snakes >= 4:
-        ai_agents.append(AStarOffensiveSnakeAgent(
+        ai_agents.append(OffensiveAISnakeAgent(
             world, green_init_pos, green_init_dir,
             ManhattanDistanceHeuristic,
             latency=3, caution=4, attack_anticipation=attack_anticipation

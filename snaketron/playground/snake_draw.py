@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
-from back.agent import AbstractSnakeAgent
+from back.agents.abstract_snake_agent import AbstractSnakeAgent
 from back.direction import DOWN, LEFT, RIGHT, UP
 from back.events import AgentUpdated, FoodConsumed, FoodCreated
 
@@ -18,13 +18,13 @@ from kivy.uix.floatlayout import FloatLayout
 import numpy as np
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional, Sequence
+    from typing import Optional, Sequence
 
-    from back.agent import PlayerSnakeAgent
+    from back.agents.player_snake_agent import PlayerSnakeAgent
     from back.events import EventReceiver, AgentUpdated
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
-    from front.type_hints import ColorValue, Coordinate
+    from front.type_hints import Coordinate
     from kivy.uix.widget import Widget
 
 
@@ -344,7 +344,7 @@ class SnakeDrawer:
 
 
 if __name__ == '__main__':
-    from back.agent import PlayerSnakeAgent
+    from back.agents.player_snake_agent import PlayerSnakeAgent
     from back.events import build_event_pipe
     from back.world import SnakeWorld
 

@@ -15,7 +15,8 @@ from back.events import FoodCreated, FoodConsumed, AgentUpdated
 if TYPE_CHECKING:
     from typing import Sequence, Optional
 
-    from back.agent import AbstractAISnakeAgent, AbstractSnakeAgent
+    from back.agents.abstract_snake_agent import AbstractSnakeAgent
+    from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
     from back.events import EventReceiver
     from back.type_hints import Position
     from back.world import SnakeWorld

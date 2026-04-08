@@ -15,7 +15,7 @@ from kivy.utils import get_color_from_hex
 if TYPE_CHECKING:
     from typing import Iterable, Optional, Sequence
 
-    from back.agent import PlayerSnakeAgent
+    from back.agents.player_snake_agent import PlayerSnakeAgent
     from back.type_hints import Direction
     from front.type_hints import ColorValue
     from front.world_display import SnakeColors

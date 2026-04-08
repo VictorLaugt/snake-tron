@@ -12,9 +12,9 @@ from back.events import AgentUpdated, FoodConsumed, FoodCreated
 from back.voronoi import furthest_voronoi_vertex
 
 if TYPE_CHECKING:
-    from typing import Iterator, Optional, Sequence
+    from typing import Iterator, Optional
 
-    from back.agent import AbstractSnakeAgent
+    from back.agents.abstract_snake_agent import AbstractSnakeAgent
     from back.events import EventSender
     from back.type_hints import Direction, Position
 
