@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 """
 TODO:
  Priorité 1:
- - faire en sorte qu'il soit impossible de tourner trois fois de suite dans le même sens en un seul tracé tactile
  - animation de déplacement fluides
 
 Priorité 2:
