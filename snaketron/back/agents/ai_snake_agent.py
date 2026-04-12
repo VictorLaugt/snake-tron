@@ -65,7 +65,7 @@ class OffensiveAISnakeAgent(AttackAISnakeMixin, CautionAISnakeMixin, AbstractAIS
         if current_target is not None and current_target.is_alive():
             potential_targets = (current_target,)
         else:
-            potential_targets = (agent for agent in self.iter_opponents() if agent.is_alive())
+            potential_targets = [agent for agent in self.iter_opponents() if agent.is_alive()]
         if self.compute_attack_path(potential_targets) is not None:
             return
 
