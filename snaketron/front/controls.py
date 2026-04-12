@@ -23,12 +23,12 @@ if TYPE_CHECKING:
     from kivy.input import MotionEvent
 
 
-class SnakeDirectionFilter:
-    def __init__(self, direction: Direction):
-        self.reset(direction)
+class SwipeDirectionFilter:
+    def __init__(self, initial_dir: Direction):
+        self.reset(initial_dir)
 
-    def reset(self, direction: Direction):
-        self.prev_valid_dir = direction
+    def reset(self, initial_dir: Direction):
+        self.prev_valid_dir = initial_dir
         self.prev_rot = 0
         self.u_turn = False
 
@@ -52,6 +52,22 @@ class SnakeDirectionFilter:
         return True
 
 
+class KeyBoardDirectionFilter:
+    def __init__(self, initial_dir: Direction):
+        self.reset(initial_dir)
+
+    def reset(self, initial_dir: Direction):
+        self.prev_valid_dir = initial_dir
+
+    def filter(self, d: Direction) -> bool:
+        if d == self.prev_valid_dir:
+            return False
+
+        self.prev_valid_dir = d
+        return True
+
+
+
 class PlayerSwipeControl(Widget):
     background_color = ListProperty(get_color_from_hex('#FFFFFF00'))
     border_color = ListProperty(get_color_from_hex('#FFFFFF00'))
@@ -63,7 +79,7 @@ class PlayerSwipeControl(Widget):
     min_seg_sqr_len: float
     touch_uid: Optional[int]
     prev_touch_pos: tuple[float, float]
-    control_filter: SnakeDirectionFilter
+    control_filter: SwipeDirectionFilter
 
     def on_kv_post(self, base_widget: Widget) -> None:
         self.draw_instr = InstructionGroup()
@@ -86,7 +102,7 @@ class PlayerSwipeControl(Widget):
         self.min_seg_sqr_len = min_seg_len**2
         self.touch_uid = None
         self.prev_touch_pos = (0., 0.)
-        self.control_filter = SnakeDirectionFilter(player.get_direction())
+        self.control_filter = SwipeDirectionFilter(player.get_direction())
 
     def on_touch_down(self, touch: MotionEvent) -> bool:
         if self.touch_uid is not None or not self.collide_point(touch.x, touch.y):
@@ -163,6 +179,8 @@ class PlayerKeyBoardControl(EventDispatcher):
     player: PlayerSnakeAgent
     key_bindings: dict[int, Direction]
 
+    control_filter: KeyBoardDirectionFilter
+
     def init_logic(self, player: PlayerSnakeAgent, up: str, left: str, down: str, right: str) -> None:
         self.player = player
         self.key_bindings = {
@@ -171,6 +189,7 @@ class PlayerKeyBoardControl(EventDispatcher):
             Keyboard.keycodes[down]: DOWN,
             Keyboard.keycodes[left]: LEFT,
         }
+        self.control_filter = KeyBoardDirectionFilter(player.get_direction())
         Window.bind(on_key_down=self.on_key_down)
 
     def on_key_down(
@@ -182,5 +201,5 @@ class PlayerKeyBoardControl(EventDispatcher):
         modifiers: Sequence[str]
     ) -> None:
         direction = self.key_bindings.get(key)
-        if direction is not None:
+        if direction is not None and self.control_filter.filter(direction):
             self.player.add_dir_request(direction)
