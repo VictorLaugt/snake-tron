@@ -33,8 +33,6 @@ class SnakeDirectionFilter:
         self.u_turn = False
 
     def filter(self, swipe_dir: Direction) -> bool:
-        # return True
-
         # prevents consecutive swipe in the same direction
         if swipe_dir == self.prev_valid_dir:
             return False
