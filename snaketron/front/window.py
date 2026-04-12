@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 
-from front.controls import (PlayerKeyBoardControls, PlayerSwipeControl,
+from front.controls import (PlayerKeyBoardControl, PlayerSwipeControl,
                             SwipeControlZone)
 from front.world_display import SnakeColors, WorldColors
 from kivy.clock import Clock
@@ -32,7 +32,7 @@ class SnakeTronWindow(BoxLayout):
     player_agents: Sequence[PlayerSnakeAgent]
     swipe_zones: list[SwipeControlZone]
     swipe_controls: list[PlayerSwipeControl]
-    keyboard_controls: list[PlayerKeyBoardControls]
+    keyboard_controls: list[PlayerKeyBoardControl]
     paused: bool
     full_speed: bool
     regular_time_step: float
@@ -116,7 +116,7 @@ class SnakeTronWindow(BoxLayout):
         )
         self.keyboard_controls = []
         for i in range(min(len(player_agents), len(keyboard_control_sets))):
-            kb_controls = PlayerKeyBoardControls()
+            kb_controls = PlayerKeyBoardControl()
             kb_controls.init_logic(player_agents[i], *keyboard_control_sets[i])
             self.keyboard_controls.append(kb_controls)
 

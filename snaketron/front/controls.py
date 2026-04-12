@@ -161,7 +161,7 @@ class SwipeControlZone(BoxLayout):
             self.add_widget(controller)
 
 
-class PlayerKeyBoardControls(EventDispatcher):
+class PlayerKeyBoardControl(EventDispatcher):
     player: PlayerSnakeAgent
     key_bindings: dict[int, Direction]
 
