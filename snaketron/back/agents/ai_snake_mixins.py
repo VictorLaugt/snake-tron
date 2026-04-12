@@ -20,10 +20,11 @@ class AISnakeMixin(AbstractAISnakeAgent):
         self.mixin_constant_attribute = mixin_argument
         self.mixin_variable_attribute = None
 
-    def reset(self) -> None:
+    def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
+        super().reset(pos, d)
         self.mixin_variable_attribute = None
 
-    def _internal_mixin_method(self)
+    def _internal_mixin_method(self):
         ...
 
     def exposed_mixin_method(self):
@@ -43,9 +44,6 @@ class CautionAISnakeMixin(AbstractAISnakeAgent):
         super().__init__(**kwargs)
 
         self.caution_radius = caution
-
-    def reset(self, pos = None, d = None):
-        return super().reset(pos, d)
 
     def _start_avoid(self, dangerous_agents: Iterable[AbstractSnakeAgent]) -> list[list[Position]]:
         """Add virtual obstacles in the world to avoid positions that are to close
@@ -103,7 +101,7 @@ class AttackAISnakeMixin(AbstractAISnakeAgent):
         super().reset(pos, d)
         self.current_target = None
 
-    def compute_attack_path(self, potential_targets: Iterable[AbstractSnakeAgent]) -> Optional[int]:
+    def compute_attack_path(self, potential_targets: Sequence[AbstractSnakeAgent]) -> Optional[int]:
         """Tries to compute a path to attack one of the given target.
         If success, returns the index of the selected target in the
         potential_targets sequence, else returns None.
@@ -132,3 +130,25 @@ class AttackAISnakeMixin(AbstractAISnakeAgent):
                 return i
 
         self.current_target = None
+
+
+class CooldownAISnakeMixin(AbstractAISnakeAgent):
+    def __init__(self, *, latency: int=0, **kwargs) -> None:
+        super().__init__(**kwargs)
+        assert latency >= 0
+        self.latency = latency
+        self.cooldown = 0
+
+    def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
+        super().reset(pos, d)
+        self.cooldown = 0
+
+    def update_cooldown(self) -> bool:
+        """Updates the cooldown and returns True when it is not over yet, False
+        otherwise."""
+        if self.cooldown > 0 and self.has_plan():
+            self.cooldown -= 1
+            return True
+        else:
+            self.cooldown = self.latency
+            return False

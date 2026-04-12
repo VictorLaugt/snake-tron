@@ -20,10 +20,8 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         initial_pos: Sequence[Position],
         initial_dir: Direction,
         heuristic_type: Type[AbstractHeuristic],
-        latency: int=0,
         alive: bool=True
     ) -> None:
-        assert latency >= 0
         super().__init__(world, initial_pos, alive)
 
         self.initial_dir = initial_dir
@@ -34,9 +32,6 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
 
         self.heuristic_type = heuristic_type
 
-        self.latency = latency
-        self.cooldown = 0
-
     def reset(self, pos: Optional[Sequence[Position]]=None, d: Optional[Direction]=None) -> None:
         super().reset(pos)
         self.x_path.clear()
@@ -46,7 +41,6 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
             self.dir = self.initial_dir
         else:
             self.dir = d
-        self.cooldown = 0
 
     def die(self) -> None:
         super().die()
@@ -54,26 +48,8 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
         self.y_path.clear()
         self.dir_path.clear()
 
-    # TODO: move the latency/cooldown mechanism into the mixin level of the class inheritance
-    #
-    # impact on constructor arguments: latency
-    # impact on attributes: self.latency, self.cooldown
-    # impact on the reset method: self.cooldown
-    #
-    # def decide_direction(self) -> Direction:
-    #     self.update_path()  # the update_path method will be responsible to handle the cooldown mechanism
-    #     if len(self.dir_path) > 0:
-    #         self.x_path.pop()
-    #         self.y_path.pop()
-    #         self.dir = self.dir_path.pop()
-    #     return self.dir
     def decide_direction(self) -> Direction:
-        if self.cooldown == 0 or len(self.dir_path) == 0:
-            self.update_path()
-            self.cooldown = self.latency
-        else:
-            self.cooldown -= 1
-
+        self.update_path()
         if len(self.dir_path) > 0:
             self.x_path.pop()
             self.y_path.pop()
@@ -119,6 +95,9 @@ class AbstractAISnakeAgent(AbstractSnakeAgent):
                     self.dir_path = dir_path
 
         return destination_idx
+
+    def has_plan(self) -> bool:
+        return len(self.dir_path) > 0
 
     @abstractmethod
     def update_path(self) -> None:
