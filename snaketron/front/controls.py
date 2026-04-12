@@ -23,6 +23,37 @@ if TYPE_CHECKING:
     from kivy.input import MotionEvent
 
 
+class SnakeDirectionFilter:
+    def __init__(self, direction: Direction):
+        self.reset(direction)
+
+    def reset(self, direction: Direction):
+        self.prev_valid_dir = direction
+        self.prev_rot = 0
+        self.u_turn = False
+
+    def filter(self, swipe_dir: Direction) -> bool:
+        # return True
+
+        # prevents consecutive swipe in the same direction
+        if swipe_dir == self.prev_valid_dir:
+            return False
+
+        # prevents three consecutive turns in the same direction
+        rot = self.prev_valid_dir[0]*swipe_dir[1] - self.prev_valid_dir[1]*swipe_dir[0]
+        if rot == self.prev_rot:
+            if self.u_turn:
+                return False
+            self.u_turn = True
+        else:
+            self.u_turn = False
+
+        # validates the swipe direction
+        self.prev_valid_dir = swipe_dir
+        self.prev_rot = rot
+        return True
+
+
 class PlayerSwipeControl(Widget):
     background_color = ListProperty(get_color_from_hex('#FFFFFF00'))
     border_color = ListProperty(get_color_from_hex('#FFFFFF00'))
@@ -33,8 +64,8 @@ class PlayerSwipeControl(Widget):
 
     min_seg_sqr_len: float
     touch_uid: Optional[int]
-    prev_pos: tuple[float, float]
-    prev_dir: Optional[Direction]
+    prev_touch_pos: tuple[float, float]
+    control_filter: SnakeDirectionFilter
 
     def on_kv_post(self, base_widget: Widget) -> None:
         self.draw_instr = InstructionGroup()
@@ -56,15 +87,16 @@ class PlayerSwipeControl(Widget):
 
         self.min_seg_sqr_len = min_seg_len**2
         self.touch_uid = None
-        self.prev_pos = (0., 0.)
-        self.prev_dir = None
+        self.prev_touch_pos = (0., 0.)
+        self.control_filter = SnakeDirectionFilter(player.get_direction())
 
     def on_touch_down(self, touch: MotionEvent) -> bool:
         if self.touch_uid is not None or not self.collide_point(touch.x, touch.y):
             return False
 
         self.touch_uid = touch.uid
-        self.prev_pos = touch.pos
+        self.prev_touch_pos = touch.pos
+        self.control_filter.reset(self.player.get_direction())
         return True
 
     def on_touch_move(self, touch: MotionEvent) -> bool:
@@ -72,7 +104,7 @@ class PlayerSwipeControl(Widget):
             return False
 
         x, y = touch.pos
-        prev_x, prev_y = self.prev_pos
+        prev_x, prev_y = self.prev_touch_pos
         dx, dy = x-prev_x, y-prev_y
         if dx*dx + dy*dy < self.min_seg_sqr_len:
             return True
@@ -81,11 +113,11 @@ class PlayerSwipeControl(Widget):
             direction = RIGHT if dx > 0 else LEFT
         else:
             direction = UP if dy > 0 else DOWN
-        if direction != self.prev_dir:
+
+        if self.control_filter.filter(direction):
             self.player.add_dir_request(direction)
 
-        self.prev_pos = touch.pos
-        self.prev_dir = direction
+        self.prev_touch_pos = touch.pos
         return True
 
     def on_touch_up(self, touch: MotionEvent) -> bool:
@@ -93,8 +125,6 @@ class PlayerSwipeControl(Widget):
             return False
 
         self.touch_uid = None
-        self.prev_pos = (0., 0.)
-        self.prev_dir = None
         return True
 
     def update_direction_display(self) -> None:
