@@ -25,11 +25,17 @@ if TYPE_CHECKING:
 
 """
 TODO:
- - déplacer tous les boutons dans un menu de pause qu'on active en cliquant une fois sur l'arène
+ Priorité 1:
+ - faire en sorte qu'il soit impossible de tourner trois fois de suite dans le même sens en un seul tracé tactile
  - animation de déplacement fluides
+
+Priorité 2:
  - essayer de faire des agents qui ignorent la latency pour le calcul de leurs chemins d'attaques, mais qui la respectent pour le calcul des chemins vers la nourriture
  - latency et caution variables grâce à une callback : dépendants de la taille du serpent, ou aléatoire
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
+
+Priorité 3:
+  - déplacer tous les boutons dans un menu de pause qu'on active en cliquant une fois sur l'arène
  - optimiser le path finding
 
 IDÉE DE GAMEPLAY:
