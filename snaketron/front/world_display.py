@@ -400,9 +400,10 @@ class SnakeDrawUpdater(EventDispatcher):
         self._stop_animations()
         self._clear_instruction_groups()
         self._init_color()
-        self._init_body()
-        self._init_animated_tail()
-        self._init_animated_head()
+        if self.alive:
+            self._init_body()
+            self._init_animated_tail()
+            self._init_animated_head()
 
     def _update_body(self, new_head_pos: Position, growth: int) -> None:
         # adds a square at the current head position
