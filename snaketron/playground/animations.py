@@ -389,8 +389,6 @@ class SnakeDrawer(EventDispatcher):
                 self.instr_back.add(sqr)
 
     def _animate_head(self) -> None:
-        # TODO: fix the animation when the head or the tail wraps to the other side of the world
-
         # slides the animated head square at the new head position
         self.head_animation = Animation(
             animated_head_pos=self.display.pos_to_coord(self.head_pos),
