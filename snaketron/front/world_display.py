@@ -11,7 +11,6 @@ from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from back.events import FoodCreated, FoodConsumed, AgentUpdated
 from back.events import FoodCreated, FoodConsumed, SnakeSimpleEvent, SnakeMovement, SnakeWrap
 
 if TYPE_CHECKING:

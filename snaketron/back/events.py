@@ -24,17 +24,10 @@ class FoodConsumed(ArenaEvent):
     pos: Position
     by: Optional[int]
 
+
 class AgentEvent:
     pass
 
-@dataclass
-class AgentUpdated(AgentEvent):
-    new_head_pos: Position
-    growth: int
-    death: bool
-
-
-# TODO: Replace AgentUpdated by implementing the following new event protocol
 class SnakeSimpleEvent(AgentEvent, IntEnum):
     SPAWN = auto()
     DIE = auto()
