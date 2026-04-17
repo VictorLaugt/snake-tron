@@ -413,7 +413,7 @@ class SnakeDrawer(EventDispatcher):
         )
         self.tail_animation.start(self)
 
-    def _update_snake(self, event: AgentUpdated) -> None:
+    def _move_snake(self, event: AgentUpdated) -> None:
         self._update_body(event.new_head_pos, event.growth)
         self._animate_head()
         self._animate_tail()
@@ -447,7 +447,7 @@ class SnakeDrawer(EventDispatcher):
 
         # snake moves
         else:
-            self._update_snake(event)
+            self._move_snake(event)
 
 
 if __name__ == '__main__':

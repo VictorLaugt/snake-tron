@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
-from back.events import AgentUpdated, FoodConsumed, FoodCreated
+from back.events import FoodConsumed, FoodCreated, SnakeSimpleEvent, SnakeMovement, SnakeWrap
 from back.voronoi import furthest_voronoi_vertex
 
 if TYPE_CHECKING:
@@ -113,8 +113,8 @@ class SnakeWorld(AbstractGridGraph):
         # used to update the world state during simulation steps
         self.dir_buffer: list[Direction] = []
         self.len_buffer: list[int] = []
-        self.deaths: list[AbstractSnakeAgent] = []
-        self.agent_events: list[AgentUpdated] = []
+        self.deaths: list[AbstractSnakeAgent] = []  # agents which died during the current simulation steps
+        self.agent_movement_events: list[SnakeMovement] = []
 
     def __repr__(self) -> str:
         repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
@@ -136,32 +136,36 @@ class SnakeWorld(AbstractGridGraph):
         for agent in self.alive_agents:
             agent_id = agent.get_id()
             agent.move(self.dir_buffer[agent_id])
-            self.agent_events[agent_id].new_head_pos = agent.get_head()
+            movement_event = self.agent_movement_events[agent_id]
+            movement_event.new_head_pos = agent.get_head()
+            movement_event.new_dir = agent.get_direction()
 
-    def _consume_food(self, p: Position) -> int:
-        """If there is food and only one snake head at position “p”, removes
-        that food and returns the number of cells the snake grows for eating it.
+    def _eat_food(self, agent: AbstractSnakeAgent) -> int:
+        """If there is food at the snage agent head position, and if no other
+        snake head occupies this position, removes that food and returns the
+        number of cells the snake agent should grows for eating it.
         Else, returns 0.
         """
+        p = agent.get_head()
         if p in self.food_pos:
             head_count = sum((agent.get_head() == p) for agent in self.alive_agents)
             if head_count == 1:
                 self.food_pos.remove(p)
-                self.event_sender.send_arena_event(FoodConsumed(p))
+                self.event_sender.send_arena_event(FoodConsumed(p, agent.get_id()))
                 return 1
         return 0
 
     def _grow_agents(self) -> None:
         # finds the snakes which eat a food
         for agent in self.alive_agents:
-            self.len_buffer[agent.get_id()] = self._consume_food(agent.get_head())
+            self.len_buffer[agent.get_id()] = self._eat_food(agent)
 
         # grows at the same time each snake which eats a food
         for agent in self.alive_agents:
             agent_id = agent.get_id()
             growth = self.len_buffer[agent.get_id()]
             agent.grow(growth)
-            self.agent_events[agent_id].growth = growth
+            self.agent_movement_events[agent_id].growth = growth
 
     def _resolve_self_collisions(self) -> None:
         # finds the snakes which eat their own tail
@@ -174,7 +178,7 @@ class SnakeWorld(AbstractGridGraph):
             cut_length = self.len_buffer[agent_id]
             if cut_length > 0:
                 agent.cut(cut_length)
-                self.agent_events[agent_id].growth = -cut_length
+                self.agent_movement_events[agent_id].growth = -cut_length
 
     def _resolve_cross_collisions(self) -> None:
         # finds the snakes which collide with others
@@ -189,7 +193,7 @@ class SnakeWorld(AbstractGridGraph):
             agent.die()
             self.alive_agents.remove(agent)
             self.dead_agents.append(agent)
-            self.agent_events[agent.get_id()].death = True
+            self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.DIE)
 
     def _find_available_food_pos(self, max_try: int=20) -> Optional[Position]:
         """Tries to find an available position to spawn a new food and returns
@@ -250,13 +254,13 @@ class SnakeWorld(AbstractGridGraph):
         self.alive_agents.append(agent)
         self.obstacle_count[spawn_pos] += spawn_length
         self.respawn_cooldown += self.initial_respawn_cooldown
-        self.agent_events[agent.get_id()].death = False
+        self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.SPAWN)
 
-    def _send_agent_events(self) -> None:
+    def _send_agent_movement_events(self) -> None:
         for agent in chain(self.deaths, self.alive_agents):
             agent_id = agent.get_id()
-            event = self.agent_events[agent_id]
-            self.event_sender.send_agent_event(agent_id, event)
+            movement_event = self.agent_movement_events[agent_id]
+            self.event_sender.send_agent_event(agent_id, movement_event)
 
 
     # ---- public
@@ -313,14 +317,17 @@ class SnakeWorld(AbstractGridGraph):
         agent_id = len(self.alive_agents) + len(self.dead_agents)
         agent.set_id(agent_id)
 
+        agent_dir = agent.get_direction()
+        agent_head = agent.get_head()
+
         if agent.is_alive():
             self.alive_agents.append(agent)
         else:
             self.dead_agents.append(agent)
 
-        self.dir_buffer.append(agent.get_direction())
+        self.dir_buffer.append(agent_dir)
         self.len_buffer.append(0)
-        self.agent_events.append(AgentUpdated((0, 0), 0, False))
+        self.agent_movement_events.append(SnakeMovement(agent_head, agent_dir, 0))
 
     def reset(self) -> None:
         """Reset the world and all its agents to make them ready to start a new game."""
@@ -336,7 +343,7 @@ class SnakeWorld(AbstractGridGraph):
             agent.reset()
             for pos in agent.iter_cells():
                 self.obstacle_count[pos] += 1
-            self.agent_events[agent.get_id()].death = False
+            self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.SPAWN)
 
         self.deaths.clear()
 
@@ -345,6 +352,6 @@ class SnakeWorld(AbstractGridGraph):
         self._grow_agents()
         self._resolve_self_collisions()
         self._resolve_cross_collisions()
+        self._send_agent_movement_events()
         self._spawn_missing_food()
         self._respawn_dead_agent()
-        self._send_agent_events()
