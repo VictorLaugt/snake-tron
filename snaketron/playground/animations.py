@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from collections import deque
-import numpy as np
 
 from kivy.animation import Animation
 from kivy.app import App
@@ -11,7 +10,7 @@ from kivy.core.window import Keyboard, Window, WindowBase
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty
 from kivy.uix.floatlayout import FloatLayout
 
 from back.events import FoodCreated, FoodConsumed
@@ -35,6 +34,20 @@ KV = '''
     on_pos: self.recompute_square_size()
     on_size: self.recompute_square_size()
 '''
+
+
+class ObstacleAgent(AbstractSnakeAgent):
+    def __init__(self, world: SnakeWorld, pos: Sequence[Position]) -> None:
+        super().__init__(world, pos, True)
+
+    def decide_direction(self) -> Direction:
+        return UP
+
+    def get_direction(self) -> Direction:
+        return UP
+
+    def move(self, d: Direction) -> None:
+        pass
 
 
 class MinimalistSnakeTronApp(App):
@@ -224,6 +237,9 @@ class FoodDrawUpdater:
 
 
 class SnakeDrawer(EventDispatcher):
+    head_rgb = ListProperty([0., 0., 0.])
+    tail_rgb = ListProperty([0., 0., 0.])
+
     animated_head_x = NumericProperty(0.)
     animated_head_y = NumericProperty(0.)
     animated_head_pos = ReferenceListProperty(animated_head_x, animated_head_y)
@@ -231,16 +247,6 @@ class SnakeDrawer(EventDispatcher):
     animated_tail_x = NumericProperty(0.)
     animated_tail_y = NumericProperty(0.)
     animated_tail_pos = ReferenceListProperty(animated_tail_x, animated_tail_y)
-
-
-    head_alive_rgb = (1., 1., 1.)
-    tail_alive_rgb = (.7, .7, .7)
-
-    head_decay_first_rgb = (.3, .0, .0)
-    head_decay_final_rgb = (.1, .0, .0)
-
-    tail_decay_first_rgb = (.7, .0, .0)
-    tail_decay_final_rgb = (.1, .0, .0)
 
     def __init__(
         self,
@@ -250,33 +256,35 @@ class SnakeDrawer(EventDispatcher):
     ) -> None:
         super().__init__()
         self.display = world_display
-        self.instr = InstructionGroup()
-        self.animated_instr = InstructionGroup()
-        self.display.canvas.add(self.instr)
-        self.display.canvas.add(self.animated_instr)
+        self.instr_back = InstructionGroup()
+        self.instr_fore = InstructionGroup()
+        self.display.canvas.add(self.instr_back)
+        self.display.canvas.add(self.instr_fore)
+
+        self.head_alive_rgb = (1., 1., 1.)
+        self.tail_alive_rgb = (.7, .7, .7)
+        self.head_decay_rgb = (.1, .0, .0)
+        self.tail_decay_rgb = (.1, .0, .0)
 
         self.snake = snake
         self.alive = self.snake.is_alive()
 
-        self.head_pos: Position = None
-
         # [bout de queue <----> 1 avant la tête]
         self.tail_squares: deque[Rectangle] = deque()
         self.tail_pos: deque[Position] = deque()
+        self.head_pos: Position = None
 
         # movement animation system
         self.animated_head: Rectangle = None
         self.animated_tail: Rectangle = None
-        self.head_animation: Animation = None
-        self.tail_animation: Animation = None
+        self.head_animation: Optional[Animation] = None
+        self.tail_animation: Optional[Animation] = None
 
-        # color system  # TODO: make the death animation smooth
+        # color system
         self.head_color = Color(*self.head_alive_rgb)
         self.tail_color = Color(*self.tail_alive_rgb)
         self.n_decay_steps = n_decay_steps
-        self.decay_step = 0
-        self.head_decay_rgb_gradient = np.linspace(self.head_decay_first_rgb, self.head_decay_final_rgb, self.n_decay_steps)
-        self.tail_decay_rgb_gradient = np.linspace(self.tail_decay_first_rgb, self.tail_decay_final_rgb, self.n_decay_steps)
+        self.decay_animation: Optional[Animation] = None
 
     def on_animated_head_pos(self, _, value):
         self.animated_head.pos = value
@@ -284,63 +292,80 @@ class SnakeDrawer(EventDispatcher):
     def on_animated_tail_pos(self, _, value):
         self.animated_tail.pos = value
 
+    def on_head_rgb(self, _, value):
+        self.head_color.rgb = value
+
+    def on_tail_rgb(self, _, value):
+        self.tail_color.rgb = value
+
     def _square(self, pos: Position) -> Rectangle:
         x, y = self.display.pos_to_coord(pos)
         s = self.display.square_size
         return Rectangle(pos=(x, y), size=(s, s))
 
-    def reset(self) -> None:
-        self.tail_squares.clear()
-        self.tail_pos.clear()
-
-        self.instr.clear()
-        self.animated_instr.clear()
+    def _clear_all(self) -> None:
+        self.instr_back.clear()
+        self.instr_fore.clear()
         if self.head_animation is not None:
             self.head_animation.cancel(self)
         if self.tail_animation is not None:
             self.tail_animation.cancel(self)
+        if self.decay_animation is not None:
+            self.decay_animation.cancel(self)
 
-        self.head_color.rgb = self.head_alive_rgb
-        self.tail_color.rgb = self.tail_alive_rgb
+    def _init_color(self) -> None:
+        self.head_rgb = self.head_alive_rgb
+        self.tail_rgb = self.tail_alive_rgb
+
+    def _init_body(self) -> None:
+        assert len(self.snake) >= 1
+
+        self.tail_squares.clear()
+        self.tail_pos.clear()
 
         cells = self.snake.iter_cells()
         self.head_pos = next(cells)
 
-        self.instr.add(self.tail_color)
-        tail_end_pos = None
+        self.instr_back.add(self.tail_color)
         for pos in cells:
             sqr = self._square(pos)
             self.tail_squares.appendleft(sqr)
             self.tail_pos.appendleft(pos)
-            self.instr.add(sqr)
-            tail_end_pos = pos
+            self.instr_back.add(sqr)
 
+    def _init_animated_head(self) -> None:
         self.animated_head = self._square(self.head_pos)
         self.animated_head_pos = self.animated_head.pos
-        self.animated_instr.add(self.head_color)
-        self.animated_instr.add(self.animated_head)
+        self.instr_fore.add(self.head_color)
+        self.instr_fore.add(self.animated_head)
 
-        self.animated_instr.add(self.tail_color)
-        if tail_end_pos is not None:
-            self.animated_tail = None  # TODO: animate the end of the tail
-            # self.animated_tail_pos = tail_end_pos
-            # self.animated_instr.add(self.animated_tail)
-        else:
-            self.animated_tail = None
+    def _init_animated_tail(self) -> None:
+        return  # TODO: animate the tail end
+        self.animated_tail = ...
+        self.animated_tail_pos = self.animated_tail.pos
+        self.instr_fore.add(self.tail_color)
+        self.instr_fore.add(self.animated_tail)
+
+    def reset(self) -> None:
+        self._clear_all()
+        self._init_color()
+        self._init_body()
+        self._init_animated_head()
+        self._init_animated_tail()
 
     def _update_body(self, new_head_pos: Position, growth: int) -> None:
         # adds a square at the current head position
         self.tail_pos.append(self.head_pos)
         sqr = self._square(self.head_pos)
         self.tail_squares.append(sqr)
-        self.instr.add(sqr)
+        self.instr_back.add(sqr)
         self.head_pos = new_head_pos
 
         if growth <= 0:
             # removes squares at the end of the tail
             for _ in range(1-growth):
                 sqr = self.tail_squares.popleft()
-                self.instr.remove(sqr)
+                self.instr_back.remove(sqr)
                 self.tail_pos.popleft()
 
         elif growth >= 2:
@@ -350,7 +375,7 @@ class SnakeDrawer(EventDispatcher):
                 self.tail_pos.appendleft(pos)
                 sqr = self._square(pos)
                 self.tail_squares.appendleft(sqr)
-                self.instr.add(sqr)
+                self.instr_back.add(sqr)
 
     def _animate_head(self, new_head_pos: Position) -> None:
         # TODO: fix the animation when the head or the tail wraps to the other side of the world
@@ -363,35 +388,41 @@ class SnakeDrawer(EventDispatcher):
         )
         self.head_animation.start(self)
 
-    def _init_decay(self) -> None:
-        self.decay_step = 0
-        self.head_color.rgb = self.head_decay_rgb_gradient[self.decay_step]
-        self.tail_color.rgb = self.tail_decay_rgb_gradient[self.decay_step]
+    def _update_snake(self, event: AgentUpdated) -> None:
+        self._update_body(event.new_head_pos, event.growth)
+        self._animate_head(event.new_head_pos)
+        self.head_pos = event.new_head_pos
 
-    def _decay(self) -> None:
-        if self.decay_step < self.n_decay_steps:
-            self.head_color.rgb = self.head_decay_rgb_gradient[self.decay_step]
-            self.tail_color.rgb = self.tail_decay_rgb_gradient[self.decay_step]
-            self.decay_step += 1
-        else:
-            self.instr.clear()
+    def _animate_decay(self) -> None:
+        animation_transition = 'out_circ'
+        self.decay_animation = Animation(
+            head_rgb=self.head_decay_rgb,
+            duration=self.n_decay_steps*self.display.time_step,
+            t=animation_transition
+        ) & Animation(
+            tail_rgb=self.tail_decay_rgb,
+            duration=self.n_decay_steps*self.display.time_step,
+            t=animation_transition
+        )
+        self.decay_animation.start(self)
 
     def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
         if event is None:
-            if not self.alive:
-                self._decay()
-        else:
-            if event.death:
-                self.alive = False
-                self._init_decay()
-                self._decay()
-            elif not self.alive:
-                self.alive = True
-                self.reset()
-            else:
-                self._update_body(event.new_head_pos, event.growth)
-                self._animate_head(event.new_head_pos)
+            return
 
+        # snake dies
+        if event.death:
+            self.alive = False
+            self._animate_decay()
+
+        # snake respawns
+        elif not self.alive:
+            self.alive = True
+            self.reset()
+
+        # snake moves
+        else:
+            self._update_snake(event)
 
 
 if __name__ == '__main__':
@@ -402,10 +433,14 @@ if __name__ == '__main__':
     sender, receiver = build_event_pipe()
     world = SnakeWorld(width=w, height=h, n_food=2, respawn_cooldown=6, event_sender=sender)
 
-    init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
+    # init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
+    init_pos = [(2, 5)] * 6
     init_dir = (0, -1)
     player = PlayerSnakeAgent(world, init_pos, init_dir)
     world.attach_agent(player)
+
+    obstacle_pos = [(11, 5), (11, 6), (11, 7), (11, 8)]
+    world.attach_agent(ObstacleAgent(world, obstacle_pos))
 
     time_step = .5
 
