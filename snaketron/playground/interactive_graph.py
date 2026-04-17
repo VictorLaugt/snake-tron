@@ -8,6 +8,7 @@ import numpy as np
 from back.a_star import shortest_path
 from back.voronoi import furthest_voronoi_vertex
 from back.world import EuclidianDistanceHeuristic, SnakeWorld
+from back.events import build_event_pipe
 
 if TYPE_CHECKING:
     from typing import Optional, TypeAlias
@@ -277,16 +278,19 @@ class VoronoiInteractiveTester(InteractiveGrid):
 
 
 if __name__ == '__main__':
-    # app = AStarInteractiveTester(
-    #     SnakeWorld(20, 20, 0),
-    #     square_size=40,
-    #     default_src=(5, 9),
-    #     default_dst=(14, 9)
-    # )
-    # app.mainloop()
+    event_sender, event_receiver = build_event_pipe()
+    world = SnakeWorld(width=20, height=20, n_food=0, event_sender=event_sender)
 
-    app = VoronoiInteractiveTester(
-        SnakeWorld(20, 20, 0),
-        square_size=40
+    app = AStarInteractiveTester(
+        world,
+        square_size=40,
+        default_src=(5, 9),
+        default_dst=(14, 9)
     )
     app.mainloop()
+
+    # app = VoronoiInteractiveTester(
+    #     world,
+    #     square_size=40
+    # )
+    # app.mainloop()
