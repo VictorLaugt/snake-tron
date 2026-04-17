@@ -320,17 +320,17 @@ class SnakeDrawUpdater:
         return Rectangle(pos=(x, y), size=(s, s))
 
     def reset(self) -> None:
-        decay_in_progress = (0 <= self.decay_step < self.n_decay_steps)
-        if decay_in_progress:
-            self.head_color.rgb = self.head_decay_rgb_grad[self.decay_step]
-            self.tail_color.rgb = self.tail_decay_rgb_grad[self.decay_step]
-        else:
-            self.head_color.rgb = self.color_values.head
-            self.tail_color.rgb = self.color_values.tail
-
         self.instr.clear()
         self.tail_squares.clear()
         self.tail_pos.clear()
+
+        decay_in_progress = (0 <= self.decay_step < self.n_decay_steps)
+        if decay_in_progress:
+            self.head_color = Color(*self.head_decay_rgb_grad[self.decay_step])
+            self.tail_color = Color(*self.tail_decay_rgb_grad[self.decay_step])
+        else:
+            self.head_color = Color(*self.color_values.head)
+            self.tail_color = Color(*self.color_values.tail)
 
         if self.alive or decay_in_progress:
             # draws the head
