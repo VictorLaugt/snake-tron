@@ -160,7 +160,7 @@ class MinimalistWorldDisplay(FloatLayout):
             if agent_id == self.player.get_id():
                 self.player_draw_updater.update_draw(event)
 
-        print(f"\nDEBUG:\n{self.world}")
+        # print(f"\nDEBUG:\n{self.world}")
 
 
 class ArenaDrawer:
@@ -208,7 +208,6 @@ class FoodDrawUpdater:
 
         self.instr = InstructionGroup()
         self.display.canvas.add(self.instr)
-        self.food_color = Color(1, 0, 0)
 
         self.foods: dict[Position, Ellipse] = {}
 
@@ -220,7 +219,7 @@ class FoodDrawUpdater:
 
     def reset(self) -> None:
         self.instr.clear()
-        self.instr.add(self.food_color)
+        self.instr.add(Color(0, 1, 0))
         for pos in self.foods.keys():
             circle = self._circle(pos)
             self.instr.add(circle)
@@ -237,16 +236,17 @@ class FoodDrawUpdater:
 
 
 class SnakeDrawer(EventDispatcher):
-    head_rgb = ListProperty([0., 0., 0.])
     tail_rgb = ListProperty([0., 0., 0.])
 
     animated_head_x = NumericProperty(0.)
     animated_head_y = NumericProperty(0.)
     animated_head_pos = ReferenceListProperty(animated_head_x, animated_head_y)
+    animated_head_rgb = ListProperty([0., 0., 0.])
 
     animated_tail_x = NumericProperty(0.)
     animated_tail_y = NumericProperty(0.)
     animated_tail_pos = ReferenceListProperty(animated_tail_x, animated_tail_y)
+    animated_tail_rgb = ListProperty([0., 0., 0.])
 
     def __init__(
         self,
@@ -281,7 +281,8 @@ class SnakeDrawer(EventDispatcher):
         self.head_animation: Optional[Animation] = None
 
         # color system
-        self.head_color = Color(*self.head_alive_rgb)
+        self.animated_head_color = Color(*self.head_alive_rgb)
+        self.animated_tail_color = Color(*self.tail_alive_rgb)
         self.tail_color = Color(*self.tail_alive_rgb)
         self.n_decay_steps = n_decay_steps
         self.decay_animation: Optional[Animation] = None
@@ -292,8 +293,11 @@ class SnakeDrawer(EventDispatcher):
     def on_animated_tail_pos(self, _, value):
         self.animated_tail.pos = value
 
-    def on_head_rgb(self, _, value):
-        self.head_color.rgb = value
+    def on_animated_head_rgb(self, _, value):
+        self.animated_head_color.rgb = value
+
+    def on_animated_tail_rgb(self, _, value):
+        self.animated_tail_color.rgb = value
 
     def on_tail_rgb(self, _, value):
         self.tail_color.rgb = value
@@ -304,19 +308,18 @@ class SnakeDrawer(EventDispatcher):
         return Rectangle(pos=(x, y), size=(s, s))
 
     def _clear_all(self) -> None:
-        self.instr_back.clear()
-        self.instr_fore.clear()
         if self.head_animation is not None:
             self.head_animation.stop(self)
         if self.tail_animation is not None:
             self.tail_animation.stop(self)
         if self.decay_animation is not None:
             self.decay_animation.stop(self)
+        self.instr_back.clear()
+        self.instr_fore.clear()
 
     def _init_color(self) -> None:
-        self.head_color = Color(*self.head_alive_rgb)
-        self.tail_color = Color(*self.tail_alive_rgb)
-        self.head_rgb = self.head_alive_rgb
+        self.animated_head_rgb = self.head_alive_rgb
+        self.animated_tail_rgb = self.tail_alive_rgb
         self.tail_rgb = self.tail_alive_rgb
 
     def _init_body(self) -> None:
@@ -328,6 +331,7 @@ class SnakeDrawer(EventDispatcher):
         cells = self.snake.iter_cells()
         self.head_pos = next(cells)
 
+        self.tail_color = Color(*self.tail_rgb)
         self.instr_back.add(self.tail_color)
         for pos in cells:
             sqr = self._square(pos)
@@ -339,13 +343,15 @@ class SnakeDrawer(EventDispatcher):
         end_tail_pos = self.tail_pos[0] if len(self.tail_pos) > 0 else self.head_pos
         self.animated_tail = self._square(end_tail_pos)
         self.animated_tail_pos = self.animated_tail.pos
-        self.instr_fore.add(self.tail_color)
+        self.animated_tail_color = Color(*self.animated_tail_rgb)
+        self.instr_fore.add(self.animated_tail_color)
         self.instr_fore.add(self.animated_tail)
 
     def _init_animated_head(self) -> None:
         self.animated_head = self._square(self.head_pos)
         self.animated_head_pos = self.animated_head.pos
-        self.instr_fore.add(self.head_color)
+        self.animated_head_color = Color(*self.animated_head_rgb)
+        self.instr_fore.add(self.animated_head_color)
         self.instr_fore.add(self.animated_head)
 
     def reset(self) -> None:
@@ -410,15 +416,14 @@ class SnakeDrawer(EventDispatcher):
         self._animate_tail()
 
     def _animate_decay(self) -> None:
+        d = self.n_decay_steps * self.display.time_step
         animation_transition = 'out_circ'
         self.decay_animation = Animation(
-            head_rgb=self.head_decay_rgb,
-            duration=self.n_decay_steps*self.display.time_step,
-            t=animation_transition
+            animated_head_rgb=self.head_decay_rgb, duration=d, t=animation_transition
         ) & Animation(
-            tail_rgb=self.tail_decay_rgb,
-            duration=self.n_decay_steps*self.display.time_step,
-            t=animation_transition
+            animated_tail_rgb=self.tail_decay_rgb, duration=d, t=animation_transition
+        ) & Animation(
+            tail_rgb=self.tail_decay_rgb, duration=d, t=animation_transition
         )
         self.decay_animation.start(self)
 
@@ -450,9 +455,9 @@ if __name__ == '__main__':
     world = SnakeWorld(width=w, height=h, n_food=2, respawn_cooldown=6, event_sender=sender)
 
     # init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
-    # init_pos = [(4, 5), (3, 5), (2, 5)]
+    init_pos = [(4, 5), (3, 5), (2, 5)]
     # init_pos = [(4, 5), (3, 5)]
-    init_pos = [(4, 5)]
+    # init_pos = [(4, 5)]
     init_dir = (1, 0)
     player = PlayerSnakeAgent(world, init_pos, init_dir)
     world.attach_agent(player)
