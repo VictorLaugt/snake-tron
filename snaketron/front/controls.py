@@ -52,22 +52,6 @@ class SwipeDirectionFilter:
         return True
 
 
-class KeyBoardDirectionFilter:
-    def __init__(self, initial_dir: Direction):
-        self.reset(initial_dir)
-
-    def reset(self, initial_dir: Direction):
-        self.prev_valid_dir = initial_dir
-
-    def filter(self, d: Direction) -> bool:
-        if d == self.prev_valid_dir:
-            return False
-
-        self.prev_valid_dir = d
-        return True
-
-
-
 class PlayerSwipeControl(Widget):
     background_color = ListProperty(get_color_from_hex('#FFFFFF00'))
     border_color = ListProperty(get_color_from_hex('#FFFFFF00'))
@@ -179,8 +163,6 @@ class PlayerKeyBoardControl(EventDispatcher):
     player: PlayerSnakeAgent
     key_bindings: dict[int, Direction]
 
-    control_filter: KeyBoardDirectionFilter
-
     def init_logic(self, player: PlayerSnakeAgent, up: str, left: str, down: str, right: str) -> None:
         self.player = player
         self.key_bindings = {
@@ -189,7 +171,6 @@ class PlayerKeyBoardControl(EventDispatcher):
             Keyboard.keycodes[down]: DOWN,
             Keyboard.keycodes[left]: LEFT,
         }
-        self.control_filter = KeyBoardDirectionFilter(player.get_direction())
         Window.bind(on_key_down=self.on_key_down)
 
     def on_key_down(
@@ -201,5 +182,5 @@ class PlayerKeyBoardControl(EventDispatcher):
         modifiers: Sequence[str]
     ) -> None:
         direction = self.key_bindings.get(key)
-        if direction is not None and self.control_filter.filter(direction):
+        if direction is not None:
             self.player.add_dir_request(direction)

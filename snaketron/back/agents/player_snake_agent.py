@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import deque
 
 from back.agents.abstract_snake_agent import AbstractSnakeAgent
-from back.direction import opposite_dir
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -50,5 +49,6 @@ class PlayerSnakeAgent(AbstractSnakeAgent):
                 last_dir = self.dir_requests[-1]
             else:
                 last_dir = self.dir
-            if request != opposite_dir(last_dir):
+
+            if request[0]*last_dir[0] + request[1]*last_dir[1] == 0:
                 self.dir_requests.append(request)
