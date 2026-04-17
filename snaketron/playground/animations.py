@@ -275,10 +275,10 @@ class SnakeDrawer(EventDispatcher):
         self.head_pos: Position = None
 
         # movement animation system
-        self.animated_head: Rectangle = None
         self.animated_tail: Rectangle = None
-        self.head_animation: Optional[Animation] = None
         self.tail_animation: Optional[Animation] = None
+        self.animated_head: Rectangle = None
+        self.head_animation: Optional[Animation] = None
 
         # color system
         self.head_color = Color(*self.head_alive_rgb)
@@ -307,13 +307,15 @@ class SnakeDrawer(EventDispatcher):
         self.instr_back.clear()
         self.instr_fore.clear()
         if self.head_animation is not None:
-            self.head_animation.cancel(self)
+            self.head_animation.stop(self)
         if self.tail_animation is not None:
-            self.tail_animation.cancel(self)
+            self.tail_animation.stop(self)
         if self.decay_animation is not None:
-            self.decay_animation.cancel(self)
+            self.decay_animation.stop(self)
 
     def _init_color(self) -> None:
+        self.head_color = Color(*self.head_alive_rgb)
+        self.tail_color = Color(*self.tail_alive_rgb)
         self.head_rgb = self.head_alive_rgb
         self.tail_rgb = self.tail_alive_rgb
 
@@ -333,25 +335,25 @@ class SnakeDrawer(EventDispatcher):
             self.tail_pos.appendleft(pos)
             self.instr_back.add(sqr)
 
+    def _init_animated_tail(self) -> None:
+        end_tail_pos = self.tail_pos[0] if len(self.tail_pos) > 0 else self.head_pos
+        self.animated_tail = self._square(end_tail_pos)
+        self.animated_tail_pos = self.animated_tail.pos
+        self.instr_fore.add(self.tail_color)
+        self.instr_fore.add(self.animated_tail)
+
     def _init_animated_head(self) -> None:
         self.animated_head = self._square(self.head_pos)
         self.animated_head_pos = self.animated_head.pos
         self.instr_fore.add(self.head_color)
         self.instr_fore.add(self.animated_head)
 
-    def _init_animated_tail(self) -> None:
-        return  # TODO: animate the tail end
-        self.animated_tail = ...
-        self.animated_tail_pos = self.animated_tail.pos
-        self.instr_fore.add(self.tail_color)
-        self.instr_fore.add(self.animated_tail)
-
     def reset(self) -> None:
         self._clear_all()
         self._init_color()
         self._init_body()
-        self._init_animated_head()
         self._init_animated_tail()
+        self._init_animated_head()
 
     def _update_body(self, new_head_pos: Position, growth: int) -> None:
         # adds a square at the current head position
@@ -377,21 +379,35 @@ class SnakeDrawer(EventDispatcher):
                 self.tail_squares.appendleft(sqr)
                 self.instr_back.add(sqr)
 
-    def _animate_head(self, new_head_pos: Position) -> None:
+    def _animate_head(self) -> None:
         # TODO: fix the animation when the head or the tail wraps to the other side of the world
 
         # slides the animated head square at the new head position
         self.head_animation = Animation(
-            animated_head_pos=self.display.pos_to_coord(new_head_pos),
+            animated_head_pos=self.display.pos_to_coord(self.head_pos),
             duration=self.display.time_step,
             t='linear'
         )
         self.head_animation.start(self)
 
+    def _animate_tail(self) -> None:
+        # slides the animated tail square at the new tail end position
+        tail_end_pos = self.tail_pos[0] if len(self.tail_pos) > 0 else self.head_pos
+        x_src, y_src = self.animated_tail_pos
+        x_dst, y_dst = self.display.pos_to_coord(tail_end_pos)
+        dx, dy = x_dst-x_src, y_dst-y_src
+
+        self.tail_animation = Animation(
+            animated_tail_pos=(x_src+1.2*dx, y_src+1.2*dy),
+            duration=self.display.time_step,
+            t='linear'
+        )
+        self.tail_animation.start(self)
+
     def _update_snake(self, event: AgentUpdated) -> None:
         self._update_body(event.new_head_pos, event.growth)
-        self._animate_head(event.new_head_pos)
-        self.head_pos = event.new_head_pos
+        self._animate_head()
+        self._animate_tail()
 
     def _animate_decay(self) -> None:
         animation_transition = 'out_circ'
@@ -434,15 +450,17 @@ if __name__ == '__main__':
     world = SnakeWorld(width=w, height=h, n_food=2, respawn_cooldown=6, event_sender=sender)
 
     # init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
-    init_pos = [(2, 5)] * 6
-    init_dir = (0, -1)
+    # init_pos = [(4, 5), (3, 5), (2, 5)]
+    # init_pos = [(4, 5), (3, 5)]
+    init_pos = [(4, 5)]
+    init_dir = (1, 0)
     player = PlayerSnakeAgent(world, init_pos, init_dir)
     world.attach_agent(player)
 
     obstacle_pos = [(11, 5), (11, 6), (11, 7), (11, 8)]
     world.attach_agent(ObstacleAgent(world, obstacle_pos))
 
-    time_step = .5
+    time_step = .2
 
     app = MinimalistSnakeTronApp(receiver, world, player, time_step)
     app.run()
