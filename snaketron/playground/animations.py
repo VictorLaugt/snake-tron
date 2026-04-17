@@ -114,7 +114,7 @@ class MinimalistWorldDisplay(FloatLayout):
         self.arena_drawer = ArenaDrawer(self, world)
         self.food_draw_updater = FoodDrawUpdater(self)
         # self.player_draw_updater = DummyPlayerDrawUpdater(self, player)
-        self.player_draw_updater = SnakeDrawer(self, player, 6)
+        self.player_draw_updater = SnakeDrawer(self, player, 3)
 
         Clock.schedule_interval(self.game_step, self.time_step)
 
@@ -160,7 +160,7 @@ class MinimalistWorldDisplay(FloatLayout):
             if agent_id == self.player.get_id():
                 self.player_draw_updater.update_draw(event)
 
-        # print(f"\nDEBUG:\n{self.world}")
+        print(f"\nDEBUG:\n{self.world}")
 
 
 class ArenaDrawer:
@@ -307,13 +307,15 @@ class SnakeDrawer(EventDispatcher):
         s = self.display.square_size
         return Rectangle(pos=(x, y), size=(s, s))
 
-    def _clear_all(self) -> None:
+    def _stop_animations(self) -> None:
         if self.head_animation is not None:
             self.head_animation.stop(self)
         if self.tail_animation is not None:
             self.tail_animation.stop(self)
         if self.decay_animation is not None:
             self.decay_animation.stop(self)
+
+    def _clear_instruction_groups(self) -> None:
         self.instr_back.clear()
         self.instr_fore.clear()
 
@@ -355,7 +357,8 @@ class SnakeDrawer(EventDispatcher):
         self.instr_fore.add(self.animated_head)
 
     def reset(self) -> None:
-        self._clear_all()
+        self._stop_animations()
+        self._clear_instruction_groups()
         self._init_color()
         self._init_body()
         self._init_animated_tail()
@@ -425,6 +428,7 @@ class SnakeDrawer(EventDispatcher):
         ) & Animation(
             tail_rgb=self.tail_decay_rgb, duration=d, t=animation_transition
         )
+        self.decay_animation.bind(on_complete=(lambda *_: self._clear_instruction_groups()))
         self.decay_animation.start(self)
 
     def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
