@@ -139,13 +139,13 @@ class WorldDisplay(FloatLayout):
             if isinstance(event, SnakeMovement):
                 updater.update_draw_snake_move(event, time_step)
             elif isinstance(event, SnakeWrap):
-                ...
+                ...  # TODO: use the SnakeWrap event to fix the animation when the head or the tail wraps to the other side of the world
             elif event == SnakeSimpleEvent.SPAWN:
                 updater.update_draw_spawn()
             elif event == SnakeSimpleEvent.DIE:
                 updater.update_draw_die(time_step)
             elif event == SnakeSimpleEvent.DASH:
-                ...
+                NotImplemented  # Gamelpay feature not implemented yet
 
 
     def update_draw(self, time_step: float) -> None:
@@ -430,7 +430,6 @@ class SnakeDrawUpdater(EventDispatcher):
                 self.instr_back.add(sqr)
 
     def _animate_head(self, time_step: float) -> None:
-        # TODO: use the SnakeWrap event to fix the animation when the head or the tail wraps to the other side of the world
         # slides the animated head square at the new head position
         self.head_animation = Animation(
             animated_head_pos=self.display.pos_to_coord(self.head_pos),

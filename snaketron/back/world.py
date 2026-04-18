@@ -347,6 +347,7 @@ class SnakeWorld(AbstractGridGraph):
 
         self.deaths.clear()
 
+    # TODO: the simulate method should send the SnakeWrap when a snake wraps to the other side of the world
     def simulate(self) -> None:
         self._move_agents()
         self._grow_agents()
