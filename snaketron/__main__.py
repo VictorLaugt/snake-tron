@@ -26,15 +26,15 @@ if TYPE_CHECKING:
 """
 TODO:
  Priorité 1:
- - animation de déplacement fluides
+ - déplacer tous les boutons dans un menu de pause qu'on active en cliquant une fois sur l'arène
+ - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé (réglable depuis le menu de pause)
+ - créer un nouvel évènement pour prendre en charge les serpents qui traversent un bord de l'arène et réaparraissent de l'autre côté
 
 Priorité 2:
  - essayer de faire des agents qui ignorent la latency pour le calcul de leurs chemins d'attaques, mais qui la respectent pour le calcul des chemins vers la nourriture
  - latency et caution variables grâce à une callback : dépendants de la taille du serpent, ou aléatoire
- - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé
 
 Priorité 3:
-  - déplacer tous les boutons dans un menu de pause qu'on active en cliquant une fois sur l'arène
  - optimiser le path finding
 
 IDÉE DE GAMEPLAY:
