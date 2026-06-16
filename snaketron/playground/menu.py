@@ -10,6 +10,8 @@ from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.utils import platform
 from kivy.graphics import Color, Rectangle, RoundedRectangle, InstructionGroup
+from kivy.properties import ListProperty, NumericProperty
+
 
 
 KV = """
@@ -52,6 +54,52 @@ KV = """
         Rectangle:
             pos: self.pos
             size: self.size
+
+<PauseMenu>:
+    background_color: 0, 0, 0, 0
+    overlay_color: 0, 0, 0, 0
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: root.menu_padding
+        spacing: root.menu_padding
+
+        canvas.before:
+            Color:
+                rgba: root.menu_background_color
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        # MOCK
+        FloatLayout:
+            size_hint_y: 4
+
+            canvas.before:
+                Color:
+                    rgba: 0.3, 0.3, 0.3, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            Label:
+                text: "Add or remove player or AI"
+                pos: self.parent.pos
+                halign: "center"
+                valign: "middle"
+
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: root.menu_padding
+
+            Button:
+                text: "Resume"
+
+            Button:
+                text: "Explain AIs"
+
+            Button:
+                text: "Full speed"
 """
 
 
@@ -64,71 +112,31 @@ class DummyApp(App):
         window = AppWindow()
         return window
 
-
-class SwipeControlZone(FloatLayout):
-    pass
-
-
 class PauseMenu(ModalView):
-    def __init__(self, **kwargs):
-        super().__init__(
-            background_color=(0, 0, 0, 0),
-            overlay_color=(0, 0, 0, 0),
-            opacity=0,  # start invisible
-            **kwargs
-        )
+    menu_background_color = ListProperty([0, 0, 1, 0.5])
+    menu_padding = NumericProperty(10)
 
-        # --- container principal ---
-        self.container = BoxLayout(
-            orientation="vertical",
-            padding=20,
-            spacing=15
-        )
-
-        with self.container.canvas.before:
-            Color(0.5, 1, 0.5, 0.12)  # effet verre
-            self.bg = Rectangle(
-                pos=self.container.pos,
-                size=self.container.size
-            )
-
-        self.container.bind(pos=self.update_bg, size=self.update_bg)
-
-        # TODO: extract content into another class whose layout is defined in the KV string
-        self.container.add_widget(Label(
-            text="Pause",
-            bold=True,
-            color=(1, 1, 1, 1)
-        ))
-
-        btn = Button(
-            text="Resume",
-            size_hint=(1, 0.3)
-        )
-        btn.bind(on_release=lambda x: self.dismiss())
-
-        self.container.add_widget(btn)
-        self.add_widget(self.container)
-
-    def update_bg(self, *args):
-        self.bg.pos = self.container.pos
-        self.bg.size = self.container.size
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, opacity=0)
 
     def on_open(self):
-        self.scale = 0.9
         self.opacity = 0
+        self.scale = 0.5
 
         anim = Animation(
             opacity=1,
-            d=0.18*10,
+            d=0.18,
             t="out_quad"
         ) + Animation(
-            d=0.12*10,
             scale=1,
+            d=0.12,
             t="out_back"
         )
-
         anim.start(self)
+
+
+class SwipeControlZone(FloatLayout):
+    pass
 
 
 class WorldDisplay(FloatLayout):
@@ -148,11 +156,10 @@ class WorldDisplay(FloatLayout):
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            # self.show_modal()
             PauseMenu(
                 size=self.size,
                 size_hint=(1, 0.5),
-                auto_dismiss=False,
+                auto_dismiss=True,
             ).open()
             return True
         return super().on_touch_down(touch)
