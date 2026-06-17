@@ -71,7 +71,6 @@ KV = """
                 pos: self.pos
                 size: self.size
 
-        # MOCK
         FloatLayout:
             size_hint_y: 4
 
@@ -93,12 +92,13 @@ KV = """
             spacing: root.menu_padding
 
             Button:
+                id: button_resume
                 text: "Resume"
 
-            Button:
+            ToggleButton:
                 text: "Explain AIs"
 
-            Button:
+            ToggleButton:
                 text: "Full speed"
 """
 
@@ -118,20 +118,24 @@ class PauseMenu(ModalView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, opacity=0)
+        self.ids.button_resume.bind(on_press=lambda *_: self.dismiss(animation=False))
 
     def on_open(self):
-        self.opacity = 0
-        self.scale = 0.5
+        start_size_hint = (0.8 * self.size_hint_x, 0.8 * self.size_hint_y)
+        final_size_hint = (self.size_hint_x, self.size_hint_y)
 
-        anim = Animation(
-            opacity=1,
-            d=0.18,
-            t="out_quad"
-        ) + Animation(
-            scale=1,
-            d=0.12,
-            t="out_back"
+        self.opacity = 0
+        self.size_hint = start_size_hint
+        anim = (
+            Animation(opacity=1, d=0.18, t="out_quad") &
+            Animation(size_hint=final_size_hint, d=0.12, t="out_back")
         )
+        anim.start(self)
+
+    def dismiss(self, *args, **kwargs):
+        self.opacity = 1
+        anim = Animation(opacity=0, d=0.18, t="out_quad")
+        anim.bind(on_complete=lambda *_: super(PauseMenu, self).dismiss(*args, **kwargs))
         anim.start(self)
 
 
