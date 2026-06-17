@@ -45,9 +45,13 @@ class SnakeTronApp(App):
         self.input_sensitivity = input_sensitivity
 
     def build(self) -> SnakeTronWindow:
-        with self.layout_file.open(mode='r') as fp:
-            layout_string = fp.read()
-        Builder.load_string(layout_string)
+        # with self.layout_file.open(mode='r') as fp:
+        #     layout_string = fp.read()
+        # Builder.load_string(layout_string)
+        Builder.load_file(str(self.layout_file))
+        # TODO: separate the interface declaration into multiple .kv files and load them all
+        # for layout_file in self.layout_dir.glob('*.kv', case_sensitive=False):
+        #     Builder.load_file(str(layout_file))
 
         with self.color_file.open(mode='r') as fp:
             colors = json.load(fp)
