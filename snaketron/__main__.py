@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 """
 TODO:
  Priorité 1:
- - déplacer tous les boutons dans un menu de pause qu'on active en cliquant une fois sur l'arène
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé (réglable depuis le menu de pause)
  - créer un nouvel évènement pour prendre en charge les serpents qui traversent un bord de l'arène et réaparraissent de l'autre côté
 
