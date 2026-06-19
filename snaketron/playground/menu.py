@@ -16,13 +16,13 @@ KV = """
     orientation: "vertical"
 
     SwipeControlZone:
-        size_hint_y: 0.25
+        size_hint_y: 0.1
 
     WorldDisplay:
         size_hint_y: 0.5
 
     SwipeControlZone:
-        size_hint_y: 0.25
+        size_hint_y: 0.4
 
 
 <SwipeControlZone>:
@@ -53,22 +53,18 @@ KV = """
             size: self.size
 
 <PauseMenu>:
-    background_color: 0, 0, 0, 0
-    overlay_color: 0, 0, 0, 0
-
-    FloatLayout:
-        id: menu_background
-
-        canvas.before:
-            Color:
-                rgba: root.menu_background_color
-            Rectangle:
-                pos: self.pos
-                size: self.size
+    canvas.before:
+        Color:
+            rgba: root.menu_background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
     BoxLayout:
         id: menu_content
 
+        pos: root.pos
+        size: root.size
         orientation: "vertical"
         padding: root.menu_padding
         spacing: root.menu_padding
@@ -115,15 +111,22 @@ class DummyApp(App):
         window = AppWindow()
         return window
 
-class PauseMenu(ModalView):
+class PauseMenu(FloatLayout):
     menu_background_color = ListProperty([0, 0, 1, 0.5])
     menu_padding = NumericProperty(10)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, opacity=0)
-        self.ids.button_resume.bind(on_press=lambda *_: self.dismiss(animation=False))
+        self.ids.button_resume.bind(on_press=lambda *_: self.request_resume())
 
-    def on_open(self):
+    def on_touch_down(self, touch):
+        if super().on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos):
+            return True
+        return False
+
+    def request_pause(self):
         content = self.ids.menu_content
 
         duration = 0.12
@@ -136,7 +139,7 @@ class PauseMenu(ModalView):
         zoom_in_anim.start(content)
         fade_in_anim.start(self)
 
-    def dismiss(self, *args, **kwargs):
+    def request_resume(self):
         content = self.ids.menu_content
 
         duration = 0.12
@@ -144,7 +147,7 @@ class PauseMenu(ModalView):
         zoom_out_anim = Animation(size_hint=final_size_hint, d=duration, t="out_back")
         fade_out_anim = Animation(opacity=0, d=duration, t="out_quad")
 
-        fade_out_anim.bind(on_complete=lambda *_: super(PauseMenu, self).dismiss(*args, **kwargs))
+        fade_out_anim.bind(on_complete=lambda *_: self.parent.remove_widget(self))
         zoom_out_anim.start(content)
         fade_out_anim.start(self)
 
@@ -169,15 +172,22 @@ class WorldDisplay(FloatLayout):
             )
 
     def on_touch_down(self, touch):
+        print("DEBUG: WorldDisplay detect touch")
+
+        if super().on_touch_down(touch):
+            return True
+
         if self.collide_point(*touch.pos):
-            PauseMenu(
-                pos=self.to_window(*self.pos),
+            pause_menu = PauseMenu(
                 size_hint=(None, None),
                 size=self.size,
-                auto_dismiss=True,
-            ).open()
+                pos=self.to_window(*self.pos),
+            )
+            self.add_widget(pause_menu)
+            pause_menu.request_pause()
             return True
-        return super().on_touch_down(touch)
+
+        return False
 
 
 class AppWindow(BoxLayout):

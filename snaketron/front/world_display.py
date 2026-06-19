@@ -17,6 +17,7 @@ from front.pause_menu import PauseMenu
 if TYPE_CHECKING:
     from typing import Sequence, Optional
     from kivy.uix.widget import Widget
+    from kivy.input import MotionEvent
 
     from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
     from back.events import EventReceiver
@@ -127,21 +128,22 @@ class WorldDisplay(FloatLayout):
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
+    def on_touch_down(self, touch: MotionEvent) -> bool:
+        if super().on_touch_down(touch):
+            return True
 
-    def on_touch_down(self, touch):
-        if not self.collide_point(touch.x, touch.y):
-            return False
+        if self.collide_point(touch.x, touch.y):
+            pause_menu = PauseMenu(
+                self.main_window,
+                size_hint=(None, None),
+                size=self.size,
+                pos=self.to_window(self.x, self.y)
+            )
+            self.add_widget(pause_menu)
+            pause_menu.request_pause()
+            return True
 
-        self.main_window.toggle_pause()
-        print(f"DEBUG: instanciating PauseMenu at position {self.to_window(self.x, self.y)}")
-        PauseMenu(
-            self.main_window,
-            pos=self.to_window(self.x, self.y),
-            size_hint=(None, None),
-            size=self.size,
-            auto_dismiss=True
-        ).open()
-        return True
+        return False
 
 
     def toggle_ai_explanations(self) -> None:
@@ -156,6 +158,7 @@ class WorldDisplay(FloatLayout):
 
     def ai_explanations_is_enabled(self) -> bool:
         return self.ai_explanations
+
 
     def _draw_arena_events(self) -> None:
         for event in self.event_receiver.recv_arena_events():
@@ -185,7 +188,6 @@ class WorldDisplay(FloatLayout):
 
         self._draw_arena_events()
         self._draw_agent_events(time_step)
-        print(f"DEBUG: world_display: {self.pos = }, {self.to_window(self.x, self.y) = }")
 
 
 class AiInspectionDrawer:

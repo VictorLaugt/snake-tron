@@ -1,17 +1,16 @@
 <PauseMenu>:
-    FloatLayout:
-        id: menu_background
-
-        canvas.before:
-            Color:
-                rgba: root.menu_background_color
-            Rectangle:
-                pos: self.pos
-                size: self.size
+    canvas.before:
+        Color:
+            rgba: root.menu_background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
     BoxLayout:
         id: menu_content
 
+        pos: root.pos
+        size: root.size
         orientation: "vertical"
         padding: root.menu_padding
         spacing: root.menu_padding
