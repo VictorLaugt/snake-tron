@@ -12,16 +12,21 @@ from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty
 from kivy.uix.floatlayout import FloatLayout
 
 from back.events import FoodCreated, FoodConsumed, SnakeSimpleEvent, SnakeMovement, SnakeWrap
+from front.pause_menu import PauseMenu
 
 if TYPE_CHECKING:
     from typing import Sequence, Optional
+    from kivy.uix.widget import Widget
+    from kivy.input import MotionEvent
 
     from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
     from back.events import EventReceiver
     from back.type_hints import Position
     from back.world import SnakeWorld
+
     from front.type_hints import ColorValue, Coordinate
-    from kivy.uix.widget import Widget
+    from front.window import SnakeTronWindow
+
 
 
 @dataclass
@@ -61,12 +66,14 @@ class WorldDisplay(FloatLayout):
 
     def init_logic(
         self,
+        main_window: SnakeTronWindow,
         event_receiver: EventReceiver,
         world: SnakeWorld,
         ai_snakes: Sequence[AbstractAISnakeAgent],
         world_colors: WorldColors,
         snake_colors: dict[int, SnakeColors]
     ) -> None:
+        self.main_window = main_window
         self.event_receiver = event_receiver
         self.world = world
         self.ai_explanations = False
@@ -121,6 +128,23 @@ class WorldDisplay(FloatLayout):
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
+    def on_touch_down(self, touch: MotionEvent) -> bool:
+        if super().on_touch_down(touch):
+            return True
+
+        if self.collide_point(touch.x, touch.y):
+            pause_menu = PauseMenu(
+                self.main_window,
+                size_hint=(None, None),
+                size=self.size,
+                pos=self.to_window(self.x, self.y)
+            )
+            self.add_widget(pause_menu)
+            pause_menu.request_pause()
+            return True
+
+        return False
+
 
     def toggle_ai_explanations(self) -> None:
         self.ai_explanations = not self.ai_explanations
@@ -131,6 +155,9 @@ class WorldDisplay(FloatLayout):
         else:
             for drawer in self.ai_inspection_drawers:
                 drawer.erase()
+
+    def ai_explanations_is_enabled(self) -> bool:
+        return self.ai_explanations
 
 
     def _draw_arena_events(self) -> None:
@@ -153,7 +180,6 @@ class WorldDisplay(FloatLayout):
                 updater.update_draw_die(time_step)
             elif event == SnakeSimpleEvent.DASH:
                 NotImplemented  # Gamelpay feature not implemented yet
-
 
     def update_draw(self, time_step: float) -> None:
         if self.ai_explanations:

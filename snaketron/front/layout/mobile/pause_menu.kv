@@ -1,0 +1,50 @@
+<PauseMenu>:
+    canvas.before:
+        Color:
+            rgba: root.menu_background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        id: menu_content
+
+        pos: root.pos
+        size: root.size
+        orientation: "vertical"
+        padding: root.menu_padding
+        spacing: root.menu_padding
+
+        # MOCK: # Feature not implemented yet: dynamically add or remove agents during the game
+        FloatLayout:
+            size_hint_y: 4
+
+            canvas.before:
+                Color:
+                    rgba: 0.3, 0.3, 0.3, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            Label:
+                text: "Add or remove player or AI"
+                pos: self.parent.pos
+                halign: "center"
+                valign: "middle"
+
+        BoxLayout:
+            size_hint_y: 1
+            orientation: "horizontal"
+            spacing: root.menu_padding
+
+            Button:
+                id: button_resume
+                text: "Resume"
+
+            ToggleButton:
+                id: button_toggle_ai_explanations
+                text: "Explain AIs"
+
+            ToggleButton:
+                id: button_toggle_fullspeed
+                text: "Full speed"

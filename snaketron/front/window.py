@@ -45,10 +45,6 @@ class SnakeTronWindow(BoxLayout):
             if isinstance(child, SwipeControlZone):
                 self.swipe_zones.append(child)
 
-        self.ids.button_pause.bind(on_press=lambda _: self.toggle_pause())
-        self.ids.button_toggle_ai_explanations.bind(on_press=lambda _: self.toggle_ai_explanations())
-        self.ids.button_toggle_fullspeed.bind(on_press=lambda _: self.toggle_fullspeed())
-
     def _set_time_step(self, new_time_step: float) -> None:
         self.time_step = new_time_step
         if not self.paused:
@@ -69,8 +65,14 @@ class SnakeTronWindow(BoxLayout):
         else:
             self._set_time_step(self.regular_time_step)
 
+    def fullspeed_is_enabled(self) -> bool:
+        return self.full_speed
+
     def toggle_ai_explanations(self) -> None:
         self.ids.world_display.toggle_ai_explanations()
+
+    def ai_explanations_is_enabled(self) -> bool:
+        return self.ids.world_display.ai_explanations_is_enabled()
 
 
     def init_logic(
@@ -106,7 +108,7 @@ class SnakeTronWindow(BoxLayout):
 
         # propagates logic to child widgets
         self.ids.world_display.init_logic(
-            event_receiver, world, ai_agents, world_colors, agent_colors
+            self, event_receiver, world, ai_agents, world_colors, agent_colors
         )
         self.ids.score_board.init_logic(agents, agent_colors)
         self._init_logic_keyboard_inputs(player_agents)
