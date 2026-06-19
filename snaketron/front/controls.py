@@ -9,7 +9,7 @@ from kivy.event import EventDispatcher
 from kivy.graphics import Color, InstructionGroup, Line
 from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.widget import Widget
+from kivy.uix.floatlayout import FloatLayout
 from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from front.world_display import SnakeColors
     from kivy.core.window import WindowBase
     from kivy.input import MotionEvent
+    from kivy.uix.widget import Widget
 
 
 class SwipeDirectionFilter:
@@ -52,7 +53,7 @@ class SwipeDirectionFilter:
         return True
 
 
-class PlayerSwipeControl(Widget):
+class PlayerSwipeControl(FloatLayout):
     background_color = ListProperty(get_color_from_hex('#FFFFFF00'))
     border_color = ListProperty(get_color_from_hex('#FFFFFF00'))
 
@@ -124,6 +125,12 @@ class PlayerSwipeControl(Widget):
 
         self.touch_uid = None
         return True
+
+    def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
+        self.update_direction_display()
+
+    def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
+        self.update_direction_display()
 
     def update_direction_display(self) -> None:
         self.draw_instr.clear()

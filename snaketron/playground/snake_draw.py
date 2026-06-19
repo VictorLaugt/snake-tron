@@ -11,7 +11,6 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Keyboard, Window, WindowBase
 from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
-from kivy.lang import Builder
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
@@ -26,14 +25,6 @@ if TYPE_CHECKING:
     from back.world import SnakeWorld
     from front.type_hints import Coordinate
     from kivy.uix.widget import Widget
-
-
-KV = '''
-<MinimalistWorldDisplay>:
-    orientation: "vertical"
-    on_pos: self.recompute_square_size()
-    on_size: self.recompute_square_size()
-'''
 
 
 class ObstacleAgent(AbstractSnakeAgent):
@@ -64,8 +55,6 @@ class MinimalistSnakeTronApp(App):
         self.world.reset()
 
     def build(self) -> MinimalistWorldDisplay:
-        Builder.load_string(KV)
-
         window = MinimalistWorldDisplay()
         window.init_logic(self.event_receiver, self.world, self.player, self.time_step)
         return window
@@ -110,7 +99,7 @@ class MinimalistWorldDisplay(FloatLayout):
         }
         Window.bind(on_key_down=self.on_key_down)
 
-        self.recompute_square_size()
+        self._recompute_square_size()
         Clock.schedule_interval(self.game_step, self.time_step)
 
     def on_key_down(
@@ -125,7 +114,7 @@ class MinimalistWorldDisplay(FloatLayout):
         if direction is not None:
             self.player.add_dir_request(direction)
 
-    def recompute_square_size(self) -> None:
+    def _recompute_square_size(self) -> None:
         self.square_size = min(
             self.height / self.world.get_height(),
             self.width / self.world.get_width()
@@ -133,6 +122,12 @@ class MinimalistWorldDisplay(FloatLayout):
 
     def on_square_size(self, instance: Widget, value: float) -> None:
         self.redraw()
+
+    def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
+        self._recompute_square_size()
+
+    def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
+        self._recompute_square_size()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (

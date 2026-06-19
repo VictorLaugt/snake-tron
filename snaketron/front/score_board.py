@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class ColoredLabel(Label):
-    box_color = ListProperty(get_color_from_hex('#FFFFFF'))
+    box_color = ListProperty(get_color_from_hex('#000000'))
 
 
 class ScoreBoard(BoxLayout):
@@ -35,7 +35,7 @@ class ScoreBoard(BoxLayout):
             snake_id = snake.get_id()
             label = ColoredLabel(
                 text=str(len(snake)),
-                color=(1, 1, 1, 1),
+                color=get_color_from_hex('#FFFFFF'),
                 box_color=self.snake_colors[snake_id].tail
             )
             self.labels[snake_id] = label

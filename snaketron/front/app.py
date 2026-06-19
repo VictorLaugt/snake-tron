@@ -7,8 +7,11 @@ from front.controls import *
 from front.score_board import *
 from front.window import *
 from front.world_display import *
+
 from kivy.app import App
 from kivy.lang import Builder
+from kivy.utils import platform
+from kivy.core.window import Window
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,7 +31,7 @@ class SnakeTronApp(App):
         ai_agents: Sequence[AbstractAISnakeAgent],
         time_step: float,
         ai_explanations: bool,
-        layout_file: Path,
+        layout_dir: Path,
         color_file: Path,
         input_sensitivity: float,
         **kwargs
@@ -40,20 +43,27 @@ class SnakeTronApp(App):
         self.ai_agents = ai_agents
         self.time_step = time_step
         self.ai_explanations = ai_explanations
-        self.layout_file = layout_file
+        self.layout_dir = layout_dir
         self.color_file = color_file
         self.input_sensitivity = input_sensitivity
 
     def build(self) -> SnakeTronWindow:
-        with self.layout_file.open(mode='r') as fp:
-            layout_string = fp.read()
-        Builder.load_string(layout_string)
+        for layout_file in self.layout_dir.rglob('*.kv'):
+            Builder.load_file(str(layout_file))
 
         with self.color_file.open(mode='r') as fp:
             colors = json.load(fp)
 
-        window = SnakeTronWindow()
-        window.init_logic(
+        if platform in ('linux', 'win', 'macosx'):
+            screen_width, screen_height = Window.system_size
+            width, height = int(432/891 * screen_height), screen_height
+            scale = screen_width / width
+            if scale < 1:
+                width, height = int(width * scale), int(height * scale)
+            Window.size = (width, height)
+
+        main_window = SnakeTronWindow()
+        main_window.init_logic(
             self.event_receiver,
             self.world,
             self.player_agents,
@@ -63,4 +73,4 @@ class SnakeTronApp(App):
             colors,
             self.input_sensitivity
         )
-        return window
+        return main_window
