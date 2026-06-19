@@ -55,14 +55,12 @@ KV = """
             pos: self.pos
             size: self.size
 
-<PauseMenu>:
+<PauseMenu@ModalView>:
     background_color: 0, 0, 0, 0
     overlay_color: 0, 0, 0, 0
 
-    BoxLayout:
-        orientation: "vertical"
-        padding: root.menu_padding
-        spacing: root.menu_padding
+    FloatLayout:
+        id: menu_background
 
         canvas.before:
             Color:
@@ -70,6 +68,13 @@ KV = """
             Rectangle:
                 pos: self.pos
                 size: self.size
+
+    BoxLayout:
+        id: menu_content
+
+        orientation: "vertical"
+        padding: root.menu_padding
+        spacing: root.menu_padding
 
         FloatLayout:
             size_hint_y: 4
@@ -88,6 +93,7 @@ KV = """
                 valign: "middle"
 
         BoxLayout:
+            size_hint_y: 1
             orientation: "horizontal"
             spacing: root.menu_padding
 
@@ -121,22 +127,29 @@ class PauseMenu(ModalView):
         self.ids.button_resume.bind(on_press=lambda *_: self.dismiss(animation=False))
 
     def on_open(self):
-        start_size_hint = (0.8 * self.size_hint_x, 0.8 * self.size_hint_y)
-        final_size_hint = (self.size_hint_x, self.size_hint_y)
+        content = self.ids.menu_content
 
-        self.opacity = 0
-        self.size_hint = start_size_hint
-        anim = (
-            Animation(opacity=1, d=0.18, t="out_quad") &
-            Animation(size_hint=final_size_hint, d=0.12, t="out_back")
-        )
-        anim.start(self)
+        duration = 0.12
+        start_size_hint = (0.8 * content.size_hint_x, 0.8 * content.size_hint_y)
+        final_size_hint = (content.size_hint_x, content.size_hint_y)
+        zoom_in_anim = Animation(size_hint=final_size_hint, d=duration, t="out_back")
+        fade_in_anim = Animation(opacity=1, d=duration, t="out_quad")
+
+        content.size_hint = start_size_hint
+        zoom_in_anim.start(content)
+        fade_in_anim.start(self)
 
     def dismiss(self, *args, **kwargs):
-        self.opacity = 1
-        anim = Animation(opacity=0, d=0.18, t="out_quad")
-        anim.bind(on_complete=lambda *_: super(PauseMenu, self).dismiss(*args, **kwargs))
-        anim.start(self)
+        content = self.ids.menu_content
+
+        duration = 0.12
+        final_size_hint = (0.8 * content.size_hint_x, 0.8 * content.size_hint_y)
+        zoom_out_anim = Animation(size_hint=final_size_hint, d=duration, t="out_back")
+        fade_out_anim = Animation(opacity=0, d=duration, t="out_quad")
+
+        fade_out_anim.bind(on_complete=lambda *_: super(PauseMenu, self).dismiss(*args, **kwargs))
+        zoom_out_anim.start(content)
+        fade_out_anim.start(self)
 
 
 class SwipeControlZone(FloatLayout):
