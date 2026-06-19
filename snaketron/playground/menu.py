@@ -1,12 +1,9 @@
 from kivy.app import App
 from kivy.animation import Animation
-from kivy.uix.button import Button
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.utils import platform
 from kivy.graphics import Color, Rectangle, RoundedRectangle, InstructionGroup
@@ -55,7 +52,7 @@ KV = """
             pos: self.pos
             size: self.size
 
-<PauseMenu@ModalView>:
+<PauseMenu>:
     background_color: 0, 0, 0, 0
     overlay_color: 0, 0, 0, 0
 
@@ -174,8 +171,9 @@ class WorldDisplay(FloatLayout):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             PauseMenu(
+                pos=self.to_window(*self.pos),
+                size_hint=(None, None),
                 size=self.size,
-                size_hint=(1, 0.5),
                 auto_dismiss=True,
             ).open()
             return True
