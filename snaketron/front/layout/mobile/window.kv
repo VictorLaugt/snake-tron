@@ -1,5 +1,4 @@
 <SnakeTronWindow>:
-    id: game_window
     orientation: "vertical"
 
     canvas.before:
@@ -22,8 +21,6 @@
 
     WorldDisplay:
         id: world_display
-        on_pos: self.recompute_square_size()
-        on_size: self.recompute_square_size()
         size_hint_y: 0.5
 
     BoxLayout:
@@ -32,16 +29,16 @@
         spacing: 5
 
         Button:
+            id: button_pause
             text: "Pause"
-            on_press: game_window.toggle_pause()
 
         Button:
+            id: button_toggle_ai_explanations
             text: "Explain AIs"
-            on_press: game_window.toggle_ai_explanations()
 
-        # Button:
-        #     text: "Full speed"
-        #     on_press: game_window.toggle_fullspeed()
+        Button:
+            id: button_toggle_fullspeed
+            text: "Full speed"
 
     SwipeControlZone:
         orientation: "horizontal"

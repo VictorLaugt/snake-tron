@@ -99,7 +99,7 @@ class WorldDisplay(FloatLayout):
             self.y + (self.world.get_height() - 1 - pos[1]) * self.square_size
         )
 
-    def recompute_square_size(self) -> None:
+    def _recompute_square_size(self) -> None:
         self.square_size = min(
             self.height / self.world.get_height(),
             self.width / self.world.get_width()
@@ -115,6 +115,13 @@ class WorldDisplay(FloatLayout):
         self.food_draw_updater.reset()
         for snake_draw_updater in self.snake_draw_updaters.values():
             snake_draw_updater.reset()
+
+    def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
+        self._recompute_square_size()
+
+    def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
+        self._recompute_square_size()
+
 
     def toggle_ai_explanations(self) -> None:
         self.ai_explanations = not self.ai_explanations

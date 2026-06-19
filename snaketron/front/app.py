@@ -7,8 +7,11 @@ from front.controls import *
 from front.score_board import *
 from front.window import *
 from front.world_display import *
+
 from kivy.app import App
 from kivy.lang import Builder
+from kivy.utils import platform
+from kivy.core.window import Window
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -51,8 +54,16 @@ class SnakeTronApp(App):
         with self.color_file.open(mode='r') as fp:
             colors = json.load(fp)
 
-        window = SnakeTronWindow()
-        window.init_logic(
+        if platform in ('linux', 'win', 'macosx'):
+            screen_width, screen_height = Window.system_size
+            width, height = int(432/891 * screen_height), screen_height
+            scale = screen_width / width
+            if scale < 1:
+                width, height = int(width * scale), int(height * scale)
+            Window.size = (width, height)
+
+        main_window = SnakeTronWindow()
+        main_window.init_logic(
             self.event_receiver,
             self.world,
             self.player_agents,
@@ -62,4 +73,4 @@ class SnakeTronApp(App):
             colors,
             self.input_sensitivity
         )
-        return window
+        return main_window
