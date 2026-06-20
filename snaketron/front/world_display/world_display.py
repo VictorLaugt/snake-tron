@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
     from kivy.input import MotionEvent
 
-    from back.agents import AbstractAISnakeAgent
+    from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
     from back.events import EventReceiver
     from back.type_hints import Position
     from back.world import SnakeWorld
@@ -56,6 +56,7 @@ class WorldDisplay(FloatLayout):
 
     event_receiver: EventReceiver
     world: SnakeWorld
+    snakes: dict[int, AbstractSnakeAgent]
     ai_explanations: bool
 
     arena_drawer: ArenaDrawer
@@ -90,9 +91,11 @@ class WorldDisplay(FloatLayout):
 
         self.food_draw_updater = FoodDrawUpdater(self, world_colors)
 
+        self.snakes = {}
         self.snake_draw_updaters = {}
         for snake in itertools.chain(world.iter_alive_agents(), world.iter_dead_agents()):
             snake_id = snake.get_id()
+            self.snakes[snake_id] = snake
             self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(
                 self, snake, snake_colors[snake_id], n_decay_steps=4
             )
@@ -162,12 +165,12 @@ class WorldDisplay(FloatLayout):
         return self.ai_explanations
 
 
-    def _draw_arena_events(self) -> None:
+    def _draw_arena_events(self, time_step: float) -> None:
         for event in self.event_receiver.recv_arena_events():
             if isinstance(event, FoodCreated):
-                self.food_draw_updater.draw_food(event)
+                self.food_draw_updater.spawn_food(event.pos, time_step)
             elif isinstance(event, FoodConsumed):
-                self.food_draw_updater.erase_food(event)
+                self.food_draw_updater.consume_food(event.pos, self.snakes.get(event.by), time_step)
 
     def _draw_agent_events(self, time_step: float) -> None:
         for snake_id, event in self.event_receiver.recv_agent_events():
@@ -188,7 +191,7 @@ class WorldDisplay(FloatLayout):
             for ai_inspection_drawer in self.ai_inspection_drawers:
                 ai_inspection_drawer.erase_and_draw()
 
-        self._draw_arena_events()
+        self._draw_arena_events(time_step)
         self._draw_agent_events(time_step)
 
 
