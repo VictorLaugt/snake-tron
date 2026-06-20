@@ -23,8 +23,6 @@ class FoodCreated(ArenaEvent):
 class FoodConsumed(ArenaEvent):
     pos: Position
     by: Optional[int]
-    # TODO: the frontend should use the field `FoodConsumed.by` to slide the
-    # food in the mouth of the snake which eat the food, if any
 
 
 class AgentEvent:
