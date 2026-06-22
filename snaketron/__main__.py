@@ -60,9 +60,6 @@ def define_opponents(
 
 def build_game(
     event_sender: EventSender,
-    height: int,
-    width: int,
-    n_food: int,
     n_snakes: int,
     n_players: int,
     respawn_cooldown: int
@@ -71,6 +68,9 @@ def build_game(
         raise ValueError("Too many snakes")
     if not (0 <= n_players <= n_snakes):
         raise ValueError("Too many players")
+
+    n_food = max(n_snakes - 1, 1)
+    height = width = 3*n_snakes + 9
 
     dx = int(0.2 * width)
     dy = 1
@@ -141,17 +141,10 @@ def build_game(
     return world, player_agents, ai_agents
 
 
-height, width = 21, 21
-# height, width = 23, 23
-# height, width = 25, 25
-# height, width = 30, 30
-# height, width = 40, 40
-
-n_snakes = 4
+n_snakes = 2
 n_players = 1
 
 respawn_cooldown = 15
-n_food = max(n_snakes - 1, 1)
 
 # time_step = 0.15
 time_step = 0.2
@@ -161,8 +154,7 @@ time_step = 0.2
 event_sender, event_receiver = build_event_pipe()
 world, player_agents, ai_agents = build_game(
     event_sender,
-    height, width,
-    n_food, n_snakes, n_players,
+    n_snakes, n_players,
     respawn_cooldown
 )
 app = SnakeTronApp(
