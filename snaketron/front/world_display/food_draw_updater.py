@@ -31,8 +31,6 @@ class FoodDrawUpdater:
         self.working_drawers: dict[Position, FoodDrawer] = {}
         self.free_drawers: list[FoodDrawer] = []
 
-        self.foods = {}
-
     def reset(self) -> None:
         for pos, drawer in self.working_drawers.items():
             drawer.despawn_without_anim(pos)
