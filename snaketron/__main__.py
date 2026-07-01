@@ -141,7 +141,7 @@ def build_game(
     return world, player_agents, ai_agents
 
 
-n_snakes = 2
+n_snakes = 4
 n_players = 1
 
 respawn_cooldown = 15

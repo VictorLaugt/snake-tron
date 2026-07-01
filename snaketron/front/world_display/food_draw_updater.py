@@ -121,6 +121,7 @@ class FoodDrawer(EventDispatcher):
         # self.animated_size = (0, 0)
         self.animated_size = (s, s)
         self.animated_pos = (x, y)
+        self.animated_color = self.invisible
         anim = (
             # Animation(animated_size=(s, s), d=duration, t='linear') &
             Animation(animated_color=c, d=duration, t='linear')
@@ -143,8 +144,8 @@ class FoodDrawer(EventDispatcher):
         food_dst = eater.get_world().get_neighbor(pos, mouth_dir)
         x, y = self.pool.display.pos_to_coord(food_dst)
         anim = (
-            Animation(animated_pos=(x, y), d=duration, t='linear') &
-            Animation(animated_color=self.invisible, d=duration, t='linear')
+            Animation(animated_pos=(x, y), d=duration, t='linear') # &
+            # Animation(animated_color=self.invisible, d=duration, t='linear')
         )
         anim.bind(on_complete=lambda *_: self._free(pos))
         anim.start(self)
