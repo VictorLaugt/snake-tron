@@ -163,24 +163,26 @@ class WorldDisplay(FloatLayout):
 
     def _draw_arena_events(self, time_step: float) -> None:
         for event in self.event_receiver.recv_arena_events():
-            if isinstance(event, FoodCreated):
-                self.food_draw_updater.spawn_food(event.pos, time_step)
-            elif isinstance(event, FoodConsumed):
-                self.food_draw_updater.consume_food(event.pos, self.snakes.get(event.by), time_step)
+            match event:
+                case FoodCreated(pos):
+                    self.food_draw_updater.spawn_food(pos, time_step)
+                case FoodConsumed(pos, by):
+                    self.food_draw_updater.consume_food(pos, self.snakes.get(by), time_step)
 
     def _draw_agent_events(self, time_step: float) -> None:
         for snake_id, event in self.event_receiver.recv_agent_events():
             updater = self.snake_draw_updaters[snake_id]
-            if isinstance(event, SnakeMovement):
-                updater.update_draw_snake_move(event, time_step)
-            elif isinstance(event, SnakeWrap):
-                ...  # TODO: use the SnakeWrap event to fix the animation when the head or the tail wraps to the other side of the world
-            elif event == SnakeSimpleEvent.SPAWN:
-                updater.update_draw_spawn()
-            elif event == SnakeSimpleEvent.DIE:
-                updater.update_draw_die(time_step)
-            elif event == SnakeSimpleEvent.DASH:
-                NotImplemented  # Gamelpay feature not implemented yet
+            match event:
+                case SnakeMovement():
+                    updater.update_draw_snake_move(event, time_step)
+                case SnakeWrap():
+                    ...  # TODO: use the SnakeWrap event to fix the animation when the head or the tail wraps to the other side of the world
+                case SnakeSimpleEvent.SPAWN:
+                    updater.update_draw_spawn()
+                case SnakeSimpleEvent.DIE:
+                    updater.update_draw_die(time_step)
+                case SnakeSimpleEvent.DASH:
+                    NotImplemented  # Gameplay feature not implemented yet
 
     def update_draw(self, time_step: float) -> None:
         if self.ai_explanations:
