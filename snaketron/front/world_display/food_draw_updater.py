@@ -96,6 +96,7 @@ class FoodDrawer(EventDispatcher):
         self.pool.working_drawers[pos] = self
 
     def _free(self, pos: Position) -> None:
+        self.animated_color = self.invisible
         self.pool.working_drawers.pop(pos)
         self.pool.free_drawers.append(self)
 
