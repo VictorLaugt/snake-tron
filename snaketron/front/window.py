@@ -108,12 +108,16 @@ class SnakeTronWindow(BoxLayout):
 
         # propagates logic to child widgets
         self.ids.world_display.init_logic(
-            self, event_receiver, world, ai_agents, world_colors, agent_colors
+            self, event_receiver, world, ai_agents,
+            world_colors, agent_colors,
+            input_sensitivity
         )
         self.ids.score_board.init_logic(agents, agent_colors)
-        self._init_logic_keyboard_inputs(player_agents)
-        self._init_logic_touchscreen_inputs(
-            player_agents, swipe_zone_bg_color, agent_colors, input_sensitivity
+        self._init_logic_keyboard_controls(player_agents)
+        self._init_logic_touchscreen_controls(
+            player_agents,
+            swipe_zone_bg_color, agent_colors,
+            input_sensitivity
         )
 
         if ai_explanations:
@@ -145,7 +149,7 @@ class SnakeTronWindow(BoxLayout):
             gridborder=get_color_from_hex(colors['world']['gridborder'])
         )
 
-    def _init_logic_keyboard_inputs(self, player_agents: Sequence[PlayerSnakeAgent]) -> None:
+    def _init_logic_keyboard_controls(self, player_agents: Sequence[PlayerSnakeAgent]) -> None:
         keyboard_control_sets = (
             ('up', 'left', 'down', 'right'),
             ('z', 'q', 's', 'd'),
@@ -157,7 +161,7 @@ class SnakeTronWindow(BoxLayout):
             kb_controls.init_logic(player_agents[i], *keyboard_control_sets[i])
             self.keyboard_controls.append(kb_controls)
 
-    def _init_logic_touchscreen_inputs(
+    def _init_logic_touchscreen_controls(
         self,
         player_agents: Sequence[PlayerSnakeAgent],
         swipe_zone_bg_color: ColorValue,
