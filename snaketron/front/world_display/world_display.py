@@ -11,7 +11,7 @@ from kivy.uix.floatlayout import FloatLayout
 
 from back.events import FoodCreated, FoodConsumed, SnakeSimpleEvent, SnakeMovement, SnakeWrap
 
-from front.pause_menu import PauseMenu
+from front.pause_menu import PauseMenuInvoker
 from front.world_display.ai_inspection_drawer import AiInspectionDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
 from front.world_display.snake_draw_updater import SnakeDrawUpdater
@@ -67,6 +67,8 @@ class WorldDisplay(FloatLayout):
     world_colors: WorldColors
     snake_colors: SnakeColors
 
+    pause_invoker: PauseMenuInvoker
+
     def init_logic(
         self,
         main_window: SnakeTronWindow,
@@ -74,9 +76,9 @@ class WorldDisplay(FloatLayout):
         world: SnakeWorld,
         ai_snakes: Sequence[AbstractAISnakeAgent],
         world_colors: WorldColors,
-        snake_colors: dict[int, SnakeColors]
+        snake_colors: dict[int, SnakeColors],
+        pause_command_touch_max_length: float
     ) -> None:
-        self.main_window = main_window
         self.event_receiver = event_receiver
         self.world = world
         self.ai_explanations = False
@@ -102,6 +104,14 @@ class WorldDisplay(FloatLayout):
 
         self.world_colors = world_colors
         self.snake_colors = snake_colors
+
+        self.pause_invoker = PauseMenuInvoker(
+            main_window, pause_command_touch_max_length,
+            size_hint=(None, None), size=self.size,
+            pos=self.to_window(self.x, self.y)
+        )
+        self.add_widget(self.pause_invoker)
+
         self.arena_drawer.erase_and_draw()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
@@ -127,28 +137,14 @@ class WorldDisplay(FloatLayout):
         for updater in self.snake_draw_updaters.values():
             updater.reset()
 
+        self.pause_invoker.size = self.size
+        self.pause_invoker.pos = self.to_window(self.x, self.y)
+
     def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
-
-    def on_touch_down(self, touch: MotionEvent) -> bool:
-        if super().on_touch_down(touch):
-            return True
-
-        if self.collide_point(touch.x, touch.y):
-            pause_menu = PauseMenu(
-                self.main_window,
-                size_hint=(None, None),
-                size=self.size,
-                pos=self.to_window(self.x, self.y)
-            )
-            self.add_widget(pause_menu)
-            pause_menu.request_pause()
-            return True
-
-        return False
 
 
     def toggle_ai_explanations(self) -> None:
