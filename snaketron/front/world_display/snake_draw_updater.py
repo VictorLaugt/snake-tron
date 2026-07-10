@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from back.agents import AbstractSnakeAgent
     from back.events import SnakeMovement
-    from back.type_hints import Position
+    from back.type_hints import Position, Direction
 
 class SnakeDrawUpdater(EventDispatcher):
     tail_rgb = ListProperty([0., 0., 0.])
@@ -212,6 +212,14 @@ class SnakeDrawUpdater(EventDispatcher):
         self._update_body(event.new_head_pos, event.growth)
         self._animate_head(time_step)
         self._animate_tail(time_step)
+
+    def update_draw_snake_wrap(self, event: SnakeMovement, time_step: float) -> None:
+        raise NotImplementedError  # TODO: animation for when the snake wraps to one side of the world
+        ...
+
+    def update_draw_snake_teleport(self, event: SnakeMovement, time_step: float) -> None:
+        raise NotImplementedError  # TODO: animation for when the snake teleports at one position of the world
+        ...
 
     def update_draw_spawn(self) -> None:
         self.alive = True

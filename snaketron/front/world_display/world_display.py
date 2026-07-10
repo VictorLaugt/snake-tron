@@ -9,7 +9,11 @@ from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from back.events import FoodCreated, FoodConsumed, SnakeSimpleEvent, SnakeMovement, SnakeWrap
+from back.events import (
+    FoodCreated, FoodConsumed,
+    SnakeSimpleEvent,
+    SnakeMovement, SnakeMovementType
+)
 
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.ai_inspection_drawer import AiInspectionDrawer
@@ -173,10 +177,13 @@ class WorldDisplay(FloatLayout):
         for snake_id, event in self.event_receiver.recv_agent_events():
             updater = self.snake_draw_updaters[snake_id]
             match event:
-                case SnakeMovement():
+                case SnakeMovement(movement_type=SnakeMovementType.COMMON):
                     updater.update_draw_snake_move(event, time_step)
-                case SnakeWrap():
-                    ...  # TODO: use the SnakeWrap event to fix the animation when the head or the tail wraps to the other side of the world
+                case SnakeMovement(movement_type=SnakeMovementType.WRAP):
+                    updater.update_draw_snake_wrap(event, time_step)
+                case SnakeMovement(movement_type=SnakeMovementType.TELEPORT):
+                    updater.update_draw_snake_teleport(event, time_step)
+
                 case SnakeSimpleEvent.SPAWN:
                     updater.update_draw_spawn()
                 case SnakeSimpleEvent.DIE:

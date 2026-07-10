@@ -33,17 +33,19 @@ class SnakeSimpleEvent(AgentEvent, IntEnum):
     DIE = auto()
     DASH = auto()
 
+
+class SnakeMovementType(IntEnum):
+    COMMON = auto()
+    WRAP = auto()
+    TELEPORT = auto()
+
+
 @dataclass
 class SnakeMovement(AgentEvent):
     new_head_pos: Position
     new_dir: Direction
     growth: int
-
-@dataclass
-class SnakeWrap(AgentEvent):
-    cell_idx: int
-    new_cell_pos: Position
-    wrap_dir: Direction
+    movement_type: SnakeMovementType
 
 
 class EventSender:
