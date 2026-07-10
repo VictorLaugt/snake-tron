@@ -214,7 +214,8 @@ class SnakeDrawUpdater(EventDispatcher):
         self._animate_tail(time_step)
 
     def update_draw_snake_wrap(self, event: SnakeMovement, time_step: float) -> None:
-        raise NotImplementedError  # TODO: animation for when the snake wraps to one side of the world
+        print("WARNING: Wrap animation is not implemented yet")
+        # TODO: animation for when the snake wraps to one side of the world
         ...
 
     def update_draw_snake_teleport(self, event: SnakeMovement, time_step: float) -> None:

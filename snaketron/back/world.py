@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
-from back.events import FoodConsumed, FoodCreated, SnakeSimpleEvent, SnakeMovement, SnakeWrap
+from back.events import (
+    FoodConsumed, FoodCreated,
+    SnakeSimpleEvent,
+    SnakeMovement, SnakeMovementType
+)
 from back.voronoi import furthest_voronoi_vertex
 
 if TYPE_CHECKING:
@@ -135,8 +139,13 @@ class SnakeWorld(AbstractGridGraph):
         # each snake moves at the same time
         for agent in self.alive_agents:
             agent_id = agent.get_id()
-            agent.move(self.dir_buffer[agent_id])
             movement_event = self.agent_movement_events[agent_id]
+
+            if agent.move(self.dir_buffer[agent_id]):
+                movement_event.movement_type = SnakeMovementType.WRAP
+            else:
+                movement_event.movement_type = SnakeMovementType.COMMON
+
             movement_event.new_head_pos = agent.get_head()
             movement_event.new_dir = agent.get_direction()
 
@@ -279,6 +288,11 @@ class SnakeWorld(AbstractGridGraph):
     def get_neighbor(self, p: Position, d: Direction) -> Position:
         return (p[0] + d[0]) % self.width, (p[1] + d[1]) % self.height
 
+    def get_neighbor_and_wrap(self, p: Position, d: Direction) -> tuple[Position, tuple[int, int]]:
+        wrap_x, neighbor_x = divmod(p[0] + d[0], self.width)
+        wrap_y, neighbor_y = divmod(p[1] + d[1], self.height)
+        return (neighbor_x, neighbor_y), (wrap_x, wrap_y)
+
     def iter_free_neighbors(self, p: Position) -> Iterator[tuple[Position, Direction]]:
         x, y = p
         up_neighbor = (x, (y-1) % self.height)
@@ -327,7 +341,9 @@ class SnakeWorld(AbstractGridGraph):
 
         self.dir_buffer.append(agent_dir)
         self.len_buffer.append(0)
-        self.agent_movement_events.append(SnakeMovement(agent_head, agent_dir, 0))
+        self.agent_movement_events.append(
+            SnakeMovement(agent_head, agent_dir, 0, SnakeMovementType.COMMON)
+        )
 
     def reset(self) -> None:
         """Reset the world and all its agents to make them ready to start a new game."""
@@ -347,7 +363,6 @@ class SnakeWorld(AbstractGridGraph):
 
         self.deaths.clear()
 
-    # TODO: the simulate method should send the SnakeWrap when a snake wraps to the other side of the world
     def simulate(self) -> None:
         self._move_agents()
         self._grow_agents()

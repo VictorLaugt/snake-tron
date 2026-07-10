@@ -61,13 +61,20 @@ class AbstractSnakeAgent(ABC):
         else:
             self.pos.extendleft(pos)
 
-    def move(self, d: Direction) -> None:
-        """Moves once the snake in the direction `d`."""
+    def move(self, d: Direction) -> bool:
+        """Moves once the snake in the direction `d`. Returns True if the snake
+        wraps through the limit of the world, False othwerwise.
+        """
+        new_head, (wrap_x, wrap_y) = self.world.get_neighbor_and_wrap(self.pos[-1], d)
         new_head = self.world.get_neighbor(self.pos[-1], d)
         self.world.incr_obstacle_count(new_head, 1)
         self.pos.append(new_head)
         self.last_tail_pos = self.pos.popleft()
         self.world.incr_obstacle_count(self.last_tail_pos, -1)
+        if wrap_x or wrap_y:
+            return True
+        else:
+            return False
 
     def check_self_collision(self) -> int:
         """Returns the length which should be cutted from the snake's tail if it
