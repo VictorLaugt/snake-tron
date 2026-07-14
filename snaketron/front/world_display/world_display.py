@@ -178,14 +178,14 @@ class WorldDisplay(FloatLayout):
             updater = self.snake_draw_updaters[snake_id]
             match event:
                 case SnakeMovement(movement_type=SnakeMovementType.COMMON):
-                    updater.update_draw_snake_move(event, time_step)
+                    updater.update_draw_snake_move(time_step, event)
                 case SnakeMovement(movement_type=SnakeMovementType.WRAP):
-                    updater.update_draw_snake_wrap(event, time_step)
+                    updater.update_draw_snake_wrap(time_step, event)
                 case SnakeMovement(movement_type=SnakeMovementType.TELEPORT):
-                    updater.update_draw_snake_teleport(event, time_step)
+                    updater.update_draw_snake_teleport(time_step, event)
 
                 case SnakeSimpleEvent.SPAWN:
-                    updater.update_draw_spawn()
+                    updater.update_draw_spawn(time_step)
                 case SnakeSimpleEvent.DIE:
                     updater.update_draw_die(time_step)
                 case SnakeSimpleEvent.DASH:

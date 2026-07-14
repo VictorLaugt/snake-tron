@@ -1,22 +1,22 @@
 {
     "ui": {
-        "swipe_zone_bg_color": "#000000",
-        "background": "#000000"
+        "swipe_zone_bg_color": "#000000FF",
+        "background": "#000000FF"
     },
     "world": {
-        "food_outline": "#FF6666",
-        "food": "#FF0000",
-        "background": "#000030",
-        "gridline": "#000090",
-        "gridborder": "#005690"
+        "food_outline": "#FF6666FF",
+        "food": "#FF0000FF",
+        "background": "#000030FF",
+        "gridline": "#000090FF",
+        "gridborder": "#005690FF"
     },
     "snakes": {
-        "head_color_wheel": ["#0066CC", "#D19300", "#9400D3", "#006400"],
-        "tail_color_wheel": ["#0088EE", "#F3B500", "#EE82EE", "#008000"],
-        "tail_decay_first": "#8B0000",
-        "tail_decay_final": "#1F0000",
-        "head_decay_first": "#640000",
-        "head_decay_final": "#1F0000",
-        "inspect": "#000060"
+        "head_color_wheel": ["#0066CCFF", "#D19300FF", "#9400D3FF", "#006400FF"],
+        "tail_color_wheel": ["#0088EEFF", "#F3B500FF", "#EE82EEFF", "#008000FF"],
+        "tail_decay_first": "#8B0000FF",
+        "tail_decay_final": "#1F000000",
+        "head_decay_first": "#640000FF",
+        "head_decay_final": "#1F000000",
+        "inspect": "#000060FF"
     }
 }

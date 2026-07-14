@@ -62,14 +62,16 @@ class PauseMenuInvoker(Widget):
         return True
 
     def open_pause_menu(self) -> None:
-        self.pause_menu = PauseMenu(
-            self.main_window,
-            on_close=self.close_pause_menu,
-            size_hint=(None, None), size=self.size,
-            pos=self.to_window(self.x, self.y)
-        )
-        self.add_widget(self.pause_menu)
-        self.pause_menu.request_pause()
+        for updater in self.main_window.ids.world_display.snake_draw_updaters.values():
+            updater.reset()
+        # self.pause_menu = PauseMenu(
+        #     self.main_window,
+        #     on_close=self.close_pause_menu,
+        #     size_hint=(None, None), size=self.size,
+        #     pos=self.to_window(self.x, self.y)
+        # )
+        # self.add_widget(self.pause_menu)
+        # self.pause_menu.request_pause()
 
     def close_pause_menu(self) -> None:
         self.remove_widget(self.pause_menu)

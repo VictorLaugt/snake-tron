@@ -140,8 +140,7 @@ class FoodDrawer(EventDispatcher):
 
     def eat(self, pos: Position, eater: AbstractSnakeAgent, duration: float) -> None:
         mouth_dir = opposite_dir(eater.get_direction())
-        food_dst = eater.get_world().get_neighbor(pos, mouth_dir)
-        x, y = self.pool.display.pos_to_coord(food_dst)
+        x, y = self.pool.display.pos_to_coord((pos[0]+mouth_dir[0], pos[1]+mouth_dir[1]))
         anim = (
             Animation(animated_pos=(x, y), d=duration, t='linear') # &
             # Animation(animated_color=self.invisible, d=duration, t='linear')
