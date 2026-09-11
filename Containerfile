@@ -34,6 +34,7 @@ COPY requirements.txt /app
 
 RUN python -m pip install --upgrade pip
 RUN pip install -r /app/requirements.txt
+RUN pip install colorama
 
 # for debug
 RUN pip install ipython

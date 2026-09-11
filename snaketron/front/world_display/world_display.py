@@ -18,7 +18,8 @@ from back.events import (
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.ai_inspection_drawer import AiInspectionDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
-from front.world_display.snake_draw_updater import SnakeDrawUpdater
+from front.world_display.snake_draw_updater_old import SnakeDrawUpdater
+# from front.world_display.snake_draw_updater import SnakeDrawUpdater
 
 if TYPE_CHECKING:
     from typing import Sequence
