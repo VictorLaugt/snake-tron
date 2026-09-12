@@ -169,6 +169,9 @@ world, player_agents, ai_agents = build_game(
     n_snakes, n_players,
     respawn_cooldown
 )
+# TODO: mieux décoréler le back et le front
+# Le front ne doit appeler que world.reset ou world.simulate, mais il ne doit pas
+# accéder aux agents
 app = SnakeTronApp(
     event_receiver,
     world, player_agents, ai_agents,
