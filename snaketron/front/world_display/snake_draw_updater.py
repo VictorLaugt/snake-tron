@@ -268,6 +268,8 @@ class SnakeDrawUpdater(EventDispatcher):
         wrap_out_dst: Position
     ) -> None:
         ...
+        # TODO: implement a multi-countdown mechanism to schedule tail end wrapping
+        # animation immediatly after the head wrapped
         return self._anim_slide_tailend(time_step, wrap_out_dst)
 
     def _animate_decay(self, time_step: float) -> None:

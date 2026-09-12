@@ -58,6 +58,10 @@ class FoodDrawUpdater:
             drawer.despawn(pos, time_step)
 
 
+# BUG: When a FoodDrawer draw a food for the first time after it has beeen
+# instanciated, the food start from the Kivy default (1, 1, 1, 1) white color
+# and fade to its correct color. Instead, the food should start from the
+# invisible color and fade to its correct color
 class FoodDrawer(EventDispatcher):
     invisible: ColorValue = get_color_from_hex('#00000000')
 
