@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
+import numpy as np
 from back.agents import AbstractSnakeAgent
 from back.direction import DOWN, LEFT, RIGHT, UP
 from back.events import AgentUpdated, FoodConsumed, FoodCreated
-
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Keyboard, Window, WindowBase
@@ -14,13 +14,11 @@ from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-import numpy as np
-
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
     from back.agents import PlayerSnakeAgent
-    from back.events import EventReceiver, AgentUpdated
+    from back.events import AgentUpdated, EventReceiver
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
     from front.type_hints import Coordinate

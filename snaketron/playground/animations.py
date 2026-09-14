@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from collections import deque
+from typing import TYPE_CHECKING
 
+from back.agents import AbstractSnakeAgent, PlayerSnakeAgent
+from back.direction import DOWN, LEFT, RIGHT, UP
+from back.events import FoodConsumed, FoodCreated
 from kivy.animation import Animation
 from kivy.app import App
 from kivy.clock import Clock
@@ -10,18 +13,15 @@ from kivy.core.window import Keyboard, Window, WindowBase
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty
+from kivy.properties import (ListProperty, NumericProperty,
+                             ReferenceListProperty)
 from kivy.uix.floatlayout import FloatLayout
-
-from back.events import FoodCreated, FoodConsumed
-from back.agents import AbstractSnakeAgent, PlayerSnakeAgent
-from back.direction import UP, DOWN, LEFT, RIGHT
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
     from back.agents import AbstractSnakeAgent
-    from back.events import EventReceiver, AgentUpdated
+    from back.events import AgentUpdated, EventReceiver
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
     from front.type_hints import Coordinate
@@ -449,8 +449,8 @@ class SnakeDrawer(EventDispatcher):
 
 
 if __name__ == '__main__':
-    from back.world import SnakeWorld
     from back.events import build_event_pipe
+    from back.world import SnakeWorld
 
     w = h = 15
     sender, receiver = build_event_pipe()

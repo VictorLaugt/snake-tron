@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-
-from back.agents.abstract_snake_agent import AbstractSnakeAgent
-from back.a_star import shortest_path
-
 from typing import TYPE_CHECKING
+
+from back.a_star import shortest_path
+from back.agents.abstract_snake_agent import AbstractSnakeAgent
+
 if TYPE_CHECKING:
-    from typing import Optional, Sequence, Iterable, Iterator, Type
+    from typing import Iterable, Iterator, Optional, Sequence, Type
+
     from back.type_hints import Direction, Position
     from back.world import AbstractHeuristic, SnakeWorld
 

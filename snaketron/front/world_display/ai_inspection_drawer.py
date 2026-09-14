@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from kivy.graphics import InstructionGroup, Color, Rectangle
+from kivy.graphics import Color, InstructionGroup, Rectangle
 
 if TYPE_CHECKING:
     from back.agents import AbstractAISnakeAgent
-    from front.world_display import WorldDisplay, SnakeColors
+    from front.world_display import SnakeColors, WorldDisplay
 
 
 class AiInspectionDrawer:

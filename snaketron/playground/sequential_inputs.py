@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from collections import deque
-import numpy as np
-from math import atan2, pi
 from array import array
+from collections import deque
+from math import atan2, pi
 
+import numpy as np
 from kivy.app import App
+from kivy.graphics import Color, Ellipse, InstructionGroup, Line
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-from kivy.graphics import Color, Line, Ellipse, InstructionGroup
-
 
 RIGHT = 0
 LEFT = 1

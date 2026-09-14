@@ -4,14 +4,15 @@ from typing import TYPE_CHECKING
 
 from kivy.animation import Animation
 from kivy.properties import ListProperty, NumericProperty
-from kivy.utils import get_color_from_hex
-from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.widget import Widget
+from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable
-    from kivy.inputs import MotionEvent
+    from typing import Callable, Optional
+
     from front.window import SnakeTronWindow
+    from kivy.inputs import MotionEvent
 
 
 class PauseMenuInvoker(Widget):

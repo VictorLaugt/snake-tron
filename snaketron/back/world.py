@@ -8,11 +8,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
-from back.events import (
-    FoodConsumed, FoodCreated,
-    SnakeSimpleEvent,
-    SnakeMovement, SnakeMovementType
-)
+from back.events import (FoodConsumed, FoodCreated, SnakeMovement,
+                         SnakeMovementType, SnakeSimpleEvent)
 from back.voronoi import furthest_voronoi_vertex
 
 if TYPE_CHECKING:

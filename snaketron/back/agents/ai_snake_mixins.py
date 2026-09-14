@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Optional, Sequence, Iterable, Iterator
+    from typing import Iterable, Iterator, Optional, Sequence
 
-    from back.type_hints import Position, Direction
     from back.agents.abstract_snake_agent import AbstractSnakeAgent
+    from back.type_hints import Direction, Position
 
 
 """

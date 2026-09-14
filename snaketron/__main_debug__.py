@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 """
 TODO:
  Priorité 1:
- - découpler le front et le back: le front doit être capable de mettre à jour son affichage uniquement en réceptionnant les évènements envoyés par le back
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé (réglable depuis le menu de pause)
  - créer un nouvel évènement pour prendre en charge les serpents qui traversent un bord de l'arène et réaparraissent de l'autre côté
 
@@ -93,43 +92,57 @@ def build_game(
     player_agents: list[PlayerSnakeAgent] = []
     ai_agents: list[OffensiveAISnakeAgent] = []
 
-    if n_players >= 1:
-        player_agents.append(PlayerSnakeAgent(world, blue_init_pos, blue_init_dir))
-    elif n_snakes >= 1:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, blue_init_pos, blue_init_dir,
-            # EuclidianDistancePeriodicHeuristic,
-            EuclidianDistanceHeuristic,
-            latency=3, caution=4, attack_anticipation=attack_anticipation
-        ))
+    # DEBUG
+    player_agents.append(PlayerSnakeAgent(
+        world,
+        [
+            (5, 5), (6, 5), (7, 5), (8, 5),
+            (8, 6), (8, 7), (8, 8), (8, 9),
+            (7, 9), (6, 9), (5, 9), (4, 9), (3, 9), (2, 9),
+            (2, 8), (2, 7), (2, 6), (2, 5), (2, 4), (2, 3), (2, 2), (2, 1), (2, 0)
+        ],
+        # [(5, 5), (6, 5), (7, 5), (8, 5)],
+        # [(5, 5)],
+        (-1, 0)
+    ))
 
-    if n_players >= 2:
-        player_agents.append(PlayerSnakeAgent(world, yellow_init_pos, yellow_init_dir))
-    elif n_snakes >= 2:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, yellow_init_pos, yellow_init_dir,
-            # EuclidianDistancePeriodicHeuristic,
-            EuclidianDistanceHeuristic,
-            latency=3, caution=4, attack_anticipation=attack_anticipation
-        ))
+    # if n_players >= 1:
+    #     player_agents.append(PlayerSnakeAgent(world, blue_init_pos, blue_init_dir))
+    # elif n_snakes >= 1:
+    #     ai_agents.append(OffensiveAISnakeAgent(
+    #         world, blue_init_pos, blue_init_dir,
+    #         # EuclidianDistancePeriodicHeuristic,
+    #         EuclidianDistanceHeuristic,
+    #         latency=3, caution=4, attack_anticipation=attack_anticipation
+    #     ))
 
-    if n_players >= 3:
-        player_agents.append(PlayerSnakeAgent(world, purple_init_pos, purple_init_dir))
-    elif n_snakes >= 3:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, purple_init_pos, purple_init_dir,
-            EuclidianDistanceHeuristic,
-            latency=3, caution=6, attack_anticipation=attack_anticipation
-        ))
+    # if n_players >= 2:
+    #     player_agents.append(PlayerSnakeAgent(world, yellow_init_pos, yellow_init_dir))
+    # elif n_snakes >= 2:
+    #     ai_agents.append(OffensiveAISnakeAgent(
+    #         world, yellow_init_pos, yellow_init_dir,
+    #         # EuclidianDistancePeriodicHeuristic,
+    #         EuclidianDistanceHeuristic,
+    #         latency=3, caution=4, attack_anticipation=attack_anticipation
+    #     ))
 
-    if n_players >= 4:
-        player_agents.append(PlayerSnakeAgent(world, green_init_pos, green_init_dir))
-    elif n_snakes >= 4:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, green_init_pos, green_init_dir,
-            ManhattanDistanceHeuristic,
-            latency=3, caution=4, attack_anticipation=attack_anticipation
-        ))
+    # if n_players >= 3:
+    #     player_agents.append(PlayerSnakeAgent(world, purple_init_pos, purple_init_dir))
+    # elif n_snakes >= 3:
+    #     ai_agents.append(OffensiveAISnakeAgent(
+    #         world, purple_init_pos, purple_init_dir,
+    #         EuclidianDistanceHeuristic,
+    #         latency=3, caution=6, attack_anticipation=attack_anticipation
+    #     ))
+
+    # if n_players >= 4:
+    #     player_agents.append(PlayerSnakeAgent(world, green_init_pos, green_init_dir))
+    # elif n_snakes >= 4:
+    #     ai_agents.append(OffensiveAISnakeAgent(
+    #         world, green_init_pos, green_init_dir,
+    #         ManhattanDistanceHeuristic,
+    #         latency=3, caution=4, attack_anticipation=attack_anticipation
+    #     ))
 
     define_opponents(player_agents, ai_agents)
 
@@ -139,33 +152,33 @@ def build_game(
     return world, player_agents, ai_agents
 
 
+n_snakes = 1
+n_players = 1
+
+respawn_cooldown = 15
+
+# time_step = 0.15
+time_step = 1
+# time_step = 0.25
+# time_step = 0.3
+
 event_sender, event_receiver = build_event_pipe()
-
 world, player_agents, ai_agents = build_game(
-    event_sender=event_sender,
-
-    n_snakes=4,
-    n_players=1,
-    respawn_cooldown=15
+    event_sender,
+    n_snakes, n_players,
+    respawn_cooldown
 )
+# TODO: mieux décoréler le back et le front
+# Le front ne doit appeler que world.reset ou world.simulate, mais il ne doit pas
+# accéder aux agents
 
 app_dir = Path(__file__).resolve().parent
 app = SnakeTronApp(
     event_receiver,
-
-    # REFACTOR: supprimer le couplage du front avec le back: le front ne devrait
-    # pas avoir de références aux éléments du back comme le monde et ses agents
     world, player_agents, ai_agents,
-
-    # time_step=0.15,
-    time_step=0.2,
-    # time_step=0.25,
-    # time_step=0.3,
-
-    ai_explanations=False,
+    time_step, ai_explanations=False,
     layout_dir=app_dir.joinpath('front', 'layout', 'mobile'),
     color_file=app_dir.joinpath('front', 'colors', 'dark.json'),
     input_sensitivity=1/100
 )
-
 app.run()

@@ -9,14 +9,14 @@ Implémente des outils pour le debugage : voir help(DebugSpace)
 """
 __all__ = ['DebugSpace', 'dbg_outputs_colors']
 
-from time import perf_counter
+import dataclasses
+import sys
 from inspect import isgeneratorfunction
 from os import devnull
-import sys
-import dataclasses
-import colorama
+from time import perf_counter
+from typing import Any, Dict, Iterable, List, Set, Tuple, TypeVar, Union
 
-from typing import TypeVar, Union, List, Tuple, Set, Dict, Iterable, Any
+import colorama
 
 NonStaticInstanceMethod = TypeVar('NonStaticInstanceMethod')
 ClassMethod = TypeVar('ClassMethod')

@@ -1,15 +1,13 @@
-from kivy.app import App
 from kivy.animation import Animation
+from kivy.app import App
 from kivy.core.window import Window
+from kivy.graphics import Color, InstructionGroup, Rectangle, RoundedRectangle
 from kivy.lang import Builder
+from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.modalview import ModalView
 from kivy.utils import platform
-from kivy.graphics import Color, Rectangle, RoundedRectangle, InstructionGroup
-from kivy.properties import ListProperty, NumericProperty
-
-
 
 KV = """
 <AppWindow>:

@@ -14,10 +14,11 @@ from kivy.utils import get_color_from_hex
 if TYPE_CHECKING:
     from typing import Iterable, Sequence
 
-    from front.type_hints import ColorValue
-    from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent, PlayerSnakeAgent
+    from back.agents import (AbstractAISnakeAgent, AbstractSnakeAgent,
+                             PlayerSnakeAgent)
     from back.events import EventReceiver
     from back.world import SnakeWorld
+    from front.type_hints import ColorValue
     from kivy.clock import ClockEvent
     from kivy.uix.widget import Widget
 

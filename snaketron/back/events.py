@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from collections import deque, defaultdict
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import IntEnum, auto
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
-    from back.type_hints import Position, Direction
+    from back.type_hints import Direction, Position
 
 
 class ArenaEvent:

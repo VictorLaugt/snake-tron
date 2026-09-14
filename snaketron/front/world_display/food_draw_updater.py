@@ -2,22 +2,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from kivy.animation import Animation
-from kivy.graphics import InstructionGroup, Color, Ellipse
-from kivy.event import EventDispatcher
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty
-from kivy.utils import get_color_from_hex
-
 from back.direction import opposite_dir
+from kivy.animation import Animation
+from kivy.event import EventDispatcher
+from kivy.graphics import Color, Ellipse, InstructionGroup
+from kivy.properties import (ListProperty, NumericProperty,
+                             ReferenceListProperty)
+from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
     from typing import Optional
 
-    from front.world_display import WorldDisplay, WorldColors
-    from front.type_hints import ColorValue
-
     from back.agents import AbstractSnakeAgent
     from back.type_hints import Position
+    from front.type_hints import ColorValue
+    from front.world_display import WorldColors, WorldDisplay
 
 
 class FoodDrawUpdater:
