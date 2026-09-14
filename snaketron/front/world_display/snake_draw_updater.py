@@ -3,28 +3,28 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
+from back.events import SnakeMovementType
 from kivy.animation import Animation
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, InstructionGroup, Rectangle
 from kivy.properties import (ListProperty, NumericProperty,
                              ReferenceListProperty)
-
-from back.events import SnakeMovementType
+from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
-    from typing import Optional, Iterable
-
-    from kivy.graphics import Instruction, Canvas
+    from typing import Iterable, Optional
 
     from back.agents import AbstractSnakeAgent
     from back.events import SnakeMovement
     from back.type_hints import Direction, Position
-    from front.world_display import SnakeColors, WorldDisplay
     from front.type_hints import ColorValue
+    from front.world_display import SnakeColors, WorldDisplay
+    from kivy.graphics import Canvas, Instruction
 
-from debug_tool import DebugSpace
-dbg = DebugSpace(name="SnakeDrawUpdater")
+
 class SnakeDrawUpdater(EventDispatcher):
+    invisible: ColorValue = get_color_from_hex('#00000000')
+
     tail_rgba = ListProperty([0., 0., 0., 0.])
     tailcut_rgba = ListProperty([0., 0., 0., 0.])
 
@@ -350,15 +350,16 @@ class SnakeDrawUpdater(EventDispatcher):
         transition = 'out_circ'
         self.anim_death = Animation(
             head_rgba=self.colors.head_decay_final, duration=d, t=transition
-        ) & Animation(
-            tailend_rgba=self.colors.tail_decay_final, duration=d, t=transition
+        # ) & Animation(
+        #     tailend_rgba=self.colors.tail_decay_final, duration=d, t=transition
         ) & Animation(
             tail_rgba=self.colors.tail_decay_final, duration=d, t=transition
         )
         self.anim_death.bind(on_complete=(lambda *_: self._clear_instruction_groups()))
 
         self.head_rgba = self.colors.head_decay_first
-        self.tailend_rgba = self.colors.tail_decay_first
+        # self.tailend_rgba = self.colors.tail_decay_first
+        self.tailend_rgba = self.invisible
         self.tail_rgba = self.colors.tail_decay_first
         self.anim_death.start(self)
 
