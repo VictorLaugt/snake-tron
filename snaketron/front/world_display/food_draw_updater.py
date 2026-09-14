@@ -32,6 +32,9 @@ class FoodDrawUpdater:
         self.free_drawers: list[FoodDrawer] = []
 
     def reset(self) -> None:
+        # BUG: dictionary changed size during iteratio
+        # How to reproduce: constantly call the reset method by changing the
+        # app window size, while a snake is eating a food
         for pos, drawer in self.working_drawers.items():
             drawer.despawn_without_anim(pos)
             drawer.spawn_without_anim(pos)
@@ -81,6 +84,7 @@ class FoodDrawer(EventDispatcher):
         self.circle = Ellipse(pos=(0, 0), size=(0, 0))
         self.pool.instr.add(self.color)
         self.pool.instr.add(self.circle)
+        self.anim: Optional[Animation] = None
 
     def on_animated_color(self, _, value):
         self.color.rgba = value
@@ -121,29 +125,31 @@ class FoodDrawer(EventDispatcher):
         self.animated_size = (s, s)
         self.animated_pos = (x, y)
         self.animated_color = self.invisible
-        anim = (
+        self.anim = (
             # Animation(animated_size=(s, s), d=duration, t='linear') &
             Animation(animated_color=c, d=duration, t='linear')
         )
-        anim.start(self)
+        self.anim.start(self)
 
     def despawn_without_anim(self, pos: Position) -> None:
+        if self.anim is not None:
+            self.anim.stop(self)
         self.animated_color = self.invisible
 
     def despawn(self, pos: Position, duration: float) -> None:
-        anim = (
+        self.anim = (
             # Animation(animated_size=(0, 0), d=duration, t='linear') &
             Animation(animated_color=self.invisible, d=duration, t='linear')
         )
-        anim.bind(on_complete=lambda *_: self._free(pos))
-        anim.start(self)
+        self.anim.bind(on_complete=lambda *_: self._free(pos))
+        self.anim.start(self)
 
     def eat(self, pos: Position, eater: AbstractSnakeAgent, duration: float) -> None:
         mouth_dir = opposite_dir(eater.get_direction())
         x, y = self.pool.display.pos_to_coord((pos[0]+mouth_dir[0], pos[1]+mouth_dir[1]))
-        anim = (
+        self.anim = (
             Animation(animated_pos=(x, y), d=duration, t='linear') # &
             # Animation(animated_color=self.invisible, d=duration, t='linear')
         )
-        anim.bind(on_complete=lambda *_: self._free(pos))
-        anim.start(self)
+        self.anim.bind(on_complete=lambda *_: self._free(pos))
+        self.anim.start(self)
