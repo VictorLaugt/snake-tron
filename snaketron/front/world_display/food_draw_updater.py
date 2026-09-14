@@ -58,14 +58,10 @@ class FoodDrawUpdater:
             drawer.despawn(pos, time_step)
 
 
-# BUG: When a FoodDrawer draw a food for the first time after it has beeen
-# instanciated, the food start from the Kivy default (1, 1, 1, 1) white color
-# and fade to its correct color. Instead, the food should start from the
-# invisible color and fade to its correct color
 class FoodDrawer(EventDispatcher):
     invisible: ColorValue = get_color_from_hex('#00000000')
 
-    animated_color = ListProperty(invisible)
+    animated_color = ListProperty([0., 0., 0., 0.])
 
     animated_pos_x = NumericProperty(0.)
     animated_pos_y = NumericProperty(0.)
@@ -81,7 +77,7 @@ class FoodDrawer(EventDispatcher):
     def __init__(self, pool: FoodDrawUpdater) -> None:
         super().__init__()
         self.pool = pool
-        self.color = Color(self.invisible)
+        self.color = Color(*self.invisible)
         self.circle = Ellipse(pos=(0, 0), size=(0, 0))
         self.pool.instr.add(self.color)
         self.pool.instr.add(self.circle)
