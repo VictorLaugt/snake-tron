@@ -1,3 +1,4 @@
+# REFACTOR: move implementations of back to front events into the files events/back2front_{protocol|pipe}.py
 from __future__ import annotations
 
 from collections import defaultdict, deque
