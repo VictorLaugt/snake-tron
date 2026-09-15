@@ -18,25 +18,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent
-    from back.events import EventSender
-
-"""
-TODO:
- Priorité 1:
- - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé (réglable depuis le menu de pause)
- - créer un nouvel évènement pour prendre en charge les serpents qui traversent un bord de l'arène et réaparraissent de l'autre côté
-
-Priorité 2:
- - essayer de faire des agents qui ignorent la latency pour le calcul de leurs chemins d'attaques, mais qui la respectent pour le calcul des chemins vers la nourriture
- - latency et caution variables grâce à une callback : dépendants de la taille du serpent, ou aléatoire
-
-Priorité 3:
- - optimiser le path finding
-
-IDÉE DE GAMEPLAY:
- - Dash utilisable au bout d'un certain nombre de nouriture mangée
- - Apparition aléatoire de zones carrées 3x3 qui forcent à changer de direction
-"""
+    from back.events import Back2FrontEventSender
 
 
 def define_opponents(
@@ -56,7 +38,7 @@ def define_opponents(
 
 
 def build_game(
-    event_sender: EventSender,
+    event_sender: Back2FrontEventSender,
     n_snakes: int,
     n_players: int,
     respawn_cooldown: int
@@ -168,9 +150,6 @@ world, player_agents, ai_agents = build_game(
     n_snakes, n_players,
     respawn_cooldown
 )
-# TODO: mieux décoréler le back et le front
-# Le front ne doit appeler que world.reset ou world.simulate, mais il ne doit pas
-# accéder aux agents
 
 app_dir = Path(__file__).resolve().parent
 app = SnakeTronApp(

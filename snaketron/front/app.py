@@ -17,14 +17,14 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent, PlayerSnakeAgent
-    from back.events import EventReceiver
+    from back.events import Back2FrontEventReceiver
     from back.world import SnakeWorld
 
 
 class SnakeTronApp(App):
     def __init__(
         self,
-        event_receiver: EventReceiver,
+        event_receiver: Back2FrontEventReceiver,
         world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
@@ -64,9 +64,7 @@ class SnakeTronApp(App):
         main_window = SnakeTronWindow()
         main_window.init_logic(
             self.event_receiver,
-            self.world,
-            self.player_agents,
-            self.ai_agents,
+            self.world, self.player_agents, self.ai_agents,  # REFACTOR: remove arg: world, player_agents, ai_agents
             self.time_step,
             self.ai_explanations,
             colors,

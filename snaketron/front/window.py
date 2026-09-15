@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
     from back.agents import (AbstractAISnakeAgent, AbstractSnakeAgent,
                              PlayerSnakeAgent)
-    from back.events import EventReceiver
+    from back.events import Back2FrontEventReceiver
     from back.world import SnakeWorld
     from front.type_hints import ColorValue
     from kivy.clock import ClockEvent
@@ -30,7 +30,6 @@ class SnakeTronWindow(BoxLayout):
     app_background_color = ListProperty(get_color_from_hex('#000000'))
 
     world: SnakeWorld
-    player_agents: Sequence[PlayerSnakeAgent]
     swipe_zones: list[SwipeControlZone]
     swipe_controls: list[PlayerSwipeControl]
     keyboard_controls: list[PlayerKeyBoardControl]
@@ -78,7 +77,8 @@ class SnakeTronWindow(BoxLayout):
 
     def init_logic(
         self,
-        event_receiver: EventReceiver,
+        event_receiver: Back2FrontEventReceiver,  # receives events from the back
+        # event_sender: Front2BackEventSender,  # TODO: implement pipe which sends events to the back such as player inputs, player connection, and player disconnection
         world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],
@@ -91,7 +91,6 @@ class SnakeTronWindow(BoxLayout):
 
         # link to the backend
         self.world = world
-        self.player_agents = player_agents
         self.world.reset()
 
         # game speed
@@ -103,17 +102,20 @@ class SnakeTronWindow(BoxLayout):
 
         # colors
         world_colors = self._create_world_colors(colors)
-        agent_colors = self._create_agent_colors(colors, agents)
+        agent_colors = self._create_agent_colors(colors, agents)  # REFACTOR: remove arg: agents
         swipe_zone_bg_color = get_color_from_hex(colors['ui']['swipe_zone_bg_color'])
         self.app_background_color = get_color_from_hex(colors['ui']['background'])
 
         # propagates logic to child widgets
         self.ids.world_display.init_logic(
-            self, event_receiver, world, ai_agents,
+            self, event_receiver,
+            world, ai_agents,  # REFACTOR: remove args: world, ai_agents
             world_colors, agent_colors,
             input_sensitivity
         )
-        self.ids.score_board.init_logic(agents, agent_colors)
+        self.ids.score_board.init_logic(agents, agent_colors)  # REFACTOR: remove arg: agents: in order to know the length of each snake, prefer using a reference to world_display
+
+        # REFACTOR: remove arg: player_agents: in order to send player inputs to the back, prefer using an event sender instead of references to the player agents
         self._init_logic_keyboard_controls(player_agents)
         self._init_logic_touchscreen_controls(
             player_agents,

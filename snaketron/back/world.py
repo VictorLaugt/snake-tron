@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from typing import Iterator, Optional
 
     from back.agents import AbstractSnakeAgent
-    from back.events import EventSender
+    from back.events import Back2FrontEventSender
     from back.type_hints import Direction, Position
 
 
@@ -88,7 +88,7 @@ class SnakeWorld(AbstractGridGraph):
         width: int,
         height: int,
         n_food: int,
-        event_sender: EventSender,
+        event_sender: Back2FrontEventSender,
         respawn_cooldown: Optional[int]=None
     ) -> None:
         assert width > 0 and height > 0

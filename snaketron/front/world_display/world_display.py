@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -19,12 +18,11 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent
-    from back.events import EventReceiver
+    from back.events import Back2FrontEventReceiver
     from back.type_hints import Position
     from back.world import SnakeWorld
     from front.type_hints import ColorValue, Coordinate
     from front.window import SnakeTronWindow
-    from kivy.input import MotionEvent
     from kivy.uix.widget import Widget
 
 
@@ -52,9 +50,9 @@ class SnakeColors:
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
-    event_receiver: EventReceiver
+    event_receiver: Back2FrontEventReceiver
     world: SnakeWorld
-    snakes: dict[int, AbstractSnakeAgent]
+    snakes: dict[int, AbstractSnakeAgent]  # REFACTOR: remove
     ai_explanations: bool
 
     arena_drawer: ArenaDrawer
@@ -70,7 +68,8 @@ class WorldDisplay(FloatLayout):
     def init_logic(
         self,
         main_window: SnakeTronWindow,
-        event_receiver: EventReceiver,
+        event_receiver: Back2FrontEventReceiver,
+        # event_sender: Front2BackEventSender,  # TODO: use the event sender to ask the back for ai inspection info, and receive them in the event receiver
         world: SnakeWorld,
         ai_snakes: Sequence[AbstractAISnakeAgent],
         world_colors: WorldColors,
@@ -78,14 +77,14 @@ class WorldDisplay(FloatLayout):
         pause_command_touch_max_length: float
     ) -> None:
         self.event_receiver = event_receiver
-        self.world = world
+        self.world = world  # REFACTOR: world height and width should be known by reading the events from event_receiver instead of calling world.get_{height|width}
         self.ai_explanations = False
 
-        self.arena_drawer = ArenaDrawer(self, world, world_colors)
+        self.arena_drawer = ArenaDrawer(self, world, world_colors)  # REFACTOR: remove arg: world
 
         self.ai_inspection_drawers = []
         for snake in ai_snakes:
-            self.ai_inspection_drawers.append(AiInspectionDrawer(
+            self.ai_inspection_drawers.append(AiInspectionDrawer(  # REFACTOR: remove arg: snake
                 self, snake, snake_colors[snake.get_id()]
             ))
 
@@ -97,7 +96,7 @@ class WorldDisplay(FloatLayout):
             snake_id = snake.get_id()
             self.snakes[snake_id] = snake
             self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(
-                self, snake, snake_colors[snake_id], n_decay_steps=4
+                self, snake.is_alive(), snake_colors[snake_id], n_decay_steps=4
             )
 
         self.world_colors = world_colors
@@ -132,8 +131,8 @@ class WorldDisplay(FloatLayout):
                 ai_inspection_drawer.erase_and_draw()
 
         self.food_draw_updater.reset()
-        for updater in self.snake_draw_updaters.values():
-            updater.reset()
+        for snake_id, updater in self.snake_draw_updaters.items():
+            updater.reset(self.snakes[snake_id].iter_cells())
 
         self.pause_invoker.size = self.size
         self.pause_invoker.pos = self.to_window(self.x, self.y)
@@ -179,7 +178,7 @@ class WorldDisplay(FloatLayout):
                     updater.update_draw_snake_teleport(time_step, event)
 
                 case SnakeSimpleEvent.SPAWN:
-                    updater.update_draw_spawn(time_step)
+                    updater.update_draw_spawn(time_step, self.snakes[snake_id].iter_cells())
                 case SnakeSimpleEvent.DIE:
                     updater.update_draw_die(time_step)
                 case SnakeSimpleEvent.DASH:

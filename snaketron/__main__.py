@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent
-    from back.events import EventSender
+    from back.events import Back2FrontEventSender
 
 """
 TODO:
@@ -57,7 +57,7 @@ def define_opponents(
 
 
 def build_game(
-    event_sender: EventSender,
+    event_sender: Back2FrontEventSender,
     n_snakes: int,
     n_players: int,
     respawn_cooldown: int
@@ -153,9 +153,7 @@ app_dir = Path(__file__).resolve().parent
 app = SnakeTronApp(
     event_receiver,
 
-    # REFACTOR: supprimer le couplage du front avec le back: le front ne devrait
-    # pas avoir de références aux éléments du back comme le monde et ses agents
-    world, player_agents, ai_agents,
+    world, player_agents, ai_agents,  # REFACTOR: remove args: world, player_agents, ai_agents
 
     # time_step=0.15,
     time_step=0.2,

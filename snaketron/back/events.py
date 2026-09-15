@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 class ArenaEvent:
     pass
 
+
+@dataclass  # TODO: send UpdateSize event to communicate initial (width, height) and each value update
+class UpdateSize(ArenaEvent):
+    width: int
+    height: int
+
+
 @dataclass
 class FoodCreated(ArenaEvent):
     pos: Position
@@ -28,7 +35,7 @@ class AgentEvent:
     pass
 
 class SnakeSimpleEvent(AgentEvent, IntEnum):
-    SPAWN = auto()
+    SPAWN = auto()  # REFACTOR: SPAWN can no longer be a simple event: it should store the positions of the spawning snake cells
     DIE = auto()
     DASH = auto()
 
@@ -47,7 +54,7 @@ class SnakeMovement(AgentEvent):
     movement_type: SnakeMovementType
 
 
-class EventSender:
+class Back2FrontEventSender:
     def __init__(
         self,
         arena_events: deque[ArenaEvent],
@@ -70,7 +77,7 @@ class EventSender:
         self.disconnected_agent_ids.append(agent_id)
 
 
-class EventReceiver:
+class Back2FrontEventReceiver:
     def __init__(
         self,
         arena_events: deque[ArenaEvent],
@@ -98,10 +105,10 @@ class EventReceiver:
             self.agent_events.pop(agent_id)
 
 
-def build_event_pipe() -> tuple[EventSender, EventReceiver]:
+def build_event_pipe() -> tuple[Back2FrontEventSender, Back2FrontEventReceiver]:
     arena_events = deque()
     agent_events = defaultdict(deque)
     disconnected_agent_ids = deque()
-    sender = EventSender(arena_events, agent_events, disconnected_agent_ids)
-    receiver = EventReceiver(arena_events, agent_events, disconnected_agent_ids)
+    sender = Back2FrontEventSender(arena_events, agent_events, disconnected_agent_ids)
+    receiver = Back2FrontEventReceiver(arena_events, agent_events, disconnected_agent_ids)
     return sender, receiver

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from typing import Optional, Sequence
 
     from back.agents import AbstractSnakeAgent
-    from back.events import AgentUpdated, EventReceiver
+    from back.events import AgentUpdated, Back2FrontEventReceiver
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
     from front.type_hints import Coordinate
@@ -53,7 +53,7 @@ class ObstacleAgent(AbstractSnakeAgent):
 class MinimalistSnakeTronApp(App):
     def __init__(
         self,
-        event_receiver: EventReceiver,
+        event_receiver: Back2FrontEventReceiver,
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float,
@@ -94,7 +94,7 @@ class MinimalistWorldDisplay(FloatLayout):
 
     def init_logic(
         self,
-        event_receiver: EventReceiver,
+        event_receiver: Back2FrontEventReceiver,
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float
