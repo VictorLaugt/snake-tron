@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
-from back.events import SnakeMovementType
 from kivy.animation import Animation
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, InstructionGroup, Rectangle
@@ -11,14 +10,17 @@ from kivy.properties import (ListProperty, NumericProperty,
                              ReferenceListProperty)
 from kivy.utils import get_color_from_hex
 
+from events.back2front_protocol import SnakeMovementType
+
 if TYPE_CHECKING:
     from typing import Iterable, Optional
 
-    from back.events import SnakeMovement
+    from kivy.graphics import Canvas, Instruction
+
     from back.type_hints import Direction, Position
+    from events.back2front_protocol import SnakeMovement
     from front.type_hints import ColorValue
     from front.world_display import SnakeColors, WorldDisplay
-    from kivy.graphics import Canvas, Instruction
 
 
 class SnakeDrawUpdater(EventDispatcher):

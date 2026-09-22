@@ -8,17 +8,17 @@ from typing import TYPE_CHECKING
 from back.agents import (OffensiveAISnakeAgent, PassiveAISnakeAgent,
                          PlayerSnakeAgent)
 from back.direction import DOWN, LEFT, RIGHT, UP
-from back.events import build_event_pipe
 from back.world import (EuclidianDistanceHeuristic,
                         EuclidianDistancePeriodicHeuristic,
                         ManhattanDistanceHeuristic, SnakeWorld)
+from events.back2front_pipe import build_event_pipe
 from front.app import SnakeTronApp
 
 if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent
-    from back.events import Back2FrontEventSender
+    from events.back2front_pipe import Back2FrontEventSender
 
 """
 TODO:

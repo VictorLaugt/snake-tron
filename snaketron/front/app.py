@@ -3,22 +3,23 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from front.controls import *
-from front.score_board import *
-from front.window import *
-from front.world_display import *
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.utils import platform
+
+from front.controls import *
+from front.score_board import *
+from front.window import *
+from front.world_display import *
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent, PlayerSnakeAgent
-    from back.events import Back2FrontEventReceiver
     from back.world import SnakeWorld
+    from events.back2front_pipe import Back2FrontEventReceiver
 
 
 class SnakeTronApp(App):

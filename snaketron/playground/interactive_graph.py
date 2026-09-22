@@ -5,10 +5,11 @@ import tkinter as tk
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from back.a_star import shortest_path
-from back.events import build_event_pipe
 from back.voronoi import furthest_voronoi_vertex
 from back.world import EuclidianDistanceHeuristic, SnakeWorld
+from events.back2front_pipe import build_event_pipe
 
 if TYPE_CHECKING:
     from typing import Optional, TypeAlias

@@ -4,26 +4,29 @@ import itertools
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from back.events import (FoodConsumed, FoodCreated, SnakeMovement,
-                         SnakeMovementType, SnakeSimpleEvent)
-from front.pause_menu import PauseMenuInvoker
-from front.world_display.ai_inspection_drawer import AiInspectionDrawer
-from front.world_display.food_draw_updater import FoodDrawUpdater
-from front.world_display.snake_draw_updater import SnakeDrawUpdater
 from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
+from events.back2front_protocol import (FoodConsumed, FoodCreated,
+                                        SnakeMovement, SnakeMovementType,
+                                        SnakeSimpleEvent)
+from front.pause_menu import PauseMenuInvoker
+from front.world_display.ai_inspection_drawer import AiInspectionDrawer
+from front.world_display.food_draw_updater import FoodDrawUpdater
+from front.world_display.snake_draw_updater import SnakeDrawUpdater
+
 if TYPE_CHECKING:
     from typing import Sequence
 
+    from kivy.uix.widget import Widget
+
     from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent
-    from back.events import Back2FrontEventReceiver
     from back.type_hints import Position
     from back.world import SnakeWorld
+    from events.back2front_pipe import Back2FrontEventReceiver
     from front.type_hints import ColorValue, Coordinate
     from front.window import SnakeTronWindow
-    from kivy.uix.widget import Widget
 
 
 

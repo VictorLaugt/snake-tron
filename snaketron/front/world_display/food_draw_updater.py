@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from back.direction import opposite_dir
 from kivy.animation import Animation
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, Ellipse, InstructionGroup
 from kivy.properties import (ListProperty, NumericProperty,
                              ReferenceListProperty)
 from kivy.utils import get_color_from_hex
+
+from back.direction import opposite_dir
 
 if TYPE_CHECKING:
     from typing import Optional

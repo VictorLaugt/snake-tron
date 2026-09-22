@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from back.direction import opposite_dir
 
 if TYPE_CHECKING:

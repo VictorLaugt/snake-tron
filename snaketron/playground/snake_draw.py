@@ -4,9 +4,6 @@ from collections import deque
 from typing import TYPE_CHECKING
 
 import numpy as np
-from back.agents import AbstractSnakeAgent
-from back.direction import DOWN, LEFT, RIGHT, UP
-from back.events import AgentUpdated, FoodConsumed, FoodCreated
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Keyboard, Window, WindowBase
@@ -14,15 +11,21 @@ from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
+from back.agents import AbstractSnakeAgent
+from back.direction import DOWN, LEFT, RIGHT, UP
+from events.back2front_protocol import FoodConsumed, FoodCreated, SnakeMovement
+
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
+    from kivy.uix.widget import Widget
+
     from back.agents import PlayerSnakeAgent
-    from back.events import AgentUpdated, Back2FrontEventReceiver
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
+    from events.back2front_protocol import (Back2FrontEventReceiver,
+                                            SnakeMovement)
     from front.type_hints import Coordinate
-    from kivy.uix.widget import Widget
 
 
 class ObstacleAgent(AbstractSnakeAgent):
@@ -65,7 +68,7 @@ class MinimalistWorldDisplay(FloatLayout):
     event_receiver: Back2FrontEventReceiver
     world: SnakeWorld
     player: PlayerSnakeAgent
-    agents_events: dict[int, AgentUpdated]
+    agents_events: dict[int, SnakeMovement]
     food_drawer: FoodDrawer
     snake_drawer: SnakeDrawer
     time_step: float
@@ -320,7 +323,7 @@ class SnakeDrawer:
         else:
             self.instr.clear()
 
-    def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
+    def update_draw(self, event: Optional[SnakeMovement]=None) -> None:
         if event is None:
             if not self.alive:
                 self._decay()
@@ -338,8 +341,8 @@ class SnakeDrawer:
 
 if __name__ == '__main__':
     from back.agents import PlayerSnakeAgent
-    from back.events import build_event_pipe
     from back.world import SnakeWorld
+    from events.back2front_pipe import build_event_pipe
 
     sender, receiver = build_event_pipe()
 

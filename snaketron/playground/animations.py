@@ -3,9 +3,6 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
-from back.agents import AbstractSnakeAgent, PlayerSnakeAgent
-from back.direction import DOWN, LEFT, RIGHT, UP
-from back.events import FoodConsumed, FoodCreated
 from kivy.animation import Animation
 from kivy.app import App
 from kivy.clock import Clock
@@ -17,15 +14,21 @@ from kivy.properties import (ListProperty, NumericProperty,
                              ReferenceListProperty)
 from kivy.uix.floatlayout import FloatLayout
 
+from back.agents import AbstractSnakeAgent, PlayerSnakeAgent
+from back.direction import DOWN, LEFT, RIGHT, UP
+from events.back2front_protocol import FoodConsumed, FoodCreated
+
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
+    from kivy.uix.widget import Widget
+
     from back.agents import AbstractSnakeAgent
-    from back.events import AgentUpdated, Back2FrontEventReceiver
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
+    from events.back2front_pipe import Back2FrontEventReceiver
+    from events.back2front_protocol import SnakeMovement
     from front.type_hints import Coordinate
-    from kivy.uix.widget import Widget
 
 
 KV = '''
@@ -411,7 +414,7 @@ class SnakeDrawer(EventDispatcher):
         )
         self.tail_animation.start(self)
 
-    def _move_snake(self, event: AgentUpdated) -> None:
+    def _move_snake(self, event: SnakeMovement) -> None:
         self._update_body(event.new_head_pos, event.growth)
         self._animate_head()
         self._animate_tail()
@@ -429,7 +432,7 @@ class SnakeDrawer(EventDispatcher):
         self.decay_animation.bind(on_complete=(lambda *_: self._clear_instruction_groups()))
         self.decay_animation.start(self)
 
-    def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
+    def update_draw(self, event: Optional[SnakeMovement]=None) -> None:
         if event is None:
             return
 
@@ -449,8 +452,8 @@ class SnakeDrawer(EventDispatcher):
 
 
 if __name__ == '__main__':
-    from back.events import build_event_pipe
     from back.world import SnakeWorld
+    from events.back2front_pipe import build_event_pipe
 
     w = h = 15
     sender, receiver = build_event_pipe()

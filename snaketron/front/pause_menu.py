@@ -11,8 +11,9 @@ from kivy.utils import get_color_from_hex
 if TYPE_CHECKING:
     from typing import Callable, Optional
 
-    from front.window import SnakeTronWindow
     from kivy.inputs import MotionEvent
+
+    from front.window import SnakeTronWindow
 
 
 class PauseMenuInvoker(Widget):

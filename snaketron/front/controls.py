@@ -3,7 +3,6 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 
-from back.direction import DOWN, LEFT, RIGHT, UP
 from kivy.core.window import Keyboard, Window
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, InstructionGroup, Line
@@ -12,16 +11,19 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.utils import get_color_from_hex
 
+from back.direction import DOWN, LEFT, RIGHT, UP
+
 if TYPE_CHECKING:
     from typing import Iterable, Optional, Sequence
+
+    from kivy.core.window import WindowBase
+    from kivy.input import MotionEvent
+    from kivy.uix.widget import Widget
 
     from back.agents import PlayerSnakeAgent
     from back.type_hints import Direction
     from front.type_hints import ColorValue
     from front.world_display import SnakeColors
-    from kivy.core.window import WindowBase
-    from kivy.input import MotionEvent
-    from kivy.uix.widget import Widget
 
 
 class SwipeDirectionFilter:

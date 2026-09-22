@@ -7,17 +7,19 @@ from random import randrange, shuffle
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
-from back.events import (FoodConsumed, FoodCreated, SnakeMovement,
-                         SnakeMovementType, SnakeSimpleEvent)
 from back.voronoi import furthest_voronoi_vertex
+from events.back2front_protocol import (FoodConsumed, FoodCreated,
+                                        SnakeMovement, SnakeMovementType,
+                                        SnakeSimpleEvent)
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
     from back.agents import AbstractSnakeAgent
-    from back.events import Back2FrontEventSender
     from back.type_hints import Direction, Position
+    from events.back2front_pipe import Back2FrontEventSender
 
 
 class AbstractHeuristic(ABC):
