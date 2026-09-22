@@ -10,16 +10,15 @@ import numpy as np
 
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
 from back.voronoi import furthest_voronoi_vertex
-from events.back2front_protocol import (FoodConsumed, FoodCreated,
-                                        SnakeMovement, SnakeMovementType,
-                                        SnakeSimpleEvent)
+from events.back2front_protocol import *
+
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
     from back.agents import AbstractSnakeAgent
     from back.type_hints import Direction, Position
-    from events.back2front_pipe import Back2FrontEventSender
+    from events.pipe import EventSender
 
 
 class AbstractHeuristic(ABC):
@@ -90,7 +89,7 @@ class SnakeWorld(AbstractGridGraph):
         width: int,
         height: int,
         n_food: int,
-        event_sender: Back2FrontEventSender,
+        event_sender: EventSender[BackendEvent],
         respawn_cooldown: Optional[int]=None
     ) -> None:
         assert width > 0 and height > 0
@@ -159,7 +158,7 @@ class SnakeWorld(AbstractGridGraph):
             head_count = sum((agent.get_head() == p) for agent in self.alive_agents)
             if head_count == 1:
                 self.food_pos.remove(p)
-                self.event_sender.send_arena_event(FoodConsumed(p, agent.get_id()))
+                self.event_sender.send(FoodConsumed(p, agent.get_id()))
                 return 1
         return 0
 
@@ -201,7 +200,7 @@ class SnakeWorld(AbstractGridGraph):
             agent.die()
             self.alive_agents.remove(agent)
             self.dead_agents.append(agent)
-            self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.DIE)
+            self.event_sender.send(SnakeDie(agent.get_id()))
 
     def _find_available_food_pos(self, max_try: int=20) -> Optional[Position]:
         """Tries to find an available position to spawn a new food and returns
@@ -221,7 +220,7 @@ class SnakeWorld(AbstractGridGraph):
             if pos is None:
                 break
             self.food_pos.add(pos)
-            self.event_sender.send_arena_event(FoodCreated(pos))
+            self.event_sender.send(FoodCreated(pos))
 
     def _find_agent_spawn_pos(self) -> Optional[Position]:
         """Tries to find a position to spawn an agent and returns it if found."""
@@ -250,25 +249,24 @@ class SnakeWorld(AbstractGridGraph):
             self.respawn_cooldown -= 1
             return
 
-        spawn_pos = self._find_agent_spawn_pos()
-        if spawn_pos is None:
+        p = self._find_agent_spawn_pos()
+        if p is None:
             return
 
         agent = self.dead_agents.popleft()
         spawn_length = agent.get_initial_length()
-        spawn_dir = toward_center(*spawn_pos, self.width, self.height)
+        spawn_pos = [p] * spawn_length
+        spawn_dir = toward_center(*p, self.width, self.height)
 
-        agent.reset([spawn_pos] * spawn_length, spawn_dir)
+        agent.reset(spawn_pos, spawn_dir)
         self.alive_agents.append(agent)
-        self.obstacle_count[spawn_pos] += spawn_length
+        self.obstacle_count[p] += spawn_length
         self.respawn_cooldown += self.initial_respawn_cooldown
-        self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.SPAWN)
+        self.event_sender.send(SnakeSpawn(agent.get_id(), spawn_pos))
 
     def _send_agent_movement_events(self) -> None:
         for agent in chain(self.deaths, self.alive_agents):
-            agent_id = agent.get_id()
-            movement_event = self.agent_movement_events[agent_id]
-            self.event_sender.send_agent_event(agent_id, movement_event)
+            self.event_sender.send(self.agent_movement_events[agent.get_id()])
 
 
     # ---- public
@@ -341,7 +339,7 @@ class SnakeWorld(AbstractGridGraph):
         self.dir_buffer.append(agent_dir)
         self.len_buffer.append(0)
         self.agent_movement_events.append(
-            SnakeMovement(agent_head, agent_dir, 0, SnakeMovementType.COMMON)
+            SnakeMovement(agent_id, SnakeMovementType.COMMON, agent_head, agent_dir, 0)
         )
 
     def reset(self) -> None:
@@ -358,7 +356,7 @@ class SnakeWorld(AbstractGridGraph):
             agent.reset()
             for pos in agent.iter_cells():
                 self.obstacle_count[pos] += 1
-            self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.SPAWN)
+            self.event_sender.send(SnakeSpawn(agent.get_id(), list(agent.iter_cells())))
 
         self.deaths.clear()
 

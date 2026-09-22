@@ -21,7 +21,9 @@ if TYPE_CHECKING:
     from back.agents import (AbstractAISnakeAgent, AbstractSnakeAgent,
                              PlayerSnakeAgent)
     from back.world import SnakeWorld
-    from events.back2front_pipe import Back2FrontEventReceiver
+    from events.back2front_protocol import BackendEvent
+    from events.front2back_protocol import FrontendEvent
+    from events.pipe import EventReceiver, EventSender
     from front.type_hints import ColorValue
 
 
@@ -79,8 +81,8 @@ class SnakeTronWindow(BoxLayout):
 
     def init_logic(
         self,
-        event_receiver: Back2FrontEventReceiver,  # receives events from the back
-        # event_sender: Front2BackEventSender,  # TODO: implement pipe which sends events to the back such as player inputs, player connection, and player disconnection
+        event_receiver: EventReceiver[BackendEvent],  # receives events from the back
+        # event_sender: EventSender[FrontendEvent],  # TODO: implement pipe which sends events to the back such as player inputs, player connection, and player disconnection
         world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],

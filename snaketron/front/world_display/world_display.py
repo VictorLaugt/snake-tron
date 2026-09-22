@@ -8,9 +8,7 @@ from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from events.back2front_protocol import (FoodConsumed, FoodCreated,
-                                        SnakeMovement, SnakeMovementType,
-                                        SnakeSimpleEvent)
+from events.back2front_protocol import *
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.ai_inspection_drawer import AiInspectionDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
@@ -24,7 +22,8 @@ if TYPE_CHECKING:
     from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent
     from back.type_hints import Position
     from back.world import SnakeWorld
-    from events.back2front_pipe import Back2FrontEventReceiver
+    from events.pipe import EventReceiver
+    from events.back2front_protocol import BackendEvent
     from front.type_hints import ColorValue, Coordinate
     from front.window import SnakeTronWindow
 
@@ -53,7 +52,7 @@ class SnakeColors:
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
-    event_receiver: Back2FrontEventReceiver
+    event_receiver: EventReceiver[BackendEvent]
     world: SnakeWorld
     snakes: dict[int, AbstractSnakeAgent]  # REFACTOR: remove
     ai_explanations: bool
@@ -71,8 +70,8 @@ class WorldDisplay(FloatLayout):
     def init_logic(
         self,
         main_window: SnakeTronWindow,
-        event_receiver: Back2FrontEventReceiver,
-        # event_sender: Front2BackEventSender,  # TODO: use the event sender to ask the back for ai inspection info, and receive them in the event receiver
+        event_receiver: EventReceiver[BackendEvent],
+        # event_sender: EventSender[FrontendEvent],  # TODO: use the event sender to ask the backend for ai inspection info, and receive them in the event receiver
         world: SnakeWorld,
         ai_snakes: Sequence[AbstractAISnakeAgent],
         world_colors: WorldColors,
@@ -161,39 +160,37 @@ class WorldDisplay(FloatLayout):
         return self.ai_explanations
 
 
-    def _draw_arena_events(self, time_step: float) -> None:
-        for event in self.event_receiver.recv_arena_events():
+    def _draw_events(self, time_step: float) -> None:
+        for event in self.event_receiver.recv():
             match event:
+                # world events
+                case ArenaUpdateSize(width, height):
+                    raise BackEventHandleNotImplemented(event)  # NotImplemented
                 case FoodCreated(pos):
                     self.food_draw_updater.spawn_food(pos, time_step)
                 case FoodConsumed(pos, by):
                     self.food_draw_updater.consume_food(pos, self.snakes.get(by), time_step)
 
-    def _draw_agent_events(self, time_step: float) -> None:
-        for snake_id, event in self.event_receiver.recv_agent_events():
-            updater = self.snake_draw_updaters[snake_id]
-            match event:
-                case SnakeMovement(movement_type=SnakeMovementType.COMMON):
-                    updater.update_draw_snake_move(time_step, event)
-                case SnakeMovement(movement_type=SnakeMovementType.WRAP):
-                    updater.update_draw_snake_wrap(time_step, event)
-                case SnakeMovement(movement_type=SnakeMovementType.TELEPORT):
-                    updater.update_draw_snake_teleport(time_step, event)
+                # agent events
+                case SnakeSpawn(snake_id, pos):
+                    self.snake_draw_updaters[snake_id].update_draw_snake_spawn(time_step, event)
+                case SnakeDie(snake_id):
+                    self.snake_draw_updaters[snake_id].update_draw_snake_die(time_step, event)
 
-                case SnakeSimpleEvent.SPAWN:
-                    updater.update_draw_spawn(time_step, self.snakes[snake_id].iter_cells())
-                case SnakeSimpleEvent.DIE:
-                    updater.update_draw_die(time_step)
-                case SnakeSimpleEvent.DASH:
-                    NotImplemented  # Gameplay feature not implemented yet
+                case SnakeMovement(snake_id, SnakeMovementType.TELEPORT):
+                    self.snake_draw_updaters[snake_id].update_draw_snake_teleport(time_step, event)
+                case SnakeMovement(snake_id):
+                    self.snake_draw_updaters[snake_id].update_draw_snake_move(time_step, event)
+
+                case SnakeDash(snake_id):
+                    raise BackEventHandleNotImplemented(event)  # NotImplemented
 
     def update_draw(self, time_step: float) -> None:
         if self.ai_explanations:
             for ai_inspection_drawer in self.ai_inspection_drawers:
                 ai_inspection_drawer.erase_and_draw()
 
-        self._draw_arena_events(time_step)
-        self._draw_agent_events(time_step)
+        self._draw_events(time_step)
 
 
 class ArenaDrawer:

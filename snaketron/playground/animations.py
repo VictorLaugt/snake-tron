@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from back.agents import AbstractSnakeAgent
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
-    from events.back2front_pipe import Back2FrontEventReceiver
-    from events.back2front_protocol import SnakeMovement
+    from events.back2front_protocol import BackendEvent, SnakeMovement
+    from events.pipe import EventReceiver
     from front.type_hints import Coordinate
 
 
@@ -56,7 +56,7 @@ class ObstacleAgent(AbstractSnakeAgent):
 class MinimalistSnakeTronApp(App):
     def __init__(
         self,
-        event_receiver: Back2FrontEventReceiver,
+        event_receiver: EventReceiver[BackendEvent],
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float,
@@ -97,7 +97,7 @@ class MinimalistWorldDisplay(FloatLayout):
 
     def init_logic(
         self,
-        event_receiver: Back2FrontEventReceiver,
+        event_receiver: EventReceiver[BackendEvent],
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float
@@ -453,10 +453,10 @@ class SnakeDrawer(EventDispatcher):
 
 if __name__ == '__main__':
     from back.world import SnakeWorld
-    from events.back2front_pipe import Back2FrontPipe
+    from events.pipe import EventPipe
 
     w = h = 15
-    back2front_pipe = Back2FrontPipe()
+    back2front_pipe = EventPipe()
     world = SnakeWorld(width=w, height=h, n_food=2, respawn_cooldown=6, event_sender=back2front_pipe.get_sender())
 
     # init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]

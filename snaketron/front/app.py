@@ -19,13 +19,14 @@ if TYPE_CHECKING:
 
     from back.agents import AbstractAISnakeAgent, PlayerSnakeAgent
     from back.world import SnakeWorld
-    from events.back2front_pipe import Back2FrontEventReceiver
+    from events.back2front_protocol import BackendEvent
+    from events.pipe import EventReceiver
 
 
 class SnakeTronApp(App):
     def __init__(
         self,
-        event_receiver: Back2FrontEventReceiver,
+        event_receiver: EventReceiver[BackendEvent],
         world: SnakeWorld,
         player_agents: Sequence[PlayerSnakeAgent],
         ai_agents: Sequence[AbstractAISnakeAgent],

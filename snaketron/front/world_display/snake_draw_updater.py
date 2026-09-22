@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from kivy.graphics import Canvas, Instruction
 
     from back.type_hints import Direction, Position
-    from events.back2front_protocol import SnakeMovement
+    from events.back2front_protocol import *
     from front.type_hints import ColorValue
     from front.world_display import SnakeColors, WorldDisplay
 
@@ -124,6 +124,7 @@ class SnakeDrawUpdater(EventDispatcher):
         s = self.display.square_size
         return Rectangle(pos=(x, y), size=(s, s))
 
+
     def _stop_animations(self) -> None:
         if self.anim_head is not None:
             self.anim_head.stop(self)
@@ -189,6 +190,7 @@ class SnakeDrawUpdater(EventDispatcher):
         self.layer_front.add(self.wrapping_tailend_color)
         self.layer_front.add(self.wrapping_tailend_cell)
 
+
     def reset(self, cell_pos: Iterable[Position]) -> None:
         self.tailend_clock.reset()
         self._stop_animations()
@@ -197,6 +199,7 @@ class SnakeDrawUpdater(EventDispatcher):
             self._init_tail(cell_pos)
             self._init_tailend(self._tailend_pos(), self.colors.tail)
             self._init_head(self.head_pos, self.colors.head)
+
 
     def _update_body(self, new_head_pos: Position, growth: int) -> Optional[list[Position]]:
         # adds a square at the current head position
@@ -223,6 +226,7 @@ class SnakeDrawUpdater(EventDispatcher):
                 sqr = self._square(pos)
                 self.tail_cells.appendleft(sqr)
                 self.layer_middle.add(sqr)
+
 
     def _anim_slide_head(self, time_step: float, dst: Position) -> Animation:
         return Animation(
@@ -317,6 +321,7 @@ class SnakeDrawUpdater(EventDispatcher):
 
         return anim
 
+
     def _animate_snake_movement(self, time_step: float, event: SnakeMovement) -> None:
         init_head_pos = self.head_pos
         init_tailend_pos = self._tailend_pos()
@@ -344,37 +349,34 @@ class SnakeDrawUpdater(EventDispatcher):
         (self.anim_head & self.anim_tail).start(self)
 
     def _animate_decay(self, time_step: float) -> None:
+        # prepare the animation
         d = self.n_decay_steps * time_step
         transition = 'out_circ'
         self.anim_death = Animation(
             head_rgba=self.colors.head_decay_final, duration=d, t=transition
-        # ) & Animation(
-        #     tailend_rgba=self.colors.tail_decay_final, duration=d, t=transition
         ) & Animation(
             tail_rgba=self.colors.tail_decay_final, duration=d, t=transition
         )
         self.anim_death.bind(on_complete=(lambda *_: self._clear_instruction_groups()))
 
+        # start the animation
         self.head_rgba = self.colors.head_decay_first
-        # self.tailend_rgba = self.colors.tail_decay_first
         self.tailend_rgba = self.invisible
         self.tail_rgba = self.colors.tail_decay_first
         self.anim_death.start(self)
 
-    def update_draw_snake_move(self, time_step: float, event: SnakeMovement) -> None:
-        self._animate_snake_movement(time_step, event)
 
-    def update_draw_snake_wrap(self, time_step: float, event: SnakeMovement) -> None:
+    def update_draw_snake_move(self, time_step: float, event: SnakeMovement) -> None:
         self._animate_snake_movement(time_step, event)
 
     def update_draw_snake_teleport(self, time_step: float, event: SnakeMovement) -> None:
         raise NotImplementedError
 
-    def update_draw_spawn(self, time_step: float, cell_pos: Iterable[Position]) -> None:
+    def update_draw_snake_spawn(self, time_step: float, event: SnakeSpawn) -> None:
         self.alive = True
-        self.reset(cell_pos)
+        self.reset(event.pos)
 
-    def update_draw_die(self, time_step: float) -> None:
+    def update_draw_snake_die(self, time_step: float, event: SnakeDie) -> None:
         self.alive = False
         self._animate_decay(time_step)
 

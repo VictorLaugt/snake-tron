@@ -11,14 +11,15 @@ from back.direction import DOWN, LEFT, RIGHT, UP
 from back.world import (EuclidianDistanceHeuristic,
                         EuclidianDistancePeriodicHeuristic,
                         ManhattanDistanceHeuristic, SnakeWorld)
-from events.back2front_pipe import Back2FrontPipe
+from events.pipe import EventPipe
 from front.app import SnakeTronApp
 
 if TYPE_CHECKING:
     from typing import Sequence
 
     from back.agents import AbstractAISnakeAgent
-    from events.back2front_pipe import Back2FrontEventSender
+    from events.pipe import EventSender
+    from events.back2front_protocol import BackendEvent
 
 """
 TODO:
@@ -57,7 +58,7 @@ def define_opponents(
 
 
 def build_game(
-    event_sender: Back2FrontEventSender,
+    event_sender: EventSender[BackendEvent],
     n_snakes: int,
     n_players: int,
     respawn_cooldown: int
@@ -139,7 +140,7 @@ def build_game(
     return world, player_agents, ai_agents
 
 
-back2front_pipe = Back2FrontPipe()
+back2front_pipe = EventPipe()
 
 world, player_agents, ai_agents = build_game(
     event_sender=back2front_pipe.get_sender(),
