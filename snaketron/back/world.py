@@ -118,6 +118,8 @@ class SnakeWorld(AbstractGridGraph):
         self.deaths: list[AbstractSnakeAgent] = []  # agents which died during the current simulation steps
         self.agent_movement_events: list[SnakeMovement] = []
 
+        self.event_sender.send(ArenaUpdateSize(self.width, self.height))
+
     def __repr__(self) -> str:
         repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
         for y in range(self.height):

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -10,23 +9,17 @@ from kivy.uix.floatlayout import FloatLayout
 
 from events.back2front_protocol import *
 from front.pause_menu import PauseMenuInvoker
-from front.world_display.ai_inspection_drawer import AiInspectionDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
 from front.world_display.snake_draw_updater import SnakeDrawUpdater
 
 if TYPE_CHECKING:
-    from typing import Sequence
-
     from kivy.uix.widget import Widget
 
-    from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent
     from back.type_hints import Position
-    from back.world import SnakeWorld
-    from events.pipe import EventReceiver
     from events.back2front_protocol import BackendEvent
+    from events.pipe import EventReceiver
     from front.type_hints import ColorValue, Coordinate
     from front.window import SnakeTronWindow
-
 
 
 @dataclass
@@ -53,14 +46,9 @@ class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
     event_receiver: EventReceiver[BackendEvent]
-    world: SnakeWorld
-
     arena_drawer: ArenaDrawer
     food_draw_updater: FoodDrawUpdater
     snake_draw_updaters: dict[int, SnakeDrawUpdater]
-
-    world_colors: WorldColors
-
     pause_invoker: PauseMenuInvoker
 
     def init_logic(
@@ -68,15 +56,13 @@ class WorldDisplay(FloatLayout):
         main_window: SnakeTronWindow,
         event_receiver: EventReceiver[BackendEvent],
         # event_sender: EventSender[FrontendEvent],  # TODO: use the event sender to ask the backend for ai inspection info, and receive them in the event receiver
-        world: SnakeWorld,
         world_colors: WorldColors,
         snake_colors: dict[int, SnakeColors],
         pause_command_touch_max_length: float
     ) -> None:
         self.event_receiver = event_receiver
-        self.world = world  # REFACTOR: world height and width should be known by reading the events from event_receiver instead of calling world.get_{height|width}
 
-        self.arena_drawer = ArenaDrawer(self, world, world_colors)  # REFACTOR: remove arg: world
+        self.arena_drawer = ArenaDrawer(self, world_colors)
         self.food_draw_updater = FoodDrawUpdater(self, world_colors)
 
         self.snake_draw_updaters = {}
@@ -92,18 +78,17 @@ class WorldDisplay(FloatLayout):
         )
         self.add_widget(self.pause_invoker)
 
-        self.arena_drawer.erase_and_draw()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (
             self.x + float(pos[0]) * self.square_size,
-            self.y + (self.world.get_height() - 1 - float(pos[1])) * self.square_size
+            self.y + (self.arena_drawer.get_height() - 1 - float(pos[1])) * self.square_size
         )
 
     def _recompute_square_size(self) -> None:
         self.square_size = min(
-            self.height / self.world.get_height(),
-            self.width / self.world.get_width()
+            self.height / self.arena_drawer.get_height(),
+            self.width / self.arena_drawer.get_width()
         )
 
     def on_square_size(self, instance: Widget, value: float) -> None:
@@ -134,7 +119,7 @@ class WorldDisplay(FloatLayout):
             match event:
                 # world events
                 case ArenaUpdateSize(width, height):
-                    raise BackEventHandleNotImplemented(event)  # NotImplemented
+                    self.arena_drawer.update_size(width, height)
 
                 case FoodCreated(food_pos):
                     self.food_draw_updater.spawn_food(food_pos, time_step)
@@ -163,22 +148,29 @@ class WorldDisplay(FloatLayout):
 
 
 class ArenaDrawer:
-    def __init__(
-        self,
-        world_display: WorldDisplay,
-        world: SnakeWorld,
-        colors: WorldColors
-    ) -> None:
+    def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:
         self.display = world_display
-        self.world = world
+        self.arena_width = 1
+        self.arena_height = 1
 
         self.instr = InstructionGroup()
         self.display.canvas.add(self.instr)
         self.color_values = colors
 
+    def get_width(self) -> int:
+        return self.arena_width
+
+    def get_height(self) -> int:
+        return self.arena_height
+
+    def update_size(self, width: int, height: int) -> None:
+        self.arena_width = width
+        self.arena_height = height
+        self.erase_and_draw()
+
     def erase_and_draw(self) -> None:
         self.instr.clear()
-        h, w = self.world.get_height(), self.world.get_width()
+        h, w = self.arena_height, self.arena_width
         display_x, display_y = self.display.pos
         display_s = self.display.square_size
 
