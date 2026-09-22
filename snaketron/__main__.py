@@ -11,7 +11,7 @@ from back.direction import DOWN, LEFT, RIGHT, UP
 from back.world import (EuclidianDistanceHeuristic,
                         EuclidianDistancePeriodicHeuristic,
                         ManhattanDistanceHeuristic, SnakeWorld)
-from events.back2front_pipe import build_event_pipe
+from events.back2front_pipe import Back2FrontPipe
 from front.app import SnakeTronApp
 
 if TYPE_CHECKING:
@@ -139,10 +139,10 @@ def build_game(
     return world, player_agents, ai_agents
 
 
-event_sender, event_receiver = build_event_pipe()
+back2front_pipe = Back2FrontPipe()
 
 world, player_agents, ai_agents = build_game(
-    event_sender=event_sender,
+    event_sender=back2front_pipe.get_sender(),
 
     n_snakes=4,
     n_players=1,
@@ -151,7 +151,7 @@ world, player_agents, ai_agents = build_game(
 
 app_dir = Path(__file__).resolve().parent
 app = SnakeTronApp(
-    event_receiver,
+    back2front_pipe.get_receiver(),
 
     world, player_agents, ai_agents,  # REFACTOR: remove args: world, player_agents, ai_agents
 

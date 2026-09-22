@@ -453,11 +453,11 @@ class SnakeDrawer(EventDispatcher):
 
 if __name__ == '__main__':
     from back.world import SnakeWorld
-    from events.back2front_pipe import build_event_pipe
+    from events.back2front_pipe import Back2FrontPipe
 
     w = h = 15
-    sender, receiver = build_event_pipe()
-    world = SnakeWorld(width=w, height=h, n_food=2, respawn_cooldown=6, event_sender=sender)
+    back2front_pipe = Back2FrontPipe()
+    world = SnakeWorld(width=w, height=h, n_food=2, respawn_cooldown=6, event_sender=back2front_pipe.get_sender())
 
     # init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
     init_pos = [(4, 5), (3, 5), (2, 5)]
@@ -472,5 +472,5 @@ if __name__ == '__main__':
 
     time_step = .2
 
-    app = MinimalistSnakeTronApp(receiver, world, player, time_step)
+    app = MinimalistSnakeTronApp(back2front_pipe.receiver(), world, player, time_step)
     app.run()

@@ -23,8 +23,8 @@ if TYPE_CHECKING:
     from back.agents import PlayerSnakeAgent
     from back.type_hints import Direction, Position
     from back.world import SnakeWorld
-    from events.back2front_protocol import (Back2FrontEventReceiver,
-                                            SnakeMovement)
+    from events.back2front_pipe import Back2FrontEventReceiver
+    from events.back2front_protocol import SnakeMovement
     from front.type_hints import Coordinate
 
 
@@ -342,15 +342,15 @@ class SnakeDrawer:
 if __name__ == '__main__':
     from back.agents import PlayerSnakeAgent
     from back.world import SnakeWorld
-    from events.back2front_pipe import build_event_pipe
+    from events.back2front_pipe import Back2FrontPipe
 
-    sender, receiver = build_event_pipe()
+    back2front_pipe = Back2FrontPipe()
 
     init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
     init_dir = (0, -1)
 
     w = h = 15
-    world = SnakeWorld(width=w, height=h, n_food=1, respawn_cooldown=6, event_sender=sender)
+    world = SnakeWorld(width=w, height=h, n_food=1, respawn_cooldown=6, event_sender=back2front_pipe.get_sender())
     obstacle_pos = []
     for x in range(0, w):
         obstacle_pos.append((x, 0))
@@ -363,5 +363,5 @@ if __name__ == '__main__':
     player = PlayerSnakeAgent(world, init_pos, init_dir)
     world.attach_agent(player)
 
-    app = MinimalistSnakeTronApp(receiver, world, player, .5)
+    app = MinimalistSnakeTronApp(back2front_pipe.get_receiver(), world, player, .5)
     app.run()

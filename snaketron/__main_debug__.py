@@ -11,7 +11,7 @@ from back.direction import DOWN, LEFT, RIGHT, UP
 from back.world import (EuclidianDistanceHeuristic,
                         EuclidianDistancePeriodicHeuristic,
                         ManhattanDistanceHeuristic, SnakeWorld)
-from events.back2front_pipe import build_event_pipe
+from events.back2front_pipe import Back2FrontPipe
 from front.app import SnakeTronApp
 
 if TYPE_CHECKING:
@@ -144,16 +144,16 @@ time_step = 1
 # time_step = 0.25
 # time_step = 0.3
 
-event_sender, event_receiver = build_event_pipe()
+back2front_pipe = Back2FrontPipe()
 world, player_agents, ai_agents = build_game(
-    event_sender,
+    back2front_pipe.get_sender(),
     n_snakes, n_players,
     respawn_cooldown
 )
 
 app_dir = Path(__file__).resolve().parent
 app = SnakeTronApp(
-    event_receiver,
+    back2front_pipe.get_receiver(),
     world, player_agents, ai_agents,
     time_step, ai_explanations=False,
     layout_dir=app_dir.joinpath('front', 'layout', 'mobile'),

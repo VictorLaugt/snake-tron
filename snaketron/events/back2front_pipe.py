@@ -9,61 +9,54 @@ if TYPE_CHECKING:
     from events.back2front_protocol import AgentEvent, ArenaEvent
 
 
+class Back2FrontPipe:
+    def __init__(self) -> None:
+        self.arena_events: deque[ArenaEvent] = deque()
+        self.agent_events: defaultdict[int, deque[AgentEvent]] = defaultdict(deque)
+        self.disconnected_agent_ids: deque[int] = deque()
+
+        self.sender = Back2FrontEventSender(self)
+        self.receiver = Back2FrontEventReceiver(self)
+
+    def get_sender(self) -> Back2FrontEventSender:
+        return self.sender
+
+    def get_receiver(self) -> Back2FrontEventReceiver:
+        return self.receiver
+
+
 class Back2FrontEventSender:
-    def __init__(
-        self,
-        arena_events: deque[ArenaEvent],
-        agent_events: defaultdict[int, deque[AgentEvent]],
-        disconnected_agent_ids: deque[int],
-    ) -> None:
-        self.arena_events = arena_events
-        self.agent_events = agent_events
-        self.disconnected_agent_ids = disconnected_agent_ids
+    def __init__(self, pipe: Back2FrontPipe) -> None:
+        self.pipe = pipe
 
     def send_arena_event(self, event: ArenaEvent) -> None:
         # print(f"DEBUG: arena event: {repr(event)}")
-        self.arena_events.append(event)
+        self.pipe.arena_events.append(event)
 
     def send_agent_event(self, agent_id: int, event: AgentEvent) -> None:
         # print(f"DEBUG: agent {agent_id} event: {repr(event)}")
-        self.agent_events[agent_id].append(event)
+        self.pipe.agent_events[agent_id].append(event)
 
     def disconnect_agent(self, agent_id: int) -> None:
-        self.disconnected_agent_ids.append(agent_id)
+        self.pipe.disconnected_agent_ids.append(agent_id)
 
 
 class Back2FrontEventReceiver:
-    def __init__(
-        self,
-        arena_events: deque[ArenaEvent],
-        agent_events: dict[int, deque[AgentEvent]],
-        disconnected_agent_ids: deque[int]
-    ) -> None:
-        self.arena_events = arena_events
-        self.agent_events = agent_events
-        self.disconnected_agent_ids = disconnected_agent_ids
+    def __init__(self, pipe: Back2FrontPipe) -> None:
+        self.pipe = pipe
 
     def recv_arena_events(self) -> Iterator[ArenaEvent]:
-        while self.arena_events:
-            yield self.arena_events.popleft()
+        while self.pipe.arena_events:
+            yield self.pipe.arena_events.popleft()
 
     def recv_agent_events(self) -> Iterator[tuple[int, AgentEvent]]:
         # consumes the event FIFO of each agent
-        for agent_id, event_fifo in self.agent_events.items():
+        for agent_id, event_fifo in self.pipe.agent_events.items():
             while event_fifo:
                 yield agent_id, event_fifo.popleft()
 
         # removes event FIFO of each agent which has been disconnected
-        while self.disconnected_agent_ids:
+        while self.pipe.disconnected_agent_ids:
             # print(f"DEBUG: disconnecting agent {agent_id}")
-            agent_id = self.disconnected_agent_ids.popleft()
-            self.agent_events.pop(agent_id)
-
-
-def build_event_pipe() -> tuple[Back2FrontEventSender, Back2FrontEventReceiver]:
-    arena_events = deque()
-    agent_events = defaultdict(deque)
-    disconnected_agent_ids = deque()
-    sender = Back2FrontEventSender(arena_events, agent_events, disconnected_agent_ids)
-    receiver = Back2FrontEventReceiver(arena_events, agent_events, disconnected_agent_ids)
-    return sender, receiver
+            agent_id = self.pipe.disconnected_agent_ids.popleft()
+            self.pipe.agent_events.pop(agent_id)
