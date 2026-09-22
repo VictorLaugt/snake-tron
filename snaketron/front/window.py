@@ -113,7 +113,7 @@ class SnakeTronWindow(BoxLayout):
         # propagates logic to child widgets
         self.ids.world_display.init_logic(
             self, event_receiver,
-            world, ai_agents,  # REFACTOR: remove args: world, ai_agents
+            world,  # REFACTOR: remove args: world
             world_colors, agent_colors,
             input_sensitivity
         )

@@ -54,16 +54,12 @@ class WorldDisplay(FloatLayout):
 
     event_receiver: EventReceiver[BackendEvent]
     world: SnakeWorld
-    snakes: dict[int, AbstractSnakeAgent]  # REFACTOR: remove
-    ai_explanations: bool
 
     arena_drawer: ArenaDrawer
-    ai_inspection_drawers: list[AiInspectionDrawer]
     food_draw_updater: FoodDrawUpdater
     snake_draw_updaters: dict[int, SnakeDrawUpdater]
 
     world_colors: WorldColors
-    snake_colors: SnakeColors
 
     pause_invoker: PauseMenuInvoker
 
@@ -73,36 +69,21 @@ class WorldDisplay(FloatLayout):
         event_receiver: EventReceiver[BackendEvent],
         # event_sender: EventSender[FrontendEvent],  # TODO: use the event sender to ask the backend for ai inspection info, and receive them in the event receiver
         world: SnakeWorld,
-        ai_snakes: Sequence[AbstractAISnakeAgent],
         world_colors: WorldColors,
         snake_colors: dict[int, SnakeColors],
         pause_command_touch_max_length: float
     ) -> None:
         self.event_receiver = event_receiver
         self.world = world  # REFACTOR: world height and width should be known by reading the events from event_receiver instead of calling world.get_{height|width}
-        self.ai_explanations = False
 
         self.arena_drawer = ArenaDrawer(self, world, world_colors)  # REFACTOR: remove arg: world
-
-        self.ai_inspection_drawers = []
-        for snake in ai_snakes:
-            self.ai_inspection_drawers.append(AiInspectionDrawer(  # REFACTOR: remove arg: snake
-                self, snake, snake_colors[snake.get_id()]
-            ))
-
         self.food_draw_updater = FoodDrawUpdater(self, world_colors)
 
-        self.snakes = {}
         self.snake_draw_updaters = {}
-        for snake in itertools.chain(world.iter_alive_agents(), world.iter_dead_agents()):
-            snake_id = snake.get_id()
-            self.snakes[snake_id] = snake
+        for snake_id, snake_color in snake_colors.items():
             self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(
-                self, snake.is_alive(), snake_colors[snake_id], n_decay_steps=4
+                self, snake_color, n_decay_steps=4
             )
-
-        self.world_colors = world_colors
-        self.snake_colors = snake_colors
 
         self.pause_invoker = PauseMenuInvoker(
             main_window, pause_command_touch_max_length,
@@ -127,14 +108,9 @@ class WorldDisplay(FloatLayout):
 
     def on_square_size(self, instance: Widget, value: float) -> None:
         self.arena_drawer.erase_and_draw()
-
-        if self.ai_explanations:
-            for ai_inspection_drawer in self.ai_inspection_drawers:
-                ai_inspection_drawer.erase_and_draw()
-
         self.food_draw_updater.reset()
-        for snake_id, updater in self.snake_draw_updaters.items():
-            updater.reset(self.snakes[snake_id].iter_cells())
+        for updater in self.snake_draw_updaters.values():
+            updater.reset()
 
         self.pause_invoker.size = self.size
         self.pause_invoker.pos = self.to_window(self.x, self.y)
@@ -147,17 +123,10 @@ class WorldDisplay(FloatLayout):
 
 
     def toggle_ai_explanations(self) -> None:
-        self.ai_explanations = not self.ai_explanations
-        if self.ai_explanations:
-            for drawer in self.ai_inspection_drawers:
-                drawer.erase_and_draw()
-
-        else:
-            for drawer in self.ai_inspection_drawers:
-                drawer.erase()
+        raise NotImplementedError
 
     def ai_explanations_is_enabled(self) -> bool:
-        return self.ai_explanations
+        return False  # MOCK
 
 
     def _draw_events(self, time_step: float) -> None:
@@ -166,10 +135,14 @@ class WorldDisplay(FloatLayout):
                 # world events
                 case ArenaUpdateSize(width, height):
                     raise BackEventHandleNotImplemented(event)  # NotImplemented
-                case FoodCreated(pos):
-                    self.food_draw_updater.spawn_food(pos, time_step)
-                case FoodConsumed(pos, by):
-                    self.food_draw_updater.consume_food(pos, self.snakes.get(by), time_step)
+
+                case FoodCreated(food_pos):
+                    self.food_draw_updater.spawn_food(food_pos, time_step)
+                case FoodConsumed(food_pos, by) if by is not None:
+                    consumer_head_pos = self.snake_draw_updaters[by].get_head_pos()
+                    self.food_draw_updater.eat_food(food_pos, consumer_head_pos, time_step)
+                case FoodConsumed(food_pos):
+                    self.food_draw_updater.despawn_food(food_pos, time_step)
 
                 # agent events
                 case SnakeSpawn(snake_id, pos):
@@ -186,10 +159,6 @@ class WorldDisplay(FloatLayout):
                     raise BackEventHandleNotImplemented(event)  # NotImplemented
 
     def update_draw(self, time_step: float) -> None:
-        if self.ai_explanations:
-            for ai_inspection_drawer in self.ai_inspection_drawers:
-                ai_inspection_drawer.erase_and_draw()
-
         self._draw_events(time_step)
 
 

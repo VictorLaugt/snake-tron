@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING, Generic, TypeVar
 
+from debug_tool import dbg
+
 if TYPE_CHECKING:
     from typing import Iterator
 
@@ -27,6 +29,7 @@ class EventSender(Generic[Event]):
         self.pipe = pipe
 
     def send(self, event: Event) -> None:
+        dbg.dprint(f"send event: {event}")
         self.pipe.fifo.append(event)
 
 
@@ -36,4 +39,6 @@ class EventReceiver(Generic[Event]):
 
     def recv(self) -> Iterator[Event]:
         while self.pipe.fifo:
-            yield self.pipe.fifo.popleft()
+            event = self.pipe.fifo.popleft()
+            dbg.dprint(f"recv event: {event}")
+            yield event

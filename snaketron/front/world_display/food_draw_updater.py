@@ -48,17 +48,11 @@ class FoodDrawUpdater:
         self.working_drawers[pos] = drawer
         drawer.spawn(pos, time_step)
 
-    def consume_food(
-        self,
-        pos: Position,
-        eater: Optional[AbstractSnakeAgent],
-        time_step: float
-    ) -> None:
-        drawer = self.working_drawers[pos]
-        if eater is not None:
-            drawer.eat(pos, eater, time_step)
-        else:
-            drawer.despawn(pos, time_step)
+    def eat_food(self, food_pos: Position, eater_pos: Position, time_step: float) -> None:
+        self.working_drawers[food_pos].eat(food_pos, eater_pos, time_step)
+
+    def despawn_food(self, food_pos: Position, time_step: float) -> None:
+        self.working_drawers[food_pos].despawn(food_pos, time_step)
 
 
 class FoodDrawer(EventDispatcher):
@@ -96,29 +90,27 @@ class FoodDrawer(EventDispatcher):
         self.circle.size = value
 
 
-    def _allocate(self, pos: Position) -> None:
-        self.pool.working_drawers[pos] = self
+    def _allocate(self, food_pos: Position) -> None:
+        self.pool.working_drawers[food_pos] = self
 
-    def _free(self, pos: Position) -> None:
+    def _free(self, food_pos: Position) -> None:
         self.animated_color = self.invisible
-        self.pool.working_drawers.pop(pos)
+        self.pool.working_drawers.pop(food_pos)
         self.pool.free_drawers.append(self)
 
 
-    def spawn_without_anim(self, pos: Position) -> None:
-        # self._allocate(pos)
-
-        x, y = self.pool.display.pos_to_coord(pos)
+    def spawn_without_anim(self, food_pos: Position) -> None:
+        x, y = self.pool.display.pos_to_coord(food_pos)
         s = self.pool.display.square_size
         c = self.pool.food_color
         self.animated_pos = (x, y)
         self.animated_size = (s, s)
         self.animated_color = c
 
-    def spawn(self, pos: Position, duration: float) -> None:
-        self._allocate(pos)
+    def spawn(self, food_pos: Position, duration: float) -> None:
+        self._allocate(food_pos)
 
-        x, y = self.pool.display.pos_to_coord(pos)
+        x, y = self.pool.display.pos_to_coord(food_pos)
         s = self.pool.display.square_size
         c = self.pool.food_color
         # self.animated_size = (0, 0)
@@ -131,25 +123,23 @@ class FoodDrawer(EventDispatcher):
         )
         self.anim.start(self)
 
-    def despawn_without_anim(self, pos: Position) -> None:
+    def despawn_without_anim(self, food_pos: Position) -> None:
         if self.anim is not None:
             self.anim.stop(self)
         self.animated_color = self.invisible
 
-    def despawn(self, pos: Position, duration: float) -> None:
+    def despawn(self, food_pos: Position, duration: float) -> None:
         self.anim = (
             # Animation(animated_size=(0, 0), d=duration, t='linear') &
             Animation(animated_color=self.invisible, d=duration, t='linear')
         )
-        self.anim.bind(on_complete=lambda *_: self._free(pos))
+        self.anim.bind(on_complete=lambda *_: self._free(food_pos))
         self.anim.start(self)
 
-    def eat(self, pos: Position, eater: AbstractSnakeAgent, duration: float) -> None:
-        mouth_dir = opposite_dir(eater.get_direction())
-        x, y = self.pool.display.pos_to_coord((pos[0]+mouth_dir[0], pos[1]+mouth_dir[1]))
+    def eat(self, food_pos: Position, eater_pos: Position, duration: float) -> None:
         self.anim = (
-            Animation(animated_pos=(x, y), d=duration, t='linear') # &
+            Animation(animated_pos=self.pool.display.pos_to_coord(eater_pos), d=duration, t='linear') # &
             # Animation(animated_color=self.invisible, d=duration, t='linear')
         )
-        self.anim.bind(on_complete=lambda *_: self._free(pos))
+        self.anim.bind(on_complete=lambda *_: self._free(food_pos))
         self.anim.start(self)

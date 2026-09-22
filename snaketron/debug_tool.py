@@ -1519,6 +1519,8 @@ class DebugSpace :
         return _FunctionTracker(self, tags, hidden_args, chrono, yieldfunc)
 
 
+dbg = DebugSpace(name="SnakeTron")
+
 
 # --- exemples
 if __name__ == '__main__' :
