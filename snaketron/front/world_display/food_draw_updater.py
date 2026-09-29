@@ -5,20 +5,18 @@ from typing import TYPE_CHECKING
 from kivy.animation import Animation
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, Ellipse, InstructionGroup
-from kivy.properties import (ListProperty, NumericProperty,
-                             ReferenceListProperty)
+from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
-
-from back.direction import opposite_dir
 
 if TYPE_CHECKING:
     from typing import Optional
 
-    from back.agents import AbstractSnakeAgent
-    from back.type_hints import Position
-    from front.type_hints import ColorValue
+    from back.type_hints import *
+    from front.type_hints import *
     from front.world_display import WorldColors, WorldDisplay
 
+
+__all__ = ['FoodDrawUpdater']
 
 class FoodDrawUpdater:
     def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:

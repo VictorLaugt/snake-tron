@@ -8,8 +8,10 @@ from back.agents.abstract_snake_agent import AbstractSnakeAgent
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
     from back.world import SnakeWorld
+
+__all__ = ['PlayerSnakeAgent']
 
 
 class PlayerSnakeAgent(AbstractSnakeAgent):

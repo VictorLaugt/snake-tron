@@ -2,13 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from back.type_hints import Direction
+from back.type_hints import *
 
 if TYPE_CHECKING:
     from typing import TypeAlias
 
-    from back.type_hints import Direction
+    from back.type_hints import *
     Real: TypeAlias = int|float
+
+__all__ = [
+    'UP', 'DOWN', 'LEFT', 'RIGHT',
+    'toward_center', 'away_from_center', 'opposite_dir'
+]
+
 
 UP: Direction = (0, -1)
 DOWN: Direction = (0, 1)

@@ -7,7 +7,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
+
+
+__all__ = [
+    'BackendEvent',
+    'WorldEvent', 'ArenaUpdateSize', 'FoodCreated', 'FoodConsumed',
+    'AgentEvent', 'SnakeSpawn', 'SnakeDie', 'SnakeMovementType', 'SnakeMovement', 'SnakeDash',
+    'BackEventHandleNotImplemented'
+]
 
 
 class BackendEvent:

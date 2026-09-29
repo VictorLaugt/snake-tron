@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from back.agents import AbstractAISnakeAgent
     from front.world_display import SnakeColors, WorldDisplay
 
+__all__ = ['AiInspectionDrawer']
 
 class AiInspectionDrawer:
     def __init__(

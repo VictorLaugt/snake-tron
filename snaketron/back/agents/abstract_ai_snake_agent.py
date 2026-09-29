@@ -6,13 +6,15 @@ from typing import TYPE_CHECKING
 
 from back.a_star import shortest_path
 from back.agents.abstract_snake_agent import AbstractSnakeAgent
+from back.grid_graph import AbstractHeuristic
 
 if TYPE_CHECKING:
     from typing import Iterable, Iterator, Optional, Sequence, Type
 
-    from back.type_hints import Direction, Position
-    from back.world import AbstractHeuristic, SnakeWorld
+    from back.type_hints import *
+    from back.world import SnakeWorld
 
+__all__ = ['AbstractAISnakeAgent']
 
 class AbstractAISnakeAgent(AbstractSnakeAgent):
     def __init__(

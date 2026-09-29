@@ -21,11 +21,11 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
     from back.agents import PlayerSnakeAgent
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
     from back.world import SnakeWorld
     from events.pipe import EventReceiver
     from events.back2front_protocol import SnakeMovement, BackendEvent
-    from front.type_hints import Coordinate
+    from front.type_hints import *
 
 
 class ObstacleAgent(AbstractSnakeAgent):

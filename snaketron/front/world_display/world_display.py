@@ -3,24 +3,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
+from debug_tool import dbg
 from events.back2front_protocol import *
 from front.pause_menu import PauseMenuInvoker
+from front.world_display.arena_drawer import ArenaDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
 from front.world_display.snake_draw_updater import SnakeDrawUpdater
 
 if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
-    from back.type_hints import Position
+    from back.type_hints import *
     from events.back2front_protocol import BackendEvent
     from events.pipe import EventReceiver
-    from front.type_hints import ColorValue, Coordinate
+    from front.type_hints import *
     from front.window import SnakeTronWindow
 
+__all__ = ['WorldColors', 'SnakeColors', 'WorldDisplay']
 
 @dataclass
 class WorldColors:
@@ -100,9 +102,11 @@ class WorldDisplay(FloatLayout):
         self.pause_invoker.size = self.size
         self.pause_invoker.pos = self.to_window(self.x, self.y)
 
+    @dbg.trackmethod()
     def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
+    @dbg.trackmethod()
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
@@ -145,67 +149,3 @@ class WorldDisplay(FloatLayout):
 
     def update_draw(self, time_step: float) -> None:
         self._draw_events(time_step)
-
-
-class ArenaDrawer:
-    def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:
-        self.display = world_display
-        self.arena_width = 1
-        self.arena_height = 1
-
-        self.instr = InstructionGroup()
-        self.display.canvas.add(self.instr)
-        self.color_values = colors
-
-    def get_width(self) -> int:
-        return self.arena_width
-
-    def get_height(self) -> int:
-        return self.arena_height
-
-    def update_size(self, width: int, height: int) -> None:
-        self.arena_width = width
-        self.arena_height = height
-        self.erase_and_draw()
-
-    def erase_and_draw(self) -> None:
-        self.instr.clear()
-        h, w = self.arena_height, self.arena_width
-        display_x, display_y = self.display.pos
-        display_s = self.display.square_size
-
-        # background
-        self.instr.add(Color(*self.color_values.background))
-        self.instr.add(Rectangle(pos=(display_x, display_y), size=(w*display_s, h*display_s)))
-
-        # grid lines every 3 cells
-        self.instr.add(Color(*self.color_values.gridline))
-        for u in range(3, w, 3):
-            x = display_x + u*display_s
-            y0 = display_y
-            y1 = display_y + h*display_s
-            self.instr.add(Line(points=(x, y0, x, y1)))
-        for v in range(3, h, 3):
-            y = display_y + (h-v)*display_s
-            x0 = display_x
-            x1 = display_x + w*display_s
-            self.instr.add(Line(points=(x0, y, x1, y)))
-
-        # grid border
-        self.instr.add(Color(*self.color_values.gridborder))
-        self.instr.add(Line(points=(
-            display_x, display_y,
-            display_x + w*display_s, display_y
-        )))
-        self.instr.add(Line(points=(
-            display_x, display_y + h*display_s,
-            display_x + w*display_s, display_y + h*display_s
-        )))
-        self.instr.add(Line(points=(
-            display_x, display_y,
-            display_x, display_y + h*display_s
-        )))
-        self.instr.add(Line(points=(
-            display_x + w*display_s, display_y,
-            display_x + w*display_s, display_y + h*display_s
-        )))

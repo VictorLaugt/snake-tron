@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from back.agents import AbstractSnakeAgent
     from front.world_display import SnakeColors
 
+__all__ = ['ScoreBoard']
+
 
 class ColoredLabel(Label):
     box_color = ListProperty(get_color_from_hex('#000000'))

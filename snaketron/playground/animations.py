@@ -24,11 +24,11 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
     from back.agents import AbstractSnakeAgent
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
     from back.world import SnakeWorld
     from events.back2front_protocol import BackendEvent, SnakeMovement
     from events.pipe import EventReceiver
-    from front.type_hints import Coordinate
+    from front.type_hints import *
 
 
 KV = '''

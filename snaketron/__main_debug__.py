@@ -5,14 +5,12 @@ from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from back.agents import (OffensiveAISnakeAgent, PassiveAISnakeAgent,
-                         PlayerSnakeAgent)
-from back.direction import DOWN, LEFT, RIGHT, UP
-from back.world import (EuclidianDistanceHeuristic,
-                        EuclidianDistancePeriodicHeuristic,
-                        ManhattanDistanceHeuristic, SnakeWorld)
-from events.pipe import EventPipe
-from front.app import SnakeTronApp
+from back.grid_graph import *
+from back.agents import *
+from back.direction import *
+from back.world import *
+from events.pipe import *
+from front.app import *
 
 if TYPE_CHECKING:
     from typing import Sequence

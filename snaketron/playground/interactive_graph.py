@@ -7,14 +7,15 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from back.a_star import shortest_path
+from back.grid_graph import EuclidianDistanceHeuristic
 from back.voronoi import furthest_voronoi_vertex
-from back.world import EuclidianDistanceHeuristic, SnakeWorld
+from back.world import SnakeWorld
 from events.pipe import EventPipe
 
 if TYPE_CHECKING:
     from typing import Optional, TypeAlias
 
-    from back.type_hints import Position
+    from back.type_hints import *
     Coordinate: TypeAlias = tuple[float, float]
 
 

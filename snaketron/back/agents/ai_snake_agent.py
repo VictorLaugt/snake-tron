@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
-from back.agents.ai_snake_mixins import (AttackAISnakeMixin,
-                                         CautionAISnakeMixin,
-                                         CooldownAISnakeMixin)
+from back.agents.abstract_ai_snake_agent import *
+from back.agents.ai_snake_mixins import *
 
 if TYPE_CHECKING:
     from typing import Sequence, Type
 
-    from back.a_star import AbstractHeuristic
-    from back.type_hints import Direction, Position
+    from back.grid_graph import AbstractHeuristic
+    from back.type_hints import *
     from back.world import SnakeWorld
+
+__all__ = ['PassiveAISnakeAgent', 'OffensiveAISnakeAgent']
 
 
 INF = float('inf')

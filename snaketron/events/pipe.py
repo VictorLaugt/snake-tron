@@ -8,6 +8,8 @@ from debug_tool import dbg
 if TYPE_CHECKING:
     from typing import Iterator
 
+__all__ = ['EventPipe', 'EventSender', 'EventReceiver']
+
 
 Event = TypeVar("Event")
 class EventPipe(Generic[Event]):

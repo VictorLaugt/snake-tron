@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     from events.back2front_protocol import BackendEvent
     from events.pipe import EventReceiver
 
+__all__ = ['SnakeTronApp']
+
 
 class SnakeTronApp(App):
     def __init__(

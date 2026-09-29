@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import chain
 from typing import TYPE_CHECKING
 
 from kivy.core.window import Keyboard, Window
@@ -21,9 +20,11 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
     from back.agents import PlayerSnakeAgent
-    from back.type_hints import Direction
-    from front.type_hints import ColorValue
+    from back.type_hints import *
+    from front.type_hints import *
     from front.world_display import SnakeColors
+
+__all__ = ['SwipeControlZone', 'PlayerSwipeControl', 'PlayerKeyBoardControl']
 
 
 class SwipeDirectionFilter:

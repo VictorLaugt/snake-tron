@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     from front.window import SnakeTronWindow
 
 
+__all__ = ['PauseMenuInvoker']
+
+
 class PauseMenuInvoker(Widget):
     main_window: SnakeTronWindow
     max_seg_sqr_length: float

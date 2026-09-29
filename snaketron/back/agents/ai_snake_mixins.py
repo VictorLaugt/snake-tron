@@ -8,7 +8,9 @@ if TYPE_CHECKING:
     from typing import Iterable, Iterator, Optional, Sequence
 
     from back.agents.abstract_snake_agent import AbstractSnakeAgent
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
+
+__all__ = ['CautionAISnakeMixin', 'AttackAISnakeMixin', 'CooldownAISnakeMixin']
 
 
 """

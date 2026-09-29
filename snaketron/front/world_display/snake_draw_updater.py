@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 from kivy.animation import Animation
 from kivy.event import EventDispatcher
 from kivy.graphics import Color, InstructionGroup, Rectangle
-from kivy.properties import (ListProperty, NumericProperty,
-                             ReferenceListProperty)
+from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
 from events.back2front_protocol import SnakeMovementType
@@ -17,11 +16,12 @@ if TYPE_CHECKING:
 
     from kivy.graphics import Canvas, Instruction
 
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
     from events.back2front_protocol import *
-    from front.type_hints import ColorValue
+    from front.type_hints import *
     from front.world_display import SnakeColors, WorldDisplay
 
+__all__ = ['SnakeDrawUpdater']
 
 class SnakeDrawUpdater(EventDispatcher):
     invisible: ColorValue = get_color_from_hex('#00000000')

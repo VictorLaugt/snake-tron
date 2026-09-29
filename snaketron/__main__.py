@@ -5,21 +5,18 @@ from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from back.agents import (OffensiveAISnakeAgent, PassiveAISnakeAgent,
-                         PlayerSnakeAgent)
-from back.direction import DOWN, LEFT, RIGHT, UP
-from back.world import (EuclidianDistanceHeuristic,
-                        EuclidianDistancePeriodicHeuristic,
-                        ManhattanDistanceHeuristic, SnakeWorld)
-from events.pipe import EventPipe
-from front.app import SnakeTronApp
+from back.grid_graph import *
+from back.agents import *
+from back.direction import *
+from back.world import *
+from events.pipe import *
+from front.app import *
 
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from back.agents import AbstractAISnakeAgent
-    from events.pipe import EventSender
     from events.back2front_protocol import BackendEvent
+    from events.pipe import EventSender
 
 """
 TODO:
@@ -145,8 +142,8 @@ back2front_pipe = EventPipe()
 world, player_agents, ai_agents = build_game(
     event_sender=back2front_pipe.get_sender(),
 
-    n_snakes=4,
-    n_players=1,
+    n_snakes=0,
+    n_players=0,
     respawn_cooldown=15
 )
 

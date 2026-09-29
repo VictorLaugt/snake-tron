@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from kivy.clock import Clock
 from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.utils import get_color_from_hex
 
-from front.controls import (PlayerKeyBoardControl, PlayerSwipeControl,
-                            SwipeControlZone)
-from front.world_display import SnakeColors, WorldColors
+from front.controls import *
+from front.score_board import *
+from front.world_display import *
 
 if TYPE_CHECKING:
     from typing import Iterable, Sequence
@@ -18,13 +18,14 @@ if TYPE_CHECKING:
     from kivy.clock import ClockEvent
     from kivy.uix.widget import Widget
 
-    from back.agents import (AbstractAISnakeAgent, AbstractSnakeAgent,
-                             PlayerSnakeAgent)
+    from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent, PlayerSnakeAgent
     from back.world import SnakeWorld
-    from events.back2front_protocol import BackendEvent
-    from events.front2back_protocol import FrontendEvent
-    from events.pipe import EventReceiver, EventSender
-    from front.type_hints import ColorValue
+    from events.back2front_protocol import *
+    from events.front2back_protocol import *
+    from events.pipe import *
+    from front.type_hints import *
+
+__all__ = ['SnakeTronWindow']
 
 
 MINIMAL_TIME_STEP = 0.01
@@ -73,10 +74,10 @@ class SnakeTronWindow(BoxLayout):
         return self.full_speed
 
     def toggle_ai_explanations(self) -> None:
-        self.ids.world_display.toggle_ai_explanations()
+        cast(WorldDisplay, self.ids.world_display).toggle_ai_explanations()
 
     def ai_explanations_is_enabled(self) -> bool:
-        return self.ids.world_display.ai_explanations_is_enabled()
+        return cast(WorldDisplay, self.ids.world_display).ai_explanations_is_enabled()
 
 
     def init_logic(
@@ -111,7 +112,7 @@ class SnakeTronWindow(BoxLayout):
         self.app_background_color = get_color_from_hex(colors['ui']['background'])
 
         # propagates logic to child widgets
-        self.ids.world_display.init_logic(
+        cast(WorldDisplay, self.ids.world_display).init_logic(
             self, event_receiver,
             world_colors, agent_colors,
             input_sensitivity
@@ -190,7 +191,7 @@ class SnakeTronWindow(BoxLayout):
 
     def game_step(self, dt: float) -> None:
         self.world.simulate()
-        self.ids.world_display.update_draw(self.time_step)
+        cast(WorldDisplay, self.ids.world_display).update_draw(self.time_step)
         self.ids.score_board.update_scores()
         for controller in self.swipe_controls:
             controller.update_direction_display()

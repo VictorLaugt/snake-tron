@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator, Optional, Sequence
 
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
     from back.world import SnakeWorld
+
+__all__ = ['AbstractSnakeAgent']
 
 
 class AbstractSnakeAgent(ABC):
