@@ -118,34 +118,27 @@ class WorldDisplay(FloatLayout):
         return False  # MOCK
 
 
-    def _draw_events(self, time_step: float) -> None:
-        for event in self.event_receiver.recv():
-            match event:
-                # world events
-                case ArenaUpdateSize(width, height):
-                    self.arena_drawer.update_size(width, height)
+    def arena_update_size(self, width: int, height: int) -> None:
+        self.arena_drawer.update_size(width, height)
 
-                case FoodCreated(food_pos):
-                    self.food_draw_updater.spawn_food(food_pos, time_step)
-                case FoodConsumed(food_pos, by) if by is not None:
-                    consumer_head_pos = self.snake_draw_updaters[by].get_head_pos()
-                    self.food_draw_updater.eat_food(food_pos, consumer_head_pos, time_step)
-                case FoodConsumed(food_pos):
-                    self.food_draw_updater.despawn_food(food_pos, time_step)
+    def arena_spawn_food(self, food_pos: Position, time_step: float) -> None:
+        self.food_draw_updater.spawn_food(food_pos, time_step)
 
-                # agent events
-                case SnakeSpawn(snake_id, pos):
-                    self.snake_draw_updaters[snake_id].update_draw_snake_spawn(time_step, event)
-                case SnakeDie(snake_id):
-                    self.snake_draw_updaters[snake_id].update_draw_snake_die(time_step, event)
+    def arena_eat_food(self, food_pos: Position, by: int, time_step: float) -> None:
+        consumer_head_pos = self.snake_draw_updaters[by].get_head_pos()
+        self.food_draw_updater.eat_food(food_pos, consumer_head_pos, time_step)
 
-                case SnakeMovement(snake_id, SnakeMovementType.TELEPORT):
-                    self.snake_draw_updaters[snake_id].update_draw_snake_teleport(time_step, event)
-                case SnakeMovement(snake_id):
-                    self.snake_draw_updaters[snake_id].update_draw_snake_move(time_step, event)
+    def arena_despawn_food(self, food_pos: Position, time_step: float) -> None:
+        self.food_draw_updater.despawn_food(food_pos, time_step)
 
-                case SnakeDash(snake_id):
-                    raise BackEventHandleNotImplemented(event)  # NotImplemented
+    def snake_spawn(self, snake_id: int, time_step: float, event: SnakeSpawn) -> None:
+        self.snake_draw_updaters[snake_id].update_draw_snake_spawn(time_step, event)
 
-    def update_draw(self, time_step: float) -> None:
-        self._draw_events(time_step)
+    def snake_die(self, snake_id: int, time_step: float, event: SnakeDie) -> None:
+        self.snake_draw_updaters[snake_id].update_draw_snake_die(time_step, event)
+
+    def snake_teleport(self, snake_id: int, time_step: float, event: SnakeMovement) -> None:
+        self.snake_draw_updaters[snake_id].update_draw_snake_teleport(time_step, event)
+
+    def snake_move(self, snake_id: int, time_step: float, event: SnakeMovement) -> None:
+        self.snake_draw_updaters[snake_id].update_draw_snake_move(time_step, event)

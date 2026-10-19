@@ -8,6 +8,8 @@ from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.utils import get_color_from_hex
 
+from events.back2front_protocol import *
+from events.front2back_protocol import *
 from front.controls import *
 from front.score_board import *
 from front.world_display import *
@@ -20,8 +22,6 @@ if TYPE_CHECKING:
 
     from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent, PlayerSnakeAgent
     from back.world import SnakeWorld
-    from events.back2front_protocol import *
-    from events.front2back_protocol import *
     from events.pipe import *
     from front.type_hints import *
 
@@ -95,6 +95,7 @@ class SnakeTronWindow(BoxLayout):
         agents: list[AbstractSnakeAgent] = list(chain(player_agents, ai_agents))
 
         # link to the backend
+        self.event_receiver = event_receiver
         self.world = world
         self.world.reset()
 
@@ -191,7 +192,37 @@ class SnakeTronWindow(BoxLayout):
 
     def game_step(self, dt: float) -> None:
         self.world.simulate()
-        cast(WorldDisplay, self.ids.world_display).update_draw(self.time_step)
-        self.ids.score_board.update_scores()
+
+        world_display = cast(WorldDisplay, self.ids.world_display)
+        score_board = cast(ScoreBoard, self.ids.score_board)
+
+        for event in self.event_receiver.recv():
+            match event:
+                # world events
+                case ArenaUpdateSize(width, height):
+                    world_display.arena_update_size(width, height)
+
+                case FoodCreated(food_pos):
+                    world_display.arena_spawn_food(food_pos, self.time_step)
+                case FoodConsumed(food_pos, by) if by is not None:
+                    world_display.arena_eat_food(food_pos, by, self.time_step)
+                case FoodConsumed(food_pos):
+                    world_display.arena_despawn_food(food_pos, self.time_step)
+
+                # agent events
+                case SnakeSpawn(snake_id):
+                    world_display.snake_spawn(snake_id, self.time_step, event)
+                case SnakeDie(snake_id):
+                    world_display.snake_die(snake_id, self.time_step, event)
+
+                case SnakeMovement(snake_id, SnakeMovementType.TELEPORT):
+                    world_display.snake_teleport(snake_id, self.time_step, event)
+                case SnakeMovement(snake_id):
+                    world_display.snake_move(snake_id, self.time_step, event)
+
+                case SnakeDash(snake_id):
+                    raise BackEventHandleNotImplemented(event)  # NotImplemented
+
+        score_board.update_scores()
         for controller in self.swipe_controls:
             controller.update_direction_display()
