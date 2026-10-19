@@ -9,11 +9,14 @@ from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Callable, Iterator, Optional, Self
 
     from back.type_hints import *
     from front.type_hints import *
-    from front.world_display import WorldColors, WorldDisplay
+    from front.world_display import *
+
+
+__all__ = ['FoodDrawUpdater']
 
 
 __all__ = ['FoodDrawUpdater']
@@ -24,33 +27,57 @@ class FoodDrawUpdater:
 
         self.instr = InstructionGroup()
         self.display.canvas.add(self.instr)
-        self.food_color = colors.food
 
-        self.working_drawers: dict[Position, FoodDrawer] = {}
-        self.free_drawers: list[FoodDrawer] = []
+        self.pool: Pool[Position, FoodDrawer] = Pool(lambda pool: FoodDrawer(
+            pool, world_display, self.instr, colors
+        ))
 
     def reset(self) -> None:
-        # BUG: dictionary changed size during iteratio
-        # How to reproduce: constantly call the reset method by changing the
-        # app window size, while a snake is eating a food
-        for pos, drawer in self.working_drawers.items():
-            drawer.despawn_without_anim(pos)
-            drawer.spawn_without_anim(pos)
-        self.free_drawers.clear()
+        for pos, drawer in list(self.pool.iter_workers()):
+            if drawer.food_consumed():
+                drawer.erase()
+            else:
+                drawer.redraw(pos)
 
     def spawn_food(self, pos: Position, time_step: float) -> None:
-        if len(self.free_drawers) > 0:
-            drawer = self.free_drawers.pop()
-        else:
-            drawer = FoodDrawer(self)
-        self.working_drawers[pos] = drawer
+        drawer = self.pool.allocate_worker(pos)
         drawer.spawn(pos, time_step)
 
     def eat_food(self, food_pos: Position, eater_pos: Position, time_step: float) -> None:
-        self.working_drawers[food_pos].eat(food_pos, eater_pos, time_step)
+        drawer = self.pool.get_worker(food_pos)
+        assert drawer is not None, f"No food at position {food_pos}"
+        drawer.eat(eater_pos, time_step)
 
     def despawn_food(self, food_pos: Position, time_step: float) -> None:
-        self.working_drawers[food_pos].despawn(food_pos, time_step)
+        drawer = self.pool.get_worker(food_pos)
+        assert drawer is not None, f"No food at position {food_pos}"
+        drawer.despawn(time_step)
+
+
+class Pool[K, W]:
+    def __init__(self, constructor: Callable[[Self], W]) -> None:
+        self.constructor = constructor
+        self.working: dict[K, W] = {}
+        self.free: list[W] = []
+
+    def allocate_worker(self, key: K) -> W:
+        if len(self.free) > 0:
+            worker = self.free.pop()
+        else:
+            worker = self.constructor(self)
+
+        self.working[key] = worker
+        return worker
+
+    def free_worker(self, key: K) -> None:
+        worker = self.working.pop(key)
+        self.free.append(worker)
+
+    def get_worker(self, key: K) -> Optional[W]:
+        return self.working.get(key)
+
+    def iter_workers(self) -> Iterator[tuple[K, W]]:
+        yield from self.working.items()
 
 
 class FoodDrawer(EventDispatcher):
@@ -69,14 +96,24 @@ class FoodDrawer(EventDispatcher):
     def __repr__(self):
         return type(self).__name__
 
-    def __init__(self, pool: FoodDrawUpdater) -> None:
+    def __init__(
+        self,
+        pool: Pool[Position, FoodDrawer],
+        display: WorldDisplay,
+        instr: InstructionGroup,
+        color_values: WorldColors
+    ) -> None:
         super().__init__()
         self.pool = pool
+        self.display = display
+        self.color_values = color_values
+        self.food_pos = None
+        self.food_is_consumed = False
+
         self.color = Color(*self.invisible)
         self.circle = Ellipse(pos=(0, 0), size=(0, 0))
-        self.pool.instr.add(self.color)
-        self.pool.instr.add(self.circle)
-        self.anim: Optional[Animation] = None
+        instr.add(self.color)
+        instr.add(self.circle)
 
     def on_animated_color(self, _, value):
         self.color.rgba = value
@@ -87,57 +124,61 @@ class FoodDrawer(EventDispatcher):
     def on_animated_size(self, _, value):
         self.circle.size = value
 
+    def food_consumed(self) -> bool:
+        return self.food_is_consumed
 
-    def _allocate(self, food_pos: Position) -> None:
-        self.pool.working_drawers[food_pos] = self
 
-    def _free(self, food_pos: Position) -> None:
+    def erase(self) -> None:
+        assert self.food_pos is not None
         self.animated_color = self.invisible
-        self.pool.working_drawers.pop(food_pos)
-        self.pool.free_drawers.append(self)
+        if self.pool.get_worker(self.food_pos) is self:
+            self.pool.free_worker(self.food_pos)
 
+    def redraw(self, food_pos: Position) -> None:
+        self.food_pos = food_pos
 
-    def spawn_without_anim(self, food_pos: Position) -> None:
-        x, y = self.pool.display.pos_to_coord(food_pos)
-        s = self.pool.display.square_size
-        c = self.pool.food_color
+        x, y = self.display.pos_to_coord(food_pos)
+        s = self.display.square_size
+        c = self.color_values.food
+
+        Animation.cancel_all(self)
         self.animated_pos = (x, y)
         self.animated_size = (s, s)
         self.animated_color = c
 
-    def spawn(self, food_pos: Position, duration: float) -> None:
-        self._allocate(food_pos)
 
-        x, y = self.pool.display.pos_to_coord(food_pos)
-        s = self.pool.display.square_size
-        c = self.pool.food_color
+    def spawn(self, food_pos: Position, duration: float) -> None:
+        self.food_is_consumed = False
+        self.food_pos = food_pos
+
+        x, y = self.display.pos_to_coord(food_pos)
+        s = self.display.square_size
+        c = self.color_values.food
+
         # self.animated_size = (0, 0)
         self.animated_size = (s, s)
         self.animated_pos = (x, y)
         self.animated_color = self.invisible
-        self.anim = (
+        anim = (
             # Animation(animated_size=(s, s), d=duration, t='linear') &
             Animation(animated_color=c, d=duration, t='linear')
         )
-        self.anim.start(self)
+        anim.start(self)
 
-    def despawn_without_anim(self, food_pos: Position) -> None:
-        if self.anim is not None:
-            self.anim.stop(self)
-        self.animated_color = self.invisible
-
-    def despawn(self, food_pos: Position, duration: float) -> None:
-        self.anim = (
+    def despawn(self, duration: float) -> None:
+        self.food_is_consumed = True
+        anim = (
             # Animation(animated_size=(0, 0), d=duration, t='linear') &
             Animation(animated_color=self.invisible, d=duration, t='linear')
         )
-        self.anim.bind(on_complete=lambda *_: self._free(food_pos))
-        self.anim.start(self)
+        anim.bind(on_complete=lambda *_: self.erase())
+        anim.start(self)
 
-    def eat(self, food_pos: Position, eater_pos: Position, duration: float) -> None:
-        self.anim = (
-            Animation(animated_pos=self.pool.display.pos_to_coord(eater_pos), d=duration, t='linear') # &
+    def eat(self, eater_pos: Position, duration: float) -> None:
+        self.food_is_consumed = True
+        anim = (
+            Animation(animated_pos=self.display.pos_to_coord(eater_pos), d=duration, t='linear') # &
             # Animation(animated_color=self.invisible, d=duration, t='linear')
         )
-        self.anim.bind(on_complete=lambda *_: self._free(food_pos))
-        self.anim.start(self)
+        anim.bind(on_complete=lambda *_: self.erase())
+        anim.start(self)
