@@ -19,8 +19,6 @@ if TYPE_CHECKING:
 __all__ = ['FoodDrawUpdater']
 
 
-__all__ = ['FoodDrawUpdater']
-
 class FoodDrawUpdater:
     def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:
         self.display = world_display

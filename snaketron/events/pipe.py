@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING
 
 from debug_tool import dbg
 
@@ -11,8 +11,7 @@ if TYPE_CHECKING:
 __all__ = ['EventPipe', 'EventSender', 'EventReceiver']
 
 
-Event = TypeVar("Event")
-class EventPipe(Generic[Event]):
+class EventPipe[Event]:
     def __init__(self) -> None:
         self.fifo: deque[Event] = deque()
 
@@ -26,7 +25,7 @@ class EventPipe(Generic[Event]):
         return self.receiver
 
 
-class EventSender(Generic[Event]):
+class EventSender[Event]:
     def __init__(self, pipe: EventPipe) -> None:
         self.pipe = pipe
 
@@ -35,7 +34,7 @@ class EventSender(Generic[Event]):
         self.pipe.fifo.append(event)
 
 
-class EventReceiver(Generic[Event]):
+class EventReceiver[Event]:
     def __init__(self, pipe: EventPipe) -> None:
         self.pipe = pipe
 
