@@ -4,9 +4,11 @@ from typing import TYPE_CHECKING
 
 from kivy.graphics import Color, InstructionGroup, Rectangle
 
+from front.colors import SnakeColors
+
 if TYPE_CHECKING:
     from back.agents import AbstractAISnakeAgent
-    from front.world_display import SnakeColors, WorldDisplay
+    from front.world_display import WorldDisplay
 
 __all__ = ['AiInspectionDrawer']
 

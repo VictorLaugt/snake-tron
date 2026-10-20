@@ -10,14 +10,14 @@ from kivy.utils import get_color_from_hex
 
 from events.back2front_protocol import *
 from events.front2back_protocol import *
+from front.colors import *
 from front.controls import *
 from front.score_board import *
 from front.world_display import *
 
 if TYPE_CHECKING:
-    from typing import Iterable, Sequence
+    from typing import Sequence
 
-    from kivy.clock import ClockEvent
     from kivy.uix.widget import Widget
 
     from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent, PlayerSnakeAgent
@@ -34,18 +34,8 @@ MINIMAL_TIME_STEP = 0.01
 class SnakeTronWindow(BoxLayout):
     app_background_color = ListProperty(get_color_from_hex('#000000'))
 
-    world: SnakeWorld
-    swipe_zones: list[SwipeControlZone]
-    swipe_controls: list[PlayerSwipeControl]
-    keyboard_controls: list[PlayerKeyBoardControl]
-    paused: bool
-    full_speed: bool
-    regular_time_step: float
-    time_step: float
-    clock_event: ClockEvent
-
     def on_kv_post(self, base_widget: Widget) -> None:
-        self.swipe_zones = []
+        self.swipe_zones: list[SwipeControlZone] = []
         for child in self.children:
             if isinstance(child, SwipeControlZone):
                 self.swipe_zones.append(child)
@@ -83,19 +73,16 @@ class SnakeTronWindow(BoxLayout):
     def init_logic(
         self,
         event_receiver: EventReceiver[BackendEvent],  # receives events from the back
-        # event_sender: EventSender[FrontendEvent],  # TODO: implement pipe which sends events to the back such as player inputs, player connection, and player disconnection
+        event_sender: EventSender[FrontendEvent],  # sends events to the back
         world: SnakeWorld,
-        player_agents: Sequence[PlayerSnakeAgent],
-        ai_agents: Sequence[AbstractAISnakeAgent],
         time_step: float,
         ai_explanations: bool,
         colors: dict,
         input_sensitivity: float,
     ) -> None:
-        agents: list[AbstractSnakeAgent] = list(chain(player_agents, ai_agents))
-
         # link to the backend
         self.event_receiver = event_receiver
+        self.event_sender = event_sender
         self.world = world
         self.world.reset()
 
@@ -108,47 +95,31 @@ class SnakeTronWindow(BoxLayout):
 
         # colors
         world_colors = self._create_world_colors(colors)
-        agent_colors = self._create_agent_colors(colors, agents)  # REFACTOR: remove arg: agents
-        swipe_zone_bg_color = get_color_from_hex(colors['ui']['swipe_zone_bg_color'])
-        self.app_background_color = get_color_from_hex(colors['ui']['background'])
+        ui_colors = self._create_ui_colors(colors)
+        self.snake_color_manager = SnakeColorManager(colors)
+        self.app_background_color = ui_colors.app_background
 
         # propagates logic to child widgets
+        cast(ScoreBoard, self.ids.score_board).init_logic()
         cast(WorldDisplay, self.ids.world_display).init_logic(
-            self, event_receiver,
-            world_colors, agent_colors,
-            input_sensitivity
+            self, self.ids.score_board, world_colors, input_sensitivity
         )
-        self.ids.score_board.init_logic(agents, agent_colors)  # REFACTOR: remove arg: agents: in order to know the length of each snake, prefer using a reference to world_display
-
-        # REFACTOR: remove arg: player_agents: in order to send player inputs to the back, prefer using an event sender instead of references to the player agents
-        self._init_logic_keyboard_controls(player_agents)
-        self._init_logic_touchscreen_controls(
-            player_agents,
-            swipe_zone_bg_color, agent_colors,
-            input_sensitivity
+        self.swipe_control_manager = SwipeControlManager(
+            event_sender, self.ids.world_display, self.swipe_zones,
+            input_sensitivity, ui_colors
         )
+        self.keyboard_control_manager = KeyBoardControlManager(
+            event_sender, (
+            ('up', 'left', 'down', 'right'),
+            ('z', 'q', 's', 'd'),
+            ('i', 'j', 'k',  'l')
+        ))
 
         if ai_explanations:
             self.toggle_ai_explanations()
 
-    def _create_agent_colors(self, colors: dict, agents: Iterable[AbstractSnakeAgent]) -> dict[int, SnakeColors]:
-        agent_colors = {}
-        head_color_wheel = colors['snakes']['head_color_wheel']
-        tail_color_wheel = colors['snakes']['tail_color_wheel']
-        for a in agents:
-            agent_id = a.get_id()
-            agent_colors[agent_id] = SnakeColors(
-                head=get_color_from_hex(head_color_wheel[agent_id % len(head_color_wheel)]),
-                tail=get_color_from_hex(tail_color_wheel[agent_id % len(tail_color_wheel)]),
-                head_decay_first=get_color_from_hex(colors['snakes']['head_decay_first']),
-                head_decay_final=get_color_from_hex(colors['snakes']['head_decay_final']),
-                tail_decay_first=get_color_from_hex(colors['snakes']['tail_decay_first']),
-                tail_decay_final=get_color_from_hex(colors['snakes']['tail_decay_final']),
-                inspect=get_color_from_hex(colors['snakes']['inspect'])
-            )
-        return agent_colors
-
-    def _create_world_colors(self, colors: dict) -> WorldColors:
+    @staticmethod
+    def _create_world_colors(colors: dict) -> WorldColors:
         return WorldColors(
             food_outline=get_color_from_hex(colors['world']['food_outline']),
             food=get_color_from_hex(colors['world']['food']),
@@ -157,38 +128,28 @@ class SnakeTronWindow(BoxLayout):
             gridborder=get_color_from_hex(colors['world']['gridborder'])
         )
 
-    def _init_logic_keyboard_controls(self, player_agents: Sequence[PlayerSnakeAgent]) -> None:
-        keyboard_control_sets = (
-            ('up', 'left', 'down', 'right'),
-            ('z', 'q', 's', 'd'),
-            ('i', 'j', 'k',  'l')
+    @staticmethod
+    def _create_ui_colors(colors: dict) -> UIColors:
+        return UIColors(
+            swipe_zone_bg=get_color_from_hex(colors['ui']['swipe_zone_bg_color']),
+            app_background=get_color_from_hex(colors['ui']['background'])
         )
-        self.keyboard_controls = []
-        for i in range(min(len(player_agents), len(keyboard_control_sets))):
-            kb_controls = PlayerKeyBoardControl()
-            kb_controls.init_logic(player_agents[i], *keyboard_control_sets[i])
-            self.keyboard_controls.append(kb_controls)
 
-    def _init_logic_touchscreen_controls(
-        self,
-        player_agents: Sequence[PlayerSnakeAgent],
-        swipe_zone_bg_color: ColorValue,
-        agent_colors: dict[int, SnakeColors],
-        input_sensitivity: float
-    ) -> None:
-        self.swipe_controls = []
-        control_zones = [[] for _ in range(len(self.swipe_zones))]
-        for i, p in enumerate(player_agents):
-            player_id = p.get_id()
-            swipe_controls = PlayerSwipeControl()
-            swipe_controls.init_logic(
-                p, agent_colors[player_id], swipe_zone_bg_color, 1/input_sensitivity
-            )
-            control_zones[i%len(self.swipe_zones)].append(swipe_controls)
-            self.swipe_controls.append(swipe_controls)
-        for i in range(len(self.swipe_zones)):
-            self.swipe_zones[i].init_logic(control_zones[i])
+    def add_snake(self, snake_id: int, is_player: bool) -> None:
+        snake_colors = self.snake_color_manager.add_snake(snake_id)
+        cast(WorldDisplay, self.ids.world_display).add_snake(snake_id, snake_colors)
+        cast(ScoreBoard, self.ids.score_board).add_snake(snake_id, snake_colors)
+        if is_player:
+            self.swipe_control_manager.add_player_snake(snake_id, snake_colors)
+            self.keyboard_control_manager.add_player_snake(snake_id)
 
+    def remove_snake(self, snake_id: int, is_player: bool) -> None:
+        self.snake_color_manager.remove_snake(snake_id)
+        cast(WorldDisplay, self.ids.world_display).remove_snake(snake_id)
+        cast(ScoreBoard, self.ids.score_board).remove_snake(snake_id)
+        if is_player:
+            self.swipe_control_manager.remove_player_snake(snake_id)
+            self.keyboard_control_manager.remove_player_snake(snake_id)
 
     def game_step(self, dt: float) -> None:
         self.world.simulate()
@@ -210,19 +171,20 @@ class SnakeTronWindow(BoxLayout):
                     world_display.arena_despawn_food(food_pos, self.time_step)
 
                 # agent events
+                case SnakeConnectionUpdate(snake_id, is_player, is_connecting=True):
+                    self.add_snake(snake_id, is_player)
+                case SnakeConnectionUpdate(snake_id, is_player, is_connecting=False):
+                    self.remove_snake(snake_id, is_player)
+
                 case SnakeSpawn(snake_id):
                     world_display.snake_spawn(snake_id, self.time_step, event)
                 case SnakeDie(snake_id):
                     world_display.snake_die(snake_id, self.time_step, event)
 
                 case SnakeMovement(snake_id, SnakeMovementType.TELEPORT):
-                    world_display.snake_teleport(snake_id, self.time_step, event)
+                    raise BackEventHandleNotImplemented(event)  # NotImplemented
                 case SnakeMovement(snake_id):
                     world_display.snake_move(snake_id, self.time_step, event)
 
                 case SnakeDash(snake_id):
                     raise BackEventHandleNotImplemented(event)  # NotImplemented
-
-        score_board.update_scores()
-        for controller in self.swipe_controls:
-            controller.update_direction_display()

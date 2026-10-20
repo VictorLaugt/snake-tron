@@ -7,17 +7,19 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from back.agents import PlayerSnakeAgent
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
 from back.grid_graph import AbstractGridGraph
 from back.voronoi import furthest_voronoi_vertex
 from events.back2front_protocol import *
+from events.front2back_protocol import *
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
     from back.agents import AbstractSnakeAgent
     from back.type_hints import *
-    from events.pipe import EventSender
+    from events.pipe import EventReceiver, EventSender
 
 
 __all__ = ['SnakeWorld']
@@ -29,6 +31,7 @@ class SnakeWorld(AbstractGridGraph):
         height: int,
         n_food: int,
         event_sender: EventSender[BackendEvent],
+        event_receiver: EventReceiver[FrontendEvent],
         respawn_cooldown: Optional[int]=None
     ) -> None:
         assert width > 0 and height > 0
@@ -43,6 +46,7 @@ class SnakeWorld(AbstractGridGraph):
         else:
             self.initial_respawn_cooldown = respawn_cooldown
         self.event_sender = event_sender
+        self.event_receiver = event_receiver
 
         # used to describe the world state between simulation steps
         self.obstacle_count = np.zeros((self.width, self.height), dtype=np.int8)
@@ -50,6 +54,7 @@ class SnakeWorld(AbstractGridGraph):
         self.respawn_cooldown = self.initial_respawn_cooldown
         self.alive_agents: list[AbstractSnakeAgent] = []
         self.dead_agents: deque[AbstractSnakeAgent] = deque()
+        self.player_agents: dict[int, PlayerSnakeAgent] = {}
 
         # used to update the world state during simulation steps
         self.dir_buffer: list[Direction] = []
@@ -70,6 +75,12 @@ class SnakeWorld(AbstractGridGraph):
         return '\n'.join(''.join(row) for row in repr_grid) + '\n'
 
     # ---- private
+    def _receive_events(self) -> None:
+        for event in self.event_receiver.recv():
+            match event:
+                case PlayerDirRequest(agent_id, dir_request):
+                    self.player_agents[agent_id].add_dir_request(dir_request)
+
     def _move_agents(self) -> None:
         # each snake decides in which direction it should move
         for agent in self.alive_agents:
@@ -283,6 +294,12 @@ class SnakeWorld(AbstractGridGraph):
             SnakeMovement(agent_id, SnakeMovementType.COMMON, agent_head, agent_dir, 0)
         )
 
+        if (is_player := isinstance(agent, PlayerSnakeAgent)):
+            self.player_agents[agent_id] = agent
+        self.event_sender.send(
+            SnakeConnectionUpdate(agent_id, is_player, True)
+        )
+
     def reset(self) -> None:
         """Reset the world and all its agents to make them ready to start a new game."""
         self.obstacle_count.fill(0)
@@ -302,6 +319,7 @@ class SnakeWorld(AbstractGridGraph):
         self.deaths.clear()
 
     def simulate(self) -> None:
+        self._receive_events()
         self._move_agents()
         self._grow_agents()
         self._resolve_self_collisions()

@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING
 from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 
 from debug_tool import dbg
+from front.colors import WorldColors
 
 if TYPE_CHECKING:
-    from front.world_display.world_display import WorldColors, WorldDisplay
+    from front.world_display.world_display import WorldDisplay
 
 __all__ = ['ArenaDrawer']
 
@@ -28,13 +29,11 @@ class ArenaDrawer:
     def get_height(self) -> int:
         return self.arena_height
 
-    @dbg.trackmethod()
     def update_size(self, width: int, height: int) -> None:
         self.arena_width = width
         self.arena_height = height
         self.erase_and_draw()
 
-    @dbg.trackmethod()
     def erase_and_draw(self) -> None:
         self.instr.clear()
         h, w = self.arena_height, self.arena_width

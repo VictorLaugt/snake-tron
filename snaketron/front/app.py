@@ -10,17 +10,16 @@ from kivy.utils import platform
 
 from front.controls import *
 from front.score_board import *
-from front.window import *
+from front.window import SnakeTronWindow
 from front.world_display import *
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Sequence
 
-    from back.agents import AbstractAISnakeAgent, PlayerSnakeAgent
     from back.world import SnakeWorld
     from events.back2front_protocol import BackendEvent
-    from events.pipe import EventReceiver
+    from events.front2back_protocol import FrontendEvent
+    from events.pipe import EventReceiver, EventSender
 
 __all__ = ['SnakeTronApp']
 
@@ -29,9 +28,8 @@ class SnakeTronApp(App):
     def __init__(
         self,
         event_receiver: EventReceiver[BackendEvent],
+        event_sender: EventSender[FrontendEvent],
         world: SnakeWorld,
-        player_agents: Sequence[PlayerSnakeAgent],
-        ai_agents: Sequence[AbstractAISnakeAgent],
         time_step: float,
         ai_explanations: bool,
         layout_dir: Path,
@@ -41,9 +39,8 @@ class SnakeTronApp(App):
     ) -> None:
         super().__init__(**kwargs)
         self.event_receiver = event_receiver
+        self.event_sender = event_sender
         self.world = world
-        self.player_agents = player_agents
-        self.ai_agents = ai_agents
         self.time_step = time_step
         self.ai_explanations = ai_explanations
         self.layout_dir = layout_dir
@@ -68,7 +65,8 @@ class SnakeTronApp(App):
         main_window = SnakeTronWindow()
         main_window.init_logic(
             self.event_receiver,
-            self.world, self.player_agents, self.ai_agents,  # REFACTOR: remove arg: world, player_agents, ai_agents
+            self.event_sender,
+            self.world,  # REFACTOR: remove arg: world
             self.time_step,
             self.ai_explanations,
             colors,

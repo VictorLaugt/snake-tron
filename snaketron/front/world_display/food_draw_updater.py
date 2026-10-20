@@ -8,6 +8,8 @@ from kivy.graphics import Color, Ellipse, InstructionGroup
 from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
+from front.colors import WorldColors
+
 if TYPE_CHECKING:
     from typing import Callable, Iterator, Optional, Self
 

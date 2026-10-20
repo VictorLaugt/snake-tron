@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from kivy.properties import NumericProperty
@@ -8,6 +7,7 @@ from kivy.uix.floatlayout import FloatLayout
 
 from debug_tool import dbg
 from events.back2front_protocol import *
+from front.colors import SnakeColors, WorldColors
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.arena_drawer import ArenaDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
@@ -19,59 +19,29 @@ if TYPE_CHECKING:
     from back.type_hints import *
     from events.back2front_protocol import BackendEvent
     from events.pipe import EventReceiver
+    from front.score_board import ScoreBoard
     from front.type_hints import *
     from front.window import SnakeTronWindow
 
-__all__ = ['WorldColors', 'SnakeColors', 'WorldDisplay']
-
-@dataclass
-class WorldColors:
-    food_outline: ColorValue
-    food: ColorValue
-    background: ColorValue
-    gridline: ColorValue
-    gridborder: ColorValue
-
-
-@dataclass
-class SnakeColors:
-    head: ColorValue
-    tail: ColorValue
-    head_decay_first: ColorValue
-    head_decay_final: ColorValue
-    tail_decay_first: ColorValue
-    tail_decay_final: ColorValue
-    inspect: ColorValue
+__all__ = ['WorldDisplay']
 
 
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
-    event_receiver: EventReceiver[BackendEvent]
-    arena_drawer: ArenaDrawer
-    food_draw_updater: FoodDrawUpdater
-    snake_draw_updaters: dict[int, SnakeDrawUpdater]
-    pause_invoker: PauseMenuInvoker
-
     def init_logic(
         self,
         main_window: SnakeTronWindow,
-        event_receiver: EventReceiver[BackendEvent],
-        # event_sender: EventSender[FrontendEvent],  # TODO: use the event sender to ask the backend for ai inspection info, and receive them in the event receiver
+        score_board: ScoreBoard,
         world_colors: WorldColors,
-        snake_colors: dict[int, SnakeColors],
         pause_command_touch_max_length: float
     ) -> None:
-        self.event_receiver = event_receiver
+        self.main_window = main_window
+        self.score_board = score_board
 
         self.arena_drawer = ArenaDrawer(self, world_colors)
         self.food_draw_updater = FoodDrawUpdater(self, world_colors)
-
-        self.snake_draw_updaters = {}
-        for snake_id, snake_color in snake_colors.items():
-            self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(
-                self, snake_color, n_decay_steps=4
-            )
+        self.snake_draw_updaters: dict[int, SnakeDrawUpdater] = {}
 
         self.pause_invoker = PauseMenuInvoker(
             main_window, pause_command_touch_max_length,
@@ -102,11 +72,9 @@ class WorldDisplay(FloatLayout):
         self.pause_invoker.size = self.size
         self.pause_invoker.pos = self.to_window(self.x, self.y)
 
-    @dbg.trackmethod()
     def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
-    @dbg.trackmethod()
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
 
@@ -116,6 +84,17 @@ class WorldDisplay(FloatLayout):
 
     def ai_explanations_is_enabled(self) -> bool:
         return False  # MOCK
+
+
+    def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
+        assert snake_id not in self.snake_draw_updaters.keys()
+        self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(self, colors, n_decay_steps=4)
+
+    def remove_snake(self, snake_id: int) -> None:
+        self.snake_draw_updaters.pop(snake_id).erase()
+
+    def get_snake_dir(self, snake_id: int) -> Direction:
+        self.snake_draw_updaters[snake_id].get_head_dir()
 
 
     def arena_update_size(self, width: int, height: int) -> None:
@@ -132,13 +111,14 @@ class WorldDisplay(FloatLayout):
         self.food_draw_updater.despawn_food(food_pos, time_step)
 
     def snake_spawn(self, snake_id: int, time_step: float, event: SnakeSpawn) -> None:
-        self.snake_draw_updaters[snake_id].update_draw_snake_spawn(time_step, event)
+        updater = self.snake_draw_updaters[snake_id]
+        updater.update_draw_snake_spawn(time_step, event)
+        self.score_board.update_score(snake_id, updater.get_snake_len())
 
     def snake_die(self, snake_id: int, time_step: float, event: SnakeDie) -> None:
         self.snake_draw_updaters[snake_id].update_draw_snake_die(time_step, event)
 
-    def snake_teleport(self, snake_id: int, time_step: float, event: SnakeMovement) -> None:
-        self.snake_draw_updaters[snake_id].update_draw_snake_teleport(time_step, event)
-
     def snake_move(self, snake_id: int, time_step: float, event: SnakeMovement) -> None:
-        self.snake_draw_updaters[snake_id].update_draw_snake_move(time_step, event)
+        updater = self.snake_draw_updaters[snake_id]
+        updater.update_draw_snake_move(time_step, event)
+        self.score_board.update_score(snake_id, updater.get_snake_len())

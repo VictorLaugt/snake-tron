@@ -7,11 +7,10 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.utils import get_color_from_hex
 
-if TYPE_CHECKING:
-    from typing import Sequence
+from front.colors import SnakeColors
 
-    from back.agents import AbstractSnakeAgent
-    from front.world_display import SnakeColors
+if TYPE_CHECKING:
+    from front.world_display import *
 
 __all__ = ['ScoreBoard']
 
@@ -21,28 +20,22 @@ class ColoredLabel(Label):
 
 
 class ScoreBoard(BoxLayout):
-    snakes: Sequence[AbstractSnakeAgent]
-    snake_colors: dict[int, SnakeColors]
-    labels: dict[int, Label]
+    def init_logic(self) -> None:
+        self.labels: dict[int, Label] = {}
 
-    def init_logic(
-        self,
-        snakes: Sequence[AbstractSnakeAgent],
-        snake_colors: dict[int, SnakeColors]
-    ) -> None:
-        self.snakes = snakes
-        self.snake_colors = snake_colors
-        self.labels = {}
-        for snake in self.snakes:
-            snake_id = snake.get_id()
-            label = ColoredLabel(
-                text=str(len(snake)),
-                color=get_color_from_hex('#FFFFFF'),
-                box_color=self.snake_colors[snake_id].tail
-            )
-            self.labels[snake_id] = label
-            self.add_widget(label)
+    def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
+        assert snake_id not in self.labels.keys()
+        label = ColoredLabel(
+            text='',
+            color=get_color_from_hex('#FFFFFF'),
+            box_color=colors.tail
+        )
+        self.labels[snake_id] = label
+        self.add_widget(label)
 
-    def update_scores(self) -> None:
-        for snake in self.snakes:
-            self.labels[snake.get_id()].text = str(len(snake))
+    def remove_snake(self, snake_id: int) -> None:
+        label = self.labels.pop(snake_id)
+        self.remove_widget(label)
+
+    def update_score(self, snake_id: int, score: int) -> None:
+        self.labels[snake_id].text = str(score)

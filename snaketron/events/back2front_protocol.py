@@ -12,8 +12,12 @@ if TYPE_CHECKING:
 
 __all__ = [
     'BackendEvent',
+
     'WorldEvent', 'ArenaUpdateSize', 'FoodCreated', 'FoodConsumed',
-    'AgentEvent', 'SnakeSpawn', 'SnakeDie', 'SnakeMovementType', 'SnakeMovement', 'SnakeDash',
+
+    'AgentEvent', 'SnakeConnectionUpdate', 'SnakeSpawn', 'SnakeDie',
+    'SnakeMovementType', 'SnakeMovement', 'SnakeDash',
+
     'BackEventHandleNotImplemented'
 ]
 
@@ -25,7 +29,7 @@ class BackendEvent:
 class WorldEvent(BackendEvent):
     pass
 
-@dataclass  # TODO: send UpdateSize event to communicate initial (width, height) and each value update
+@dataclass
 class ArenaUpdateSize(WorldEvent):
     width: int
     height: int
@@ -44,6 +48,11 @@ class FoodConsumed(WorldEvent):
 @dataclass
 class AgentEvent(BackendEvent):
     agent_id: int
+
+@dataclass
+class SnakeConnectionUpdate(AgentEvent):
+    is_player: bool
+    is_connecting: bool
 
 @dataclass
 class SnakeSpawn(AgentEvent):

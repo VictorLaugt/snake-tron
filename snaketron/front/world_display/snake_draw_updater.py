@@ -10,6 +10,7 @@ from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
 from events.back2front_protocol import SnakeMovementType
+from front.colors import SnakeColors
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from back.type_hints import *
     from events.back2front_protocol import *
     from front.type_hints import *
-    from front.world_display import SnakeColors, WorldDisplay
+    from front.world_display import WorldDisplay
 
 __all__ = ['SnakeDrawUpdater']
 
@@ -87,6 +88,7 @@ class SnakeDrawUpdater(EventDispatcher):
         self.tail_cells: deque[Rectangle] = deque()
         self.tail_pos: deque[Position] = deque()
         self.head_pos: Position = None
+        self.head_dir: Direction = None
 
         # front layer: head cell
         self.head_color: Color = None
@@ -121,6 +123,12 @@ class SnakeDrawUpdater(EventDispatcher):
     def get_tailend_pos(self) -> Position:
         return self.tail_pos[0] if len(self.tail_pos) > 0 else self.head_pos
 
+    def get_head_dir(self) -> Direction:
+        return self.head_dir
+
+    def get_snake_len(self) -> int:
+        return len(self.tail_pos) + 1
+
 
     def _square(self, pos: Position) -> Rectangle:
         x, y = self.display.pos_to_coord(pos)
@@ -141,10 +149,17 @@ class SnakeDrawUpdater(EventDispatcher):
         self.layer_front.clear()
         self.layer_back.clear()
 
-    def _init_tail(self, cell_pos: Optional[Iterable[Position]]) -> None:
+    def _init_tail(
+        self,
+        cell_pos: Optional[Iterable[Position]],
+        head_dir: Optional[Direction]
+    ) -> None:
         self.tail_color = Color(*self.colors.tail)
         self.tail_rgba = self.colors.tail
         self.layer_middle.add(self.tail_color)
+
+        if head_dir is not None:
+            self.head_dir = head_dir
 
         if cell_pos is not None:
             cell_pos = iter(cell_pos)
@@ -199,23 +214,36 @@ class SnakeDrawUpdater(EventDispatcher):
         self.layer_front.add(self.wrapping_tailend_cell)
 
 
-    def reset(self, cell_pos: Optional[Iterable[Position]]=None) -> None:
+    def erase(self) -> None:
         self.tailend_clock.reset()
         self._stop_animations()
         self._clear_instruction_groups()
+
+    def reset(
+        self,
+        cell_pos: Optional[Iterable[Position]]=None,
+        head_dir: Optional[Direction]=None
+    ) -> None:
+        self.erase()
         if self.alive:
-            self._init_tail(cell_pos)
+            self._init_tail(cell_pos, head_dir)
             self._init_tailend(self.get_tailend_pos(), self.colors.tail)
             self._init_head(self.head_pos, self.colors.head)
 
 
-    def _update_body(self, new_head_pos: Position, growth: int) -> Optional[list[Position]]:
+    def _update_body(
+        self,
+        new_head_pos: Position,
+        new_dir: Direction,
+        growth: int
+    ) -> Optional[list[Position]]:
         # adds a square at the current head position
         self.tail_pos.append(self.head_pos)
         sqr = self._square(self.head_pos)
         self.tail_cells.append(sqr)
         self.layer_middle.add(sqr)
         self.head_pos = new_head_pos
+        self.head_dir = new_dir
 
         if growth <= 0:
             # removes squares at the end of the tail
@@ -335,7 +363,7 @@ class SnakeDrawUpdater(EventDispatcher):
         init_tailend_pos = self.get_tailend_pos()
 
         # update the stationary cells
-        tailcut_pos = self._update_body(event.new_head_pos, event.growth)
+        tailcut_pos = self._update_body(event.new_head_pos, event.new_dir, event.growth)
 
         # prepare the animation of the head cell
         if event.movement_type == SnakeMovementType.WRAP:
@@ -376,9 +404,6 @@ class SnakeDrawUpdater(EventDispatcher):
 
     def update_draw_snake_move(self, time_step: float, event: SnakeMovement) -> None:
         self._animate_snake_movement(time_step, event)
-
-    def update_draw_snake_teleport(self, time_step: float, event: SnakeMovement) -> None:
-        raise NotImplementedError
 
     def update_draw_snake_spawn(self, time_step: float, event: SnakeSpawn) -> None:
         self.alive = True

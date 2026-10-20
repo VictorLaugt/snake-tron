@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from events.back2front_protocol import BackendEvent
+    from events.front2back_protocol import FrontendEvent
     from events.pipe import EventSender
 
 """
@@ -56,6 +57,7 @@ def define_opponents(
 
 def build_game(
     event_sender: EventSender[BackendEvent],
+    event_receiver: EventReceiver[FrontendEvent],
     n_snakes: int,
     n_players: int,
     respawn_cooldown: int
@@ -87,7 +89,7 @@ def build_game(
 
     attack_anticipation = int(0.15*(height + width))
 
-    world = SnakeWorld(width, height, n_food, event_sender, respawn_cooldown)
+    world = SnakeWorld(width, height, n_food, event_sender, event_receiver, respawn_cooldown)
     player_agents: list[PlayerSnakeAgent] = []
     ai_agents: list[OffensiveAISnakeAgent] = []
 
@@ -138,20 +140,23 @@ def build_game(
 
 
 back2front_pipe = EventPipe()
+front2back_pipe = EventPipe()
 
 world, player_agents, ai_agents = build_game(
     event_sender=back2front_pipe.get_sender(),
+    event_receiver=front2back_pipe.get_receiver(),
 
-    n_snakes=0,
-    n_players=0,
+    n_snakes=4,
+    n_players=1,
     respawn_cooldown=15
 )
 
 app_dir = Path(__file__).resolve().parent
 app = SnakeTronApp(
     back2front_pipe.get_receiver(),
+    front2back_pipe.get_sender(),
 
-    world, player_agents, ai_agents,  # REFACTOR: remove args: world, player_agents, ai_agents
+    world,  # REFACTOR: remove args: world
 
     # time_step=0.15,
     time_step=0.2,
@@ -159,8 +164,8 @@ app = SnakeTronApp(
     # time_step=0.3,
 
     ai_explanations=False,
-    layout_dir=app_dir.joinpath('front', 'layout', 'mobile'),
-    color_file=app_dir.joinpath('front', 'colors', 'dark.json'),
+    layout_dir=app_dir.joinpath('front', 'kivy_layout', 'mobile'),
+    color_file=app_dir.joinpath('front', 'color_scheme', 'dark.json'),
     input_sensitivity=1/100
 )
 
