@@ -160,7 +160,7 @@ app = SnakeTronApp(
 
     # time_step=0.15,
     time_step=0.2,
-    # time_step=0.25,
+    # time_step=0.25,  # FIXME: A partir d'un certain time_step, l'affichage initial de l'arène est extremement zoomé
     # time_step=0.3,
 
     ai_explanations=False,
