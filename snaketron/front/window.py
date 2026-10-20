@@ -105,8 +105,7 @@ class SnakeTronWindow(BoxLayout):
             self, self.ids.score_board, world_colors, input_sensitivity
         )
         self.swipe_control_manager = SwipeControlManager(
-            event_sender, self.ids.world_display, self.swipe_zones,
-            input_sensitivity, ui_colors
+            event_sender, self.swipe_zones, input_sensitivity, ui_colors
         )
         self.keyboard_control_manager = KeyBoardControlManager(
             event_sender, (
@@ -180,11 +179,14 @@ class SnakeTronWindow(BoxLayout):
                     world_display.snake_spawn(snake_id, self.time_step, event)
                 case SnakeDie(snake_id):
                     world_display.snake_die(snake_id, self.time_step, event)
+                    self.swipe_control_manager.set_direction(snake_id, None)
 
-                case SnakeMovement(snake_id, SnakeMovementType.TELEPORT):
+                case SnakeMovement(snake_id, SnakeMovementType.TELEPORT, _, new_dir, _):
                     raise BackEventHandleNotImplemented(event)  # NotImplemented
-                case SnakeMovement(snake_id):
+                    self.swipe_control_manager.set_direction(snake_id, new_dir)
+                case SnakeMovement(snake_id, _, _, new_dir, _):
                     world_display.snake_move(snake_id, self.time_step, event)
+                    self.swipe_control_manager.set_direction(snake_id, new_dir)
 
                 case SnakeDash(snake_id):
                     raise BackEventHandleNotImplemented(event)  # NotImplemented

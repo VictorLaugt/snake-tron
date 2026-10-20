@@ -14,7 +14,7 @@ from front.colors import UIColors
 from front.world_display import WorldDisplay
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from typing import Iterable, Optional
 
     from kivy.input import MotionEvent
     from kivy.uix.widget import Widget
@@ -27,34 +27,13 @@ if TYPE_CHECKING:
 __all__ = ['PlayerSwipeControl', 'SwipeControlZone']
 
 
-class PlayerSnakeState:
-    def __init__(
-        self,
-        event_sender: EventSender[FrontendEvent],
-        world_display: WorldDisplay,
-        snake_id: int
-    ) -> None:
-        self.event_sender = event_sender
-        self.world_display = world_display
-        self.snake_id = snake_id
-
-    def get_direction(self) -> Direction:
-        d = self.world_display.get_snake_dir(self.snake_id)
-        if d is None:  # FIXME: should not be None
-            print(f"DEBUG: None")
-            return (0, 0)
-        return d
-
-    def send_dir_request(self, dir_request: Direction) -> None:
-        self.event_sender.send(PlayerDirRequest(self.snake_id, dir_request))
-
-
 class SwipeDirectionFilter:
-    def __init__(self, initial_dir: Direction):
+    def __init__(self, initial_dir: Optional[Direction]) -> None:
         self.reset(initial_dir)
 
-    def reset(self, initial_dir: Direction):
-        assert initial_dir is not None
+    def reset(self, initial_dir: Optional[Direction]) -> None:
+        if initial_dir is None:
+            return
         self.prev_valid_dir = initial_dir
         self.prev_rot = 0
         self.u_turn = False
@@ -78,9 +57,6 @@ class SwipeDirectionFilter:
         self.prev_rot = rot
         return True
 
-    def get_prev_valid_dir(self) -> Direction:
-        return self.prev_valid_dir
-
 
 class PlayerSwipeControl(FloatLayout):
     background_color = ListProperty(get_color_from_hex('#FFFFFF00'))
@@ -88,14 +64,17 @@ class PlayerSwipeControl(FloatLayout):
 
     def __init__(
         self,
-        player_state: PlayerSnakeState,
+        event_sender: EventSender[FrontendEvent],
+        snake_id: int,
         snake_colors: SnakeColors,
         background_color: ColorValue,
         min_seg_len: float,
         *args, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.player_state = player_state
+        self.event_sender = event_sender
+        self.snake_id = snake_id
+        self.last_direction: Optional[Direction]=None
 
         self.colors = snake_colors
         self.background_color = background_color
@@ -104,7 +83,7 @@ class PlayerSwipeControl(FloatLayout):
         self.min_seg_sqr_len = min_seg_len**2
         self.touch_uid = None
         self.prev_touch_pos = (0., 0.)
-        self.control_filter = SwipeDirectionFilter(player_state.get_direction())
+        self.control_filter = SwipeDirectionFilter(self.last_direction)
 
         self.draw_instr = InstructionGroup()
         self.canvas.add(self.draw_instr)
@@ -116,7 +95,7 @@ class PlayerSwipeControl(FloatLayout):
 
         self.touch_uid = touch.uid
         self.prev_touch_pos = touch.pos
-        self.control_filter.reset(self.player_state.get_direction())
+        self.control_filter.reset(self.last_direction)
         return True
 
     def on_touch_move(self, touch: MotionEvent) -> bool:
@@ -135,8 +114,7 @@ class PlayerSwipeControl(FloatLayout):
             direction = UP if dy > 0 else DOWN
 
         if self.control_filter.filter(direction):
-            self.player_state.send_dir_request(direction)
-            self.update_direction_display()
+            self.event_sender.send(PlayerDirRequest(self.snake_id, direction))
 
         self.prev_touch_pos = touch.pos
         return True
@@ -149,27 +127,30 @@ class PlayerSwipeControl(FloatLayout):
         return True
 
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
-        self.update_direction_display()
+        self.update_direction_display(None)
 
     def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
-        self.update_direction_display()
+        self.update_direction_display(None)
 
-    def update_direction_display(self) -> None:
+    def update_direction_display(self, direction: Optional[Direction]) -> None:
         self.draw_instr.clear()
 
         cx, cy = self.center
         size = min(self.width, self.height) * 0.2
-        direction = self.control_filter.get_prev_valid_dir()
         if direction == UP:
+            self.last_direction = direction
             points = (cx, cy - size, cx, cy + size, cx - size * 0.5, cy + size * 0.5,
                       cx, cy + size, cx + size * 0.5, cy + size * 0.5)
         elif direction == DOWN:
+            self.last_direction = direction
             points = (cx, cy + size, cx, cy - size, cx - size * 0.5, cy - size * 0.5,
                       cx, cy - size, cx + size * 0.5, cy - size * 0.5)
         elif direction == LEFT:
+            self.last_direction = direction
             points = (cx + size, cy, cx - size, cy, cx - size * 0.5, cy + size * 0.5,
                       cx - size, cy, cx - size * 0.5, cy - size * 0.5)
         elif direction == RIGHT:
+            self.last_direction = direction
             points = (cx - size, cy, cx + size, cy, cx + size * 0.5, cy + size * 0.5,
                       cx + size, cy, cx + size * 0.5, cy - size * 0.5)
         else:
@@ -183,19 +164,17 @@ class SwipeControlZone(BoxLayout):
     def init_logic(
         self,
         event_sender: EventSender[FrontendEvent],
-        world_display: WorldDisplay,
         input_sensitivity: float,
         ui_colors: UIColors
     ) -> None:
         self.event_sender = event_sender
-        self.world_display = world_display
         self.input_sensitivity = input_sensitivity
         self.ui_colors = ui_colors
         self.controllers: dict[int, PlayerSwipeControl] = {}
 
     def add_player_snake(self, snake_id: int, snake_colors: SnakeColors) -> None:
         controller = PlayerSwipeControl(
-            PlayerSnakeState(self.event_sender, self.world_display, snake_id),
+            self.event_sender, snake_id,
             snake_colors, self.ui_colors.swipe_zone_bg,
             1/self.input_sensitivity
         )
@@ -206,12 +185,14 @@ class SwipeControlZone(BoxLayout):
         controller = self.controllers.pop(snake_id)
         self.remove_widget()
 
+    def set_direction(self, snake_id: int, new_direction: Optional[Direction]) -> None:
+        self.controllers[snake_id].update_direction_display(new_direction)
+
 
 class SwipeControlManager:
     def __init__(
         self,
         event_sender: EventSender[FrontendEvent],
-        world_display: WorldDisplay,
         swipe_zones: Iterable[SwipeControlZone],
         input_sensitivity: float,
         ui_colors: UIColors
@@ -221,7 +202,7 @@ class SwipeControlManager:
 
         for swipe_zone in self.swipe_zones:
             swipe_zone.init_logic(
-                event_sender, world_display, input_sensitivity, ui_colors
+                event_sender, input_sensitivity, ui_colors
             )
 
     def add_player_snake(self, snake_id: int, colors: SnakeColors) -> None:
@@ -232,3 +213,8 @@ class SwipeControlManager:
     def remove_player_snake(self, snake_id: int) -> None:
         swipe_zone_idx = self.controller_zone_mapping.pop(snake_id)
         self.swipe_zones[swipe_zone_idx].remove_player_snake(snake_id)
+
+    def set_direction(self, snake_id: int, new_direction: Optional[Direction]) -> None:
+        swipe_zone_idx = self.controller_zone_mapping.get(snake_id)
+        if swipe_zone_idx is not None:
+            self.swipe_zones[swipe_zone_idx].set_direction(snake_id, new_direction)

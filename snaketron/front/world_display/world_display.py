@@ -83,7 +83,7 @@ class WorldDisplay(FloatLayout):
         raise NotImplementedError
 
     def ai_explanations_is_enabled(self) -> bool:
-        return False  # MOCK
+        return False  # MOCK: ai explanation temporarly unavailable
 
 
     def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
