@@ -31,18 +31,21 @@ class WorldEvent(BackendEvent):
 
 @dataclass
 class ArenaUpdateSize(WorldEvent):
+    """When the size of the arena is updated"""
     width: int
     height: int
 
 
 @dataclass
 class FoodCreated(WorldEvent):
-    pos: Position
+    """When a food item is created"""
+    pos: Position  # Position where the food appeared
 
 @dataclass
 class FoodConsumed(WorldEvent):
-    pos: Position
-    by: Optional[int]
+    """When a food item is consumed"""
+    pos: Position  # Position where the food was before being consumed
+    by: Optional[int]  # Id of the agent which ate the food if any, None otherwise
 
 
 @dataclass
@@ -51,15 +54,18 @@ class AgentEvent(BackendEvent):
 
 @dataclass
 class SnakeConnectionUpdate(AgentEvent):
+    """When a snake is connecting to or is disconnecting from the world"""
     is_player: bool
     is_connecting: bool
 
 @dataclass
 class SnakeSpawn(AgentEvent):
+    """When an already connected snake (re)spawns"""
     pos: Sequence[Position]
 
 @dataclass
 class SnakeDie(AgentEvent):
+    """When a snake despawns because it died"""
     pass
 
 class SnakeMovementType(IntEnum):
@@ -69,6 +75,7 @@ class SnakeMovementType(IntEnum):
 
 @dataclass
 class SnakeMovement(AgentEvent):
+    """When a snake moves"""
     movement_type: SnakeMovementType
     new_head_pos: Position
     new_dir: Direction
@@ -76,6 +83,7 @@ class SnakeMovement(AgentEvent):
 
 @dataclass
 class SnakeDash(AgentEvent):
+    """When a snake dashes"""
     movements: Sequence[SnakeMovement]
 
 

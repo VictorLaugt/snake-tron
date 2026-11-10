@@ -40,36 +40,6 @@ class SnakeTronWindow(BoxLayout):
             if isinstance(child, SwipeControlZone):
                 self.swipe_zones.append(child)
 
-    def _set_time_step(self, new_time_step: float) -> None:
-        self.time_step = new_time_step
-        if not self.paused:
-            Clock.unschedule(self.clock_event)
-            self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
-
-    def toggle_pause(self) -> None:
-        self.paused = not self.paused
-        if self.paused:
-            Clock.unschedule(self.clock_event)
-        else:
-            self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
-
-    def toggle_fullspeed(self) -> None:
-        self.full_speed = not self.full_speed
-        if self.full_speed:
-            self._set_time_step(MINIMAL_TIME_STEP)
-        else:
-            self._set_time_step(self.regular_time_step)
-
-    def fullspeed_is_enabled(self) -> bool:
-        return self.full_speed
-
-    def toggle_ai_explanations(self) -> None:
-        cast(WorldDisplay, self.ids.world_display).toggle_ai_explanations()
-
-    def ai_explanations_is_enabled(self) -> bool:
-        return cast(WorldDisplay, self.ids.world_display).ai_explanations_is_enabled()
-
-
     def init_logic(
         self,
         event_receiver: EventReceiver[BackendEvent],  # receives events from the back
@@ -134,6 +104,35 @@ class SnakeTronWindow(BoxLayout):
             app_background=get_color_from_hex(colors['ui']['background'])
         )
 
+    def _set_time_step(self, new_time_step: float) -> None:
+        self.time_step = new_time_step
+        if not self.paused:
+            Clock.unschedule(self.clock_event)
+            self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
+
+    def toggle_fullspeed(self) -> None:
+        self.full_speed = not self.full_speed
+        if self.full_speed:
+            self._set_time_step(MINIMAL_TIME_STEP)
+        else:
+            self._set_time_step(self.regular_time_step)
+
+    def fullspeed_is_enabled(self) -> bool:
+        return self.full_speed
+
+    def toggle_pause(self) -> None:
+        self.paused = not self.paused
+        if self.paused:
+            Clock.unschedule(self.clock_event)
+        else:
+            self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
+
+    def toggle_ai_explanations(self) -> None:
+        cast(WorldDisplay, self.ids.world_display).toggle_ai_explanations()
+
+    def ai_explanations_is_enabled(self) -> bool:
+        return cast(WorldDisplay, self.ids.world_display).ai_explanations_is_enabled()
+
     def add_snake(self, snake_id: int, is_player: bool) -> None:
         snake_colors = self.snake_color_manager.add_snake(snake_id)
         cast(WorldDisplay, self.ids.world_display).add_snake(snake_id, snake_colors)
@@ -152,9 +151,7 @@ class SnakeTronWindow(BoxLayout):
 
     def game_step(self, dt: float) -> None:
         self.world.simulate()
-
         world_display = cast(WorldDisplay, self.ids.world_display)
-        score_board = cast(ScoreBoard, self.ids.score_board)
 
         for event in self.event_receiver.recv():
             match event:
