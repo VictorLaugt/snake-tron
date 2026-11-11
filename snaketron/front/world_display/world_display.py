@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     from back.type_hints import *
     from events.back2front_protocol import BackendEvent
-    from events.pipe import EventReceiver
+    from events.abstract_pipe import AbstractEventReceiver
     from front.score_board import ScoreBoard
     from front.type_hints import *
     from front.window import SnakeTronWindow

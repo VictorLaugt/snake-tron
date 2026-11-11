@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+from threading import Thread
 from typing import TYPE_CHECKING
 
 from kivy.app import App
+from kivy.clock import mainthread
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.utils import platform
 
+from debug_tool import dbg
 from front.controls import *
 from front.score_board import *
 from front.window import SnakeTronWindow
@@ -17,19 +20,18 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from back.world import SnakeWorld
+    from events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
     from events.back2front_protocol import BackendEvent
     from events.front2back_protocol import FrontendEvent
-    from events.pipe import EventReceiver, EventSender
 
-__all__ = ['SnakeTronApp']
+__all__ = ['SnakeTronFrontend']
 
 
-class SnakeTronApp(App):
+class SnakeTronFrontend(App):
     def __init__(
         self,
-        event_receiver: EventReceiver[BackendEvent],
-        event_sender: EventSender[FrontendEvent],
-        world: SnakeWorld,
+        event_receiver: AbstractEventReceiver[BackendEvent],
+        event_sender: AbstractEventSender[FrontendEvent],
         time_step: float,
         ai_explanations: bool,
         layout_dir: Path,
@@ -40,12 +42,14 @@ class SnakeTronApp(App):
         super().__init__(**kwargs)
         self.event_receiver = event_receiver
         self.event_sender = event_sender
-        self.world = world
         self.time_step = time_step
         self.ai_explanations = ai_explanations
         self.layout_dir = layout_dir
         self.color_file = color_file
         self.input_sensitivity = input_sensitivity
+
+        self.main_window: SnakeTronWindow = None
+        self.event_receiver_thread = Thread(target=self.event_receiver_loop, daemon=True)
 
     def build(self) -> SnakeTronWindow:
         for layout_file in self.layout_dir.rglob('*.kv'):
@@ -62,14 +66,24 @@ class SnakeTronApp(App):
                 width, height = int(width * scale), int(height * scale)
             Window.size = (width, height)
 
-        main_window = SnakeTronWindow()
-        main_window.init_logic(
+        self.main_window = SnakeTronWindow()
+        self.main_window.init_logic(
             self.event_receiver,
             self.event_sender,
-            self.world,  # REFACTOR: remove arg: world
             self.time_step,
             self.ai_explanations,
             colors,
             self.input_sensitivity
         )
-        return main_window
+        self.event_receiver_thread.start()
+        return self.main_window
+
+    def event_receiver_loop(self) -> None:
+        while True:
+            for event in self.event_receiver.recv():
+                self.process_backend_event(event)
+
+    @mainthread
+    def process_backend_event(self, event: BackendEvent) -> None:
+        dbg.dprint(f"frontend handling event: {event}")
+        self.main_window.process_backend_event(event)

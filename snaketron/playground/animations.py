@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from back.type_hints import *
     from back.world import SnakeWorld
     from events.back2front_protocol import BackendEvent, SnakeMovement
-    from events.pipe import EventReceiver
+    from events.abstract_pipe import EventReceiver
     from front.type_hints import *
 
 
@@ -453,7 +453,7 @@ class SnakeDrawer(EventDispatcher):
 
 if __name__ == '__main__':
     from back.world import SnakeWorld
-    from events.pipe import EventPipe
+    from events.abstract_pipe import EventPipe
 
     w = h = 15
     back2front_pipe = EventPipe()

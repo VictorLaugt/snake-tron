@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
     from back.type_hints import *
-    from events.pipe import EventSender
+    from events.abstract_pipe import AbstractEventSender
     from front.colors import SnakeColors
     from front.type_hints import *
 
@@ -64,7 +64,7 @@ class PlayerSwipeControl(FloatLayout):
 
     def __init__(
         self,
-        event_sender: EventSender[FrontendEvent],
+        event_sender: AbstractEventSender[FrontendEvent],
         snake_id: int,
         snake_colors: SnakeColors,
         background_color: ColorValue,
@@ -163,7 +163,7 @@ class PlayerSwipeControl(FloatLayout):
 class SwipeControlZone(BoxLayout):
     def init_logic(
         self,
-        event_sender: EventSender[FrontendEvent],
+        event_sender: AbstractEventSender[FrontendEvent],
         input_sensitivity: float,
         ui_colors: UIColors
     ) -> None:
@@ -192,7 +192,7 @@ class SwipeControlZone(BoxLayout):
 class SwipeControlManager:
     def __init__(
         self,
-        event_sender: EventSender[FrontendEvent],
+        event_sender: AbstractEventSender[FrontendEvent],
         swipe_zones: Iterable[SwipeControlZone],
         input_sensitivity: float,
         ui_colors: UIColors

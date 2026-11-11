@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from itertools import chain
 from typing import TYPE_CHECKING, cast
 
-from kivy.clock import Clock
 from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.utils import get_color_from_hex
@@ -16,13 +14,10 @@ from front.score_board import *
 from front.world_display import *
 
 if TYPE_CHECKING:
-    from typing import Sequence
-
     from kivy.uix.widget import Widget
 
-    from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent, PlayerSnakeAgent
     from back.world import SnakeWorld
-    from events.pipe import *
+    from events.abstract_pipe import *
     from front.type_hints import *
 
 __all__ = ['SnakeTronWindow']
@@ -42,9 +37,8 @@ class SnakeTronWindow(BoxLayout):
 
     def init_logic(
         self,
-        event_receiver: EventReceiver[BackendEvent],  # receives events from the back
-        event_sender: EventSender[FrontendEvent],  # sends events to the back
-        world: SnakeWorld,
+        event_receiver: AbstractEventReceiver[BackendEvent],  # receives events from the back
+        event_sender: AbstractEventSender[FrontendEvent],  # sends events to the back
         time_step: float,
         ai_explanations: bool,
         colors: dict,
@@ -53,15 +47,12 @@ class SnakeTronWindow(BoxLayout):
         # link to the backend
         self.event_receiver = event_receiver
         self.event_sender = event_sender
-        self.world = world
-        self.world.reset()
 
         # game speed
         self.paused = False
         self.full_speed = False
         self.regular_time_step = time_step
         self.time_step = time_step
-        self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
 
         # colors
         world_colors = self._create_world_colors(colors)
@@ -104,30 +95,19 @@ class SnakeTronWindow(BoxLayout):
             app_background=get_color_from_hex(colors['ui']['background'])
         )
 
-    def _set_time_step(self, new_time_step: float) -> None:
-        self.time_step = new_time_step
-        if not self.paused:
-            Clock.unschedule(self.clock_event)
-            self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
-
-    def toggle_fullspeed(self) -> None:
+    def toggle_fullspeed(self) -> None:  # TODO: should use events
         self.full_speed = not self.full_speed
-        if self.full_speed:
-            self._set_time_step(MINIMAL_TIME_STEP)
-        else:
-            self._set_time_step(self.regular_time_step)
+        raise NotImplementedError("Fullspeed feature is not implemented")
 
     def fullspeed_is_enabled(self) -> bool:
         return self.full_speed
 
-    def toggle_pause(self) -> None:
+    def toggle_pause(self) -> None:  # TODO: should use events
         self.paused = not self.paused
-        if self.paused:
-            Clock.unschedule(self.clock_event)
-        else:
-            self.clock_event = Clock.schedule_interval(self.game_step, self.time_step)
+        raise NotImplementedError("Pause feature is not implemented")
 
-    def toggle_ai_explanations(self) -> None:
+    def toggle_ai_explanations(self) -> None:  # TODO: should use events
+        raise NotImplementedError("Ai explanations feature is not implemented")
         cast(WorldDisplay, self.ids.world_display).toggle_ai_explanations()
 
     def ai_explanations_is_enabled(self) -> bool:
@@ -149,41 +129,38 @@ class SnakeTronWindow(BoxLayout):
             self.swipe_control_manager.remove_player_snake(snake_id)
             self.keyboard_control_manager.remove_player_snake(snake_id)
 
-    def game_step(self, dt: float) -> None:
-        self.world.simulate()
+    def process_backend_event(self, event: BackendEvent) -> None:
         world_display = cast(WorldDisplay, self.ids.world_display)
+        match event:
+            # world events
+            case ArenaUpdateSize(width, height):
+                world_display.arena_update_size(width, height)
 
-        for event in self.event_receiver.recv():
-            match event:
-                # world events
-                case ArenaUpdateSize(width, height):
-                    world_display.arena_update_size(width, height)
+            case FoodCreated(food_pos):
+                world_display.arena_spawn_food(food_pos, self.time_step)
+            case FoodConsumed(food_pos, by) if by is not None:
+                world_display.arena_eat_food(food_pos, by, self.time_step)
+            case FoodConsumed(food_pos):
+                world_display.arena_despawn_food(food_pos, self.time_step)
 
-                case FoodCreated(food_pos):
-                    world_display.arena_spawn_food(food_pos, self.time_step)
-                case FoodConsumed(food_pos, by) if by is not None:
-                    world_display.arena_eat_food(food_pos, by, self.time_step)
-                case FoodConsumed(food_pos):
-                    world_display.arena_despawn_food(food_pos, self.time_step)
+            # agent events
+            case SnakeConnectionUpdate(snake_id, is_player, is_connecting=True):
+                self.add_snake(snake_id, is_player)
+            case SnakeConnectionUpdate(snake_id, is_player, is_connecting=False):
+                self.remove_snake(snake_id, is_player)
 
-                # agent events
-                case SnakeConnectionUpdate(snake_id, is_player, is_connecting=True):
-                    self.add_snake(snake_id, is_player)
-                case SnakeConnectionUpdate(snake_id, is_player, is_connecting=False):
-                    self.remove_snake(snake_id, is_player)
+            case SnakeSpawn(snake_id):
+                world_display.snake_spawn(snake_id, self.time_step, event)
+            case SnakeDie(snake_id):
+                world_display.snake_die(snake_id, self.time_step, event)
+                self.swipe_control_manager.set_direction(snake_id, None)
 
-                case SnakeSpawn(snake_id):
-                    world_display.snake_spawn(snake_id, self.time_step, event)
-                case SnakeDie(snake_id):
-                    world_display.snake_die(snake_id, self.time_step, event)
-                    self.swipe_control_manager.set_direction(snake_id, None)
+            case SnakeMovement(snake_id, SnakeMovementType.TELEPORT, _, new_dir, _):
+                raise BackEventHandleNotImplemented(event)  # NotImplemented
+                self.swipe_control_manager.set_direction(snake_id, new_dir)
+            case SnakeMovement(snake_id, _, _, new_dir, _):
+                world_display.snake_move(snake_id, self.time_step, event)
+                self.swipe_control_manager.set_direction(snake_id, new_dir)
 
-                case SnakeMovement(snake_id, SnakeMovementType.TELEPORT, _, new_dir, _):
-                    raise BackEventHandleNotImplemented(event)  # NotImplemented
-                    self.swipe_control_manager.set_direction(snake_id, new_dir)
-                case SnakeMovement(snake_id, _, _, new_dir, _):
-                    world_display.snake_move(snake_id, self.time_step, event)
-                    self.swipe_control_manager.set_direction(snake_id, new_dir)
-
-                case SnakeDash(snake_id):
-                    raise BackEventHandleNotImplemented(event)  # NotImplemented
+            case SnakeDash(snake_id):
+                raise BackEventHandleNotImplemented(event)  # NotImplemented

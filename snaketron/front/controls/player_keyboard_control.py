@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from kivy.core.window import WindowBase
 
     from back.type_hints import *
-    from events.pipe import EventSender
+    from events.abstract_pipe import AbstractEventSender
     from front.type_hints import *
 
 __all__ = ['KeyBoardControlManager']
@@ -23,7 +23,7 @@ __all__ = ['KeyBoardControlManager']
 class PlayerKeyBoardControl(EventDispatcher):
     def __init__(
         self,
-        snake_id: int, event_sender: EventSender[FrontendEvent],
+        snake_id: int, event_sender: AbstractEventSender[FrontendEvent],
         up: str, left: str, down: str, right: str
     ) -> None:
         super().__init__()
@@ -56,7 +56,7 @@ class PlayerKeyBoardControl(EventDispatcher):
 class KeyBoardControlManager:
     def __init__(
         self,
-        event_sender: EventSender[FrontendEvent],
+        event_sender: AbstractEventSender[FrontendEvent],
         keyboard_control_sets: Sequence[tuple[str, str, str, str]]
     ) -> None:
         self.event_sender = event_sender

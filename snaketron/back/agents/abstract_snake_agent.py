@@ -28,6 +28,9 @@ class AbstractSnakeAgent(ABC):
         self.pos = deque(initial_pos)
         self.last_tail_pos = self.pos[0]
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} id={self.agent_id} pos={self.pos}>"
+
     def get_id(self) -> int:
         return self.agent_id
 

@@ -11,6 +11,8 @@ from back.agents import PlayerSnakeAgent
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
 from back.grid_graph import AbstractGridGraph
 from back.voronoi import furthest_voronoi_vertex
+from debug_tool import dbg
+from events.abstract_pipe import AbstractEventSender
 from events.back2front_protocol import *
 from events.front2back_protocol import *
 
@@ -19,19 +21,30 @@ if TYPE_CHECKING:
 
     from back.agents import AbstractSnakeAgent
     from back.type_hints import *
-    from events.pipe import EventReceiver, EventSender
+    from events.abstract_pipe import AbstractEventReceiver
 
 
 __all__ = ['SnakeWorld']
 
+
+class TrackedEventSender[Event](AbstractEventSender):
+    def __init__(self, event_sender: AbstractEventSender[Event]) -> None:
+        self.event_sender = event_sender
+
+    def send(self, event: Event) -> None:
+        dbg.dprint(f"backend sent event: {event}")
+        self.event_sender.send(event)
+
+
 class SnakeWorld(AbstractGridGraph):
+    @dbg.trackmethod()
     def __init__(
         self,
         width: int,
         height: int,
         n_food: int,
-        event_sender: EventSender[BackendEvent],
-        event_receiver: EventReceiver[FrontendEvent],
+        event_sender: AbstractEventSender[BackendEvent],
+        event_receiver: AbstractEventReceiver[FrontendEvent],
         respawn_cooldown: Optional[int]=None
     ) -> None:
         assert width > 0 and height > 0
@@ -45,7 +58,7 @@ class SnakeWorld(AbstractGridGraph):
             self.initial_respawn_cooldown = float('+inf')
         else:
             self.initial_respawn_cooldown = respawn_cooldown
-        self.event_sender = event_sender
+        self.event_sender = TrackedEventSender(event_sender)
         self.event_receiver = event_receiver
 
         # used to describe the world state between simulation steps
@@ -65,18 +78,24 @@ class SnakeWorld(AbstractGridGraph):
         self.event_sender.send(ArenaUpdateSize(self.width, self.height))
 
     def __repr__(self) -> str:
-        repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
+        grid_repr_builder = [['  .  '  for x in range(self.width)] for y in range(self.height)]
         for y in range(self.height):
             for x in range(self.width):
-                if self.obstacle_count[x, y] > 0:
-                    repr_grid[y][x] = f" {self.obstacle_count[x, y]:03d} "
+                if self.obstacle_count[x, y] != 0:
+                    grid_repr_builder[y][x] = f" {self.obstacle_count[x, y]:03d} "
                 if (x, y) in self.food_pos:
-                    repr_grid[y][x] = "  *  "
-        return '\n'.join(''.join(row) for row in repr_grid) + '\n'
+                    grid_repr_builder[y][x] = "  *  "
+        grid_repr = '\n'.join(''.join(row) for row in grid_repr_builder) + '\n'
+        return (
+            f"alive agents: {self.alive_agents}\n"
+            f"dead agents:  {self.dead_agents}\n"
+            f"{grid_repr}"
+        )
 
     # ---- private
     def _receive_events(self) -> None:
         for event in self.event_receiver.recv():
+            dbg.dprint(f"backend handling event: {event}")
             match event:
                 case PlayerDirRequest(agent_id, dir_request):
                     self.player_agents[agent_id].add_dir_request(dir_request)
@@ -279,27 +298,30 @@ class SnakeWorld(AbstractGridGraph):
         """Adds a new agent in the world."""
         agent_id = len(self.alive_agents) + len(self.dead_agents)
         agent.set_id(agent_id)
+        agent.reset()
 
-        agent_dir = agent.get_direction()
-        agent_head = agent.get_head()
+        if (is_player := isinstance(agent, PlayerSnakeAgent)):
+            self.player_agents[agent_id] = agent
+        self.event_sender.send(SnakeConnectionUpdate(agent_id, is_player, True))
 
         if agent.is_alive():
             self.alive_agents.append(agent)
+            agent_pos = list(agent.iter_cells())
+            for pos in agent_pos:
+                self.obstacle_count[pos] += 1
+            self.event_sender.send(SnakeSpawn(agent_id, agent_pos))
         else:
             self.dead_agents.append(agent)
 
+        agent_dir = agent.get_direction()
+        agent_head = agent.get_head()
         self.dir_buffer.append(agent_dir)
         self.len_buffer.append(0)
         self.agent_movement_events.append(
             SnakeMovement(agent_id, SnakeMovementType.COMMON, agent_head, agent_dir, 0)
         )
 
-        if (is_player := isinstance(agent, PlayerSnakeAgent)):
-            self.player_agents[agent_id] = agent
-        self.event_sender.send(
-            SnakeConnectionUpdate(agent_id, is_player, True)
-        )
-
+    @dbg.trackmethod()
     def reset(self) -> None:
         """Reset the world and all its agents to make them ready to start a new game."""
         self.obstacle_count.fill(0)
@@ -316,8 +338,6 @@ class SnakeWorld(AbstractGridGraph):
                 self.obstacle_count[pos] += 1
             self.event_sender.send(SnakeSpawn(agent.get_id(), list(agent.iter_cells())))
 
-        self.deaths.clear()
-
     def simulate(self) -> None:
         self._receive_events()
         self._move_agents()
@@ -327,3 +347,4 @@ class SnakeWorld(AbstractGridGraph):
         self._send_agent_movement_events()
         self._spawn_missing_food()
         self._respawn_dead_agent()
+        dbg.dprint(f"simulated a step:\n{self}")

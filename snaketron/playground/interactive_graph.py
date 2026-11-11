@@ -10,7 +10,7 @@ from back.a_star import shortest_path
 from back.grid_graph import EuclidianDistanceHeuristic
 from back.voronoi import furthest_voronoi_vertex
 from back.world import SnakeWorld
-from events.pipe import EventPipe
+from events.abstract_pipe import EventPipe
 
 if TYPE_CHECKING:
     from typing import Optional, TypeAlias
