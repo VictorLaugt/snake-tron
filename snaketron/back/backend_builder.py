@@ -10,8 +10,6 @@ from back.grid_graph import *
 from back.world import *
 
 if TYPE_CHECKING:
-    from typing import Sequence
-
     from events.back2front_protocol import BackendEvent
     from events.front2back_protocol import FrontendEvent
     from events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
@@ -129,7 +127,27 @@ class SnakeTronBackend:
         self.time_step = new_time_step
 
     def run(self) -> None:
-        # self.world.reset()
+        time.sleep(3)  # FIXME
         while True:
             self.world.simulate()
             time.sleep(self.time_step)
+    # TODO: replace with an implementation of the following pseudo-code:
+
+    # def run(self):  # boucle du thread principal
+    #     while True:
+    #         self.running.wait()  # self.running: threading.Event
+    #         with self.world_lock:  # self.world_lock: threading.Lock
+    #             self.world.simulate()
+    #         time.sleep(self.time_step)
+
+    # def event_receiver_loop(self):  # target d'un thread daemon secondaire qui écoute les évènements reçu
+    #     while True:
+    #         for event in self.event_receiver.recv():  # bloquant
+    #             match event:
+    #                 case RequestPause:
+    #                     self.running.set()
+    #                 case RequestResume:
+    #                     self.running.clear()
+    #                 case _:
+    #                     with self.world_lock:
+    #                         self.world.process_frontend_event(event)
