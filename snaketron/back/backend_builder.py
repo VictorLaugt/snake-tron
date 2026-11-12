@@ -14,7 +14,12 @@ if TYPE_CHECKING:
     from events.front2back_protocol import FrontendEvent
     from events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
 
-__all__ = ['SnakeTronBackend']
+__all__ = ['SnakeTronBackend', 'run_backend']
+
+
+def run_backend(*args, **kwargs):
+    backend = SnakeTronBackend(*args, **kwargs)
+    backend.run()
 
 
 def define_opponents(

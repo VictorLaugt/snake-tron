@@ -28,11 +28,6 @@ IDÉE DE GAMEPLAY:
 """
 
 
-def run_backend(*args, **kwargs):
-    backend = SnakeTronBackend(*args, **kwargs)
-    backend.run()
-
-
 if __name__ == '__main__':
     app_dir = Path(__file__).resolve().parent
 
