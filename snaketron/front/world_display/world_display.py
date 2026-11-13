@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from debug_tool import dbg
 from events.back2front_protocol import *
 from front.colors import SnakeColors, WorldColors
+from debug_tool import frontend_debugspace as dbg
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.arena_drawer import ArenaDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
@@ -17,8 +17,8 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
     from back.type_hints import *
-    from events.back2front_protocol import BackendEvent
     from events.abstract_pipe import AbstractEventReceiver
+    from events.back2front_protocol import BackendEvent
     from front.score_board import ScoreBoard
     from front.type_hints import *
     from front.window import SnakeTronWindow

@@ -38,6 +38,5 @@ class MultiprocessEventReceiver[Event](AbstractEventReceiver):
     def __init__(self, fifo: Queue[Event]) -> None:
         self.fifo = fifo
 
-    def recv(self) -> Iterator[Event]:
-        while not self.fifo.empty():
-            yield self.fifo.get()
+    def recv(self) -> Event:
+        return self.fifo.get()

@@ -3,10 +3,15 @@ from __future__ import annotations
 
 from multiprocessing import Process
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from back.backend_builder import *
-from events.multiprocessing_pipe import *
-from front.app import *
+from back.backend_process import run_backend_process
+from events.multiprocessing_pipe import MultiprocessEventPipe
+from front.app import SnakeTronFrontend
+
+if TYPE_CHECKING:
+    from events.back2front_protocol import BackendEvent
+    from events.front2back_protocol import FrontendEvent
 
 """
 TODO:
@@ -31,28 +36,26 @@ IDÉE DE GAMEPLAY:
 if __name__ == '__main__':
     app_dir = Path(__file__).resolve().parent
 
-
     # dt = 1.0
     # dt = 0.15
     dt = 0.2
     # dt = 0.25
     # dt = 0.3
 
-    back2front_pipe = MultiprocessEventPipe()  # Communicates events sent from backend to frontend
-    front2back_pipe = MultiprocessEventPipe()  # Communicates events sent from frontend to backend
+    back2front_pipe: MultiprocessEventPipe[list[BackendEvent]] = MultiprocessEventPipe()  # Communicates events sent from backend to frontend
+    front2back_pipe: MultiprocessEventPipe[FrontendEvent] = MultiprocessEventPipe()  # Communicates events sent from frontend to backend
 
     backend_process = Process(
         kwargs=dict(
-            event_sender=back2front_pipe.get_sender(),
-            event_receiver=front2back_pipe.get_receiver(),
-
             n_snakes=4,
             n_players=1,
             respawn_cooldown=15,
 
-            time_step=dt
+            time_step=dt,
+            event_sender=back2front_pipe.get_sender(),
+            event_receiver=front2back_pipe.get_receiver()
         ),
-        target=run_backend,
+        target=run_backend_process,
         daemon=True
     )
 

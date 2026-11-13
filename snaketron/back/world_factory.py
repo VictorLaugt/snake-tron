@@ -1,53 +1,37 @@
 from __future__ import annotations
 
-import time
 from itertools import chain
-from typing import TYPE_CHECKING
 
 from back.agents import *
 from back.direction import *
 from back.grid_graph import *
-from back.world import *
-
-if TYPE_CHECKING:
-    from events.back2front_protocol import BackendEvent
-    from events.front2back_protocol import FrontendEvent
-    from events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
-
-__all__ = ['SnakeTronBackend', 'run_backend']
+from back.world import SnakeWorld
 
 
-def run_backend(*args, **kwargs):
-    backend = SnakeTronBackend(*args, **kwargs)
-    backend.run()
+class SnakeWorldFactory:
+    @staticmethod
+    def define_opponents(
+        player_agents: list[PlayerSnakeAgent],
+        ai_agents: list[OffensiveAISnakeAgent]
+    ) -> None:
+        if len(player_agents) >= 1:
+            for ai in ai_agents:
+                for player in player_agents:
+                    ai.add_opponent(player)
 
+        else:
+            half = len(ai_agents) // 2
+            for agent in ai_agents[half:]:
+                for opponent in ai_agents[:half]:
+                    agent.add_opponent(opponent)
 
-def define_opponents(
-    player_agents: list[PlayerSnakeAgent],
-    ai_agents: list[OffensiveAISnakeAgent]
-) -> None:
-    if len(player_agents) >= 1:
-        for ai in ai_agents:
-            for player in player_agents:
-                ai.add_opponent(player)
-
-    else:
-        half = len(ai_agents) // 2
-        for agent in ai_agents[half:]:
-            for opponent in ai_agents[:half]:
-                agent.add_opponent(opponent)
-
-
-class SnakeTronBackend:
-    def __init__(
-        self,
-        event_sender: AbstractEventSender[BackendEvent],
-        event_receiver: AbstractEventReceiver[FrontendEvent],
+    @classmethod
+    def build(
+        cls,
         n_snakes: int,
         n_players: int,
-        respawn_cooldown: int,
-        time_step: float,
-    ) -> None:
+        respawn_cooldown: int
+    ) -> SnakeWorld:
         if not (0 <= n_snakes <= 4):
             raise ValueError("Too many snakes")
         if not (0 <= n_players <= n_snakes):
@@ -75,7 +59,7 @@ class SnakeTronBackend:
 
         attack_anticipation = int(0.15*(height + width))
 
-        world = SnakeWorld(width, height, n_food, event_sender, event_receiver, respawn_cooldown)
+        world = SnakeWorld(width, height, n_food, respawn_cooldown)
         player_agents: list[PlayerSnakeAgent] = []
         ai_agents: list[OffensiveAISnakeAgent] = []
 
@@ -117,42 +101,9 @@ class SnakeTronBackend:
                 latency=3, caution=4, attack_anticipation=attack_anticipation
             ))
 
-        define_opponents(player_agents, ai_agents)
+        cls.define_opponents(player_agents, ai_agents)
 
         for agent in chain(player_agents, ai_agents):
             world.attach_agent(agent)
 
-        self.world = world
-        self.time_step = time_step
-
-    def get_time_step(self) -> float:
-        return self.time_step
-
-    def set_time_step(self, new_time_step: float) -> float:
-        self.time_step = new_time_step
-
-    def run(self) -> None:
-        time.sleep(3)  # FIXME
-        while True:
-            self.world.simulate()
-            time.sleep(self.time_step)
-    # TODO: replace with an implementation of the following pseudo-code:
-
-    # def run(self):  # boucle du thread principal
-    #     while True:
-    #         self.running.wait()  # self.running: threading.Event
-    #         with self.world_lock:  # self.world_lock: threading.Lock
-    #             self.world.simulate()
-    #         time.sleep(self.time_step)
-
-    # def event_receiver_loop(self):  # target d'un thread daemon secondaire qui écoute les évènements reçu
-    #     while True:
-    #         for event in self.event_receiver.recv():  # bloquant
-    #             match event:
-    #                 case RequestPause:
-    #                     self.running.set()
-    #                 case RequestResume:
-    #                     self.running.clear()
-    #                 case _:
-    #                     with self.world_lock:
-    #                         self.world.process_frontend_event(event)
+        return world

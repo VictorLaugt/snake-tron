@@ -1,10 +1,6 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing import Iterator
 
 __all__ = ['AbstractEventPipe', 'AbstractEventSender', 'AbstractEventReceiver']
 
@@ -26,5 +22,5 @@ class AbstractEventSender[Event](abc.ABC):
 
 class AbstractEventReceiver[Event](abc.ABC):
     @abc.abstractmethod
-    def recv(self) -> Iterator[Event]:
+    def recv(self) -> Event:
         pass

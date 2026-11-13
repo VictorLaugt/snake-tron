@@ -37,7 +37,6 @@ class SnakeTronWindow(BoxLayout):
 
     def init_logic(
         self,
-        event_receiver: AbstractEventReceiver[BackendEvent],  # receives events from the back
         event_sender: AbstractEventSender[FrontendEvent],  # sends events to the back
         time_step: float,
         ai_explanations: bool,
@@ -45,7 +44,6 @@ class SnakeTronWindow(BoxLayout):
         input_sensitivity: float,
     ) -> None:
         # link to the backend
-        self.event_receiver = event_receiver
         self.event_sender = event_sender
 
         # game speed

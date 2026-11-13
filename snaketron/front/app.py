@@ -10,7 +10,9 @@ from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.utils import platform
 
-from debug_tool import dbg
+from debug_tool import frontend_debugspace as dbg
+from events.abstract_pipe import AbstractEventSender
+from events.front2back_protocol import FrontendEvent
 from front.controls import *
 from front.score_board import *
 from front.window import SnakeTronWindow
@@ -19,18 +21,25 @@ from front.world_display import *
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from back.world import SnakeWorld
-    from events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
+    from events.abstract_pipe import AbstractEventReceiver
     from events.back2front_protocol import BackendEvent
-    from events.front2back_protocol import FrontendEvent
 
 __all__ = ['SnakeTronFrontend']
+
+
+class TrackedFrontendEventSender(AbstractEventSender[FrontendEvent]):
+    def __init__(self, event_sender: AbstractEventSender[FrontendEvent]) -> None:
+        self.event_sender = event_sender
+
+    def send(self, event: FrontendEvent) -> None:
+        dbg.dprint(f"sending event: {event}")
+        self.event_sender.send(event)
 
 
 class SnakeTronFrontend(App):
     def __init__(
         self,
-        event_receiver: AbstractEventReceiver[BackendEvent],
+        event_receiver: AbstractEventReceiver[list[BackendEvent]],
         event_sender: AbstractEventSender[FrontendEvent],
         time_step: float,
         ai_explanations: bool,
@@ -41,7 +50,7 @@ class SnakeTronFrontend(App):
     ) -> None:
         super().__init__(**kwargs)
         self.event_receiver = event_receiver
-        self.event_sender = event_sender
+        self.event_sender = TrackedFrontendEventSender(event_sender)
         self.time_step = time_step
         self.ai_explanations = ai_explanations
         self.layout_dir = layout_dir
@@ -68,7 +77,6 @@ class SnakeTronFrontend(App):
 
         self.main_window = SnakeTronWindow()
         self.main_window.init_logic(
-            self.event_receiver,
             self.event_sender,
             self.time_step,
             self.ai_explanations,
@@ -80,10 +88,12 @@ class SnakeTronFrontend(App):
 
     def event_receiver_loop(self) -> None:
         while True:
-            for event in self.event_receiver.recv():
-                self.process_backend_event(event)
+            dbg.dprint("waiting for events ...")
+            events = self.event_receiver.recv()
+            self.process_backend_events(events)
 
     @mainthread
-    def process_backend_event(self, event: BackendEvent) -> None:
-        dbg.dprint(f"frontend handling event: {event}")
-        self.main_window.process_backend_event(event)
+    def process_backend_events(self, events: list[BackendEvent]) -> None:
+        for e in events:
+            dbg.dprint(f"handling event: {e}")
+            self.main_window.process_backend_event(e)

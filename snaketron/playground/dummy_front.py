@@ -15,8 +15,6 @@ if TYPE_CHECKING:
     from events.back2front_protocol import BackendEvent
     from events.front2back_protocol import FrontendEvent
 
-from debug_tool import dbg
-
 
 class DummySnakeTronFrontend(App):
     def __init__(
@@ -60,7 +58,7 @@ class DummySnakeTronFrontend(App):
     def event_receiver_loop(self):
         while True:
             for event in self.event_receiver.recv():
-                dbg.dprint(f"frontend handling event {event}")
+                print(f"frontend handling event {event}")
                 self.process_backend_event(event)
 
     @mainthread

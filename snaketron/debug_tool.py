@@ -1055,6 +1055,7 @@ class DebugSpace :
             _symbol_color(header),
             ('\n'+len(header)*' ').join(lines),
             sep='',
+            flush=True,
             **kwargs
             )
 
@@ -1519,7 +1520,8 @@ class DebugSpace :
         return _FunctionTracker(self, tags, hidden_args, chrono, yieldfunc)
 
 
-dbg = DebugSpace(name="SnakeTron")
+frontend_debugspace = DebugSpace(name="Frontend")
+backend_debugspace = DebugSpace(name="Backend")
 
 
 # --- exemples

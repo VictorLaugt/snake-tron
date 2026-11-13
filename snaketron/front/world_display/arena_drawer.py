@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 
-from debug_tool import dbg
 from front.colors import WorldColors
 
 if TYPE_CHECKING:
