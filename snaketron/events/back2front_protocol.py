@@ -16,7 +16,7 @@ __all__ = [
     'WorldEvent', 'ArenaUpdateSize', 'FoodCreated', 'FoodConsumed',
 
     'AgentEvent', 'SnakeConnectionUpdate', 'SnakeSpawn', 'SnakeDie',
-    'SnakeMovementType', 'SnakeMovement', 'SnakeDash',
+    'SnakeMovementType', 'SnakeMovement', 'SnakeDash', 'AiSnakeInspection',
 
     'BackEventHandleNotImplemented'
 ]
@@ -85,6 +85,10 @@ class SnakeMovement(AgentEvent):
 class SnakeDash(AgentEvent):
     """When a snake dashes"""
     movements: Sequence[SnakeMovement]
+
+@dataclass(slots=True)
+class AiSnakeInspection(AgentEvent):
+    inspection: list[Position]
 
 
 class BackEventHandleNotImplemented(Exception):

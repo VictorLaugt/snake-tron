@@ -62,5 +62,4 @@ class SnakeColorManager:
         self.snake_colors_mapping.pop(snake_id)
 
     def get_snake_colors(self, snake_id: int) -> SnakeColors:
-        assert snake_id in self.snake_colors_mapping.keys()
-        return self.snake_colors_mapping.get(snake_id)
+        return self.snake_colors_mapping[snake_id]

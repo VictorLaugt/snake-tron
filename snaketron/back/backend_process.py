@@ -8,7 +8,7 @@ from back.world import SnakeWorld
 from back.world_factory import SnakeWorldFactory
 from debug_tool import backend_debugspace as dbg
 from events.abstract_pipe import AbstractEventSender
-from events.back2front_protocol import BackendEvent
+from events.back2front_protocol import *
 from events.front2back_protocol import *
 
 if TYPE_CHECKING:
@@ -49,20 +49,27 @@ class SnakeTronBackend:
         self.simulation_lock = threading.Lock()
         self.event_receiver_thread = threading.Thread(target=self.event_receiver_loop, daemon=True)
 
+        self.inspected_ai_snakes: list[int] = []
+
+    def _simulate(self) -> list[BackendEvent]:
+        self.world.simulate()
+        events = self.world.flush_state_updates()
+
+        for snake_id in self.inspected_ai_snakes:
+            ai_inspection = AiSnakeInspection(snake_id, list(self.world.inspect_ai(snake_id)))
+            events.append(ai_inspection)
+
+        return events
+
     def _update_simulation_speed(self, time_step: Optional[float], pause: Optional[bool]) -> None:
         if time_step is not None:
-            with self.simulation_lock:
-                self.time_step = time_step
+            self.time_step = time_step
 
         if pause is not None:
             if pause:
                 self.is_running.clear()
             else:
                 self.is_running.set()
-
-    def _interact_with_world(self, event: FrontendEvent) -> None:
-        with self.simulation_lock:
-            self.world.interact(event)
 
     def run(self) -> None:
         initial_events = self.world.flush_state_updates()
@@ -74,8 +81,7 @@ class SnakeTronBackend:
             self.is_running.wait()
 
             with self.simulation_lock:
-                self.world.simulate()
-                events = self.world.flush_state_updates()
+                events = self._simulate()
                 time_step = self.time_step
 
             self.event_sender.send(events)
@@ -84,12 +90,19 @@ class SnakeTronBackend:
     def event_receiver_loop(self):
         while True:
             event = self.event_receiver.recv()
-            dbg.dprint(f"handling event: {event}")
-            match event:
-                case SimulationSpeedUpdateRequest(time_step, pause):
-                    self._update_simulation_speed(time_step, pause)
-                case _:
-                    self._interact_with_world(event)
+            with self.simulation_lock:
+                dbg.dprint(f"handling event: {event}")
+                match event:
+                    case SimulationSpeedUpdateRequest(time_step, pause):
+                        self._update_simulation_speed(time_step, pause)
+
+                    case AiInspectionRequest(snake_id, enable_inspection=True):
+                        self.inspected_ai_snakes.append(snake_id)
+                    case AiInspectionRequest(snake_id, enable_inspection=False):
+                        self.inspected_ai_snakes.remove(snake_id)
+
+                    case PlayerDirRequest(snake_id, dir_request):
+                        self.world.add_player_dir_request(snake_id, dir_request)
 
 
 def run_backend_process(

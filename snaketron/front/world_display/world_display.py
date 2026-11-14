@@ -7,7 +7,6 @@ from kivy.uix.floatlayout import FloatLayout
 
 from events.back2front_protocol import *
 from front.colors import SnakeColors, WorldColors
-from debug_tool import frontend_debugspace as dbg
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.arena_drawer import ArenaDrawer
 from front.world_display.food_draw_updater import FoodDrawUpdater
@@ -77,13 +76,6 @@ class WorldDisplay(FloatLayout):
 
     def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()
-
-
-    def toggle_ai_explanations(self) -> None:
-        raise NotImplementedError
-
-    def ai_explanations_is_enabled(self) -> bool:
-        return False  # MOCK: ai explanation temporarly unavailable
 
 
     def add_snake(self, snake_id: int, colors: SnakeColors) -> None:

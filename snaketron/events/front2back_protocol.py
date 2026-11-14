@@ -8,7 +8,10 @@ if TYPE_CHECKING:
 
     from back.type_hints import Direction
 
-__all__ = ['FrontendEvent', 'SimulationSpeedUpdateRequest', 'PlayerDirRequest']
+__all__ = [
+    'FrontendEvent', 'SimulationSpeedUpdateRequest', 'AiInspectionRequest',
+    'PlayerDirRequest'
+]
 
 class FrontendEvent:
     __slots__ = ()
@@ -18,6 +21,12 @@ class FrontendEvent:
 class SimulationSpeedUpdateRequest(FrontendEvent):
     time_step: Optional[float]
     pause: Optional[bool]
+
+
+@dataclass(slots=True)
+class AiInspectionRequest(FrontendEvent):
+    snake_id: int
+    enable_inspection: bool
 
 
 @dataclass(slots=True)

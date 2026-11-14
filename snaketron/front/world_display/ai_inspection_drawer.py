@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 __all__ = ['AiInspectionDrawer']
 
-class AiInspectionDrawer:
+class AiInspectionDrawer:  # TODO: Adapt AiInspectionDrawer to the new event system
     def __init__(
         self,
         world_display: WorldDisplay,

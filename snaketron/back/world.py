@@ -13,12 +13,11 @@ from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
 from back.grid_graph import AbstractGridGraph
 from back.voronoi import furthest_voronoi_vertex
 from events.back2front_protocol import *
-from events.front2back_protocol import *
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
-    from back.agents import AbstractSnakeAgent
+    from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
     from back.type_hints import *
 
 
@@ -74,6 +73,7 @@ class SnakeWorld(AbstractGridGraph):
         self.alive_agents: list[AbstractSnakeAgent] = []
         self.dead_agents: deque[AbstractSnakeAgent] = deque()
         self.player_agents: dict[int, PlayerSnakeAgent] = {}
+        self.ai_agents: dict[int, AbstractAISnakeAgent] = {}
 
         # used to update the world state during simulation steps
         self.dir_buffer: list[Direction] = []
@@ -278,6 +278,12 @@ class SnakeWorld(AbstractGridGraph):
         if self.obstacle_count[right_neighbor] == 0:
             yield right_neighbor, RIGHT
 
+    def incr_obstacle_count(self, p: Position, n: int) -> None:
+        """Increments by `n` the obstacle count at position `p`."""
+        self.obstacle_count[p] += n
+
+
+    # ---- public state interface
     def iter_food(self) -> Iterator[Position]:
         """Iterates over each food position of the world."""
         return iter(self.food_pos)
@@ -290,10 +296,14 @@ class SnakeWorld(AbstractGridGraph):
         """Iterates over the agents of the world which are dead."""
         return iter(self.dead_agents)
 
+    def inspect_ai(self, agent_id: int) -> Iterator[Position]:
+        """Iterates over the positions of the path the AI snake is following."""
+        if (ai_agent := self.ai_agents.get(agent_id)) is not None:
+            yield from ai_agent.inspect()
 
-    def incr_obstacle_count(self, p: Position, n: int) -> None:
-        """Increments by `n` the obstacle count at position `p`."""
-        self.obstacle_count[p] += n
+    def add_player_dir_request(self, agent_id: int, request: Direction) -> None:
+        if (player_agent := self.player_agents.get(agent_id)) is not None:
+            player_agent.add_dir_request(request)
 
 
     # ---- public builder interface
@@ -305,6 +315,8 @@ class SnakeWorld(AbstractGridGraph):
 
         if (is_player := isinstance(agent, PlayerSnakeAgent)):
             self.player_agents[agent_id] = agent
+        else:
+            self.ai_agents[agent_id] = agent
         self.state_updates.append(SnakeConnectionUpdate(agent_id, is_player, True))
 
         if agent.is_alive():
@@ -342,14 +354,6 @@ class SnakeWorld(AbstractGridGraph):
 
 
     # ---- public event interface
-    def interact(self, event: FrontendEvent) -> None:
-        """Interacts with the simulation by sending an event to the world which
-        could affect the next simulation steps.
-        """
-        match event:
-            case PlayerDirRequest(agent_id, dir_request):
-                self.player_agents[agent_id].add_dir_request(dir_request)
-
     def simulate(self) -> None:
         """Evolves the world from one simulation step."""
         self._move_agents()

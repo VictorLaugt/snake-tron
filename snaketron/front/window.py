@@ -48,7 +48,7 @@ class SnakeTronWindow(BoxLayout):
 
         # game speed
         self.paused = False
-        self.full_speed = False
+        self.full_speed_enabled = False
         self.regular_time_step = time_step
         self.time_step = time_step
 
@@ -73,6 +73,9 @@ class SnakeTronWindow(BoxLayout):
             ('i', 'j', 'k',  'l')
         ))
 
+        # ai inspection
+        self.ai_inspection_enabled = False
+        self.ai_snakes: set[int] = set()
         if ai_explanations:
             self.toggle_ai_explanations()
 
@@ -94,23 +97,24 @@ class SnakeTronWindow(BoxLayout):
         )
 
     def toggle_fullspeed(self) -> None:
-        self.full_speed = not self.full_speed
-        self.time_step = MINIMAL_TIME_STEP if self.full_speed else self.regular_time_step
+        self.full_speed_enabled = not self.full_speed_enabled
+        self.time_step = MINIMAL_TIME_STEP if self.full_speed_enabled else self.regular_time_step
         self.event_sender.send(SimulationSpeedUpdateRequest(time_step=self.time_step, pause=None))
 
     def fullspeed_is_enabled(self) -> bool:
-        return self.full_speed
+        return self.full_speed_enabled
 
     def toggle_pause(self) -> None:
         self.paused = not self.paused
         self.event_sender.send(SimulationSpeedUpdateRequest(time_step=None, pause=self.paused))
 
     def toggle_ai_explanations(self) -> None:  # TODO: should use events
-        raise NotImplementedError("Ai explanations feature is not implemented")
-        cast(WorldDisplay, self.ids.world_display).toggle_ai_explanations()
+        self.ai_inspection_enabled = not self.ai_inspection_enabled
+        for snake_id in self.ai_snakes:
+            self.event_sender.send(AiInspectionRequest(snake_id, self.ai_inspection_enabled))
 
     def ai_explanations_is_enabled(self) -> bool:
-        return cast(WorldDisplay, self.ids.world_display).ai_explanations_is_enabled()
+        return self.ai_inspection_enabled
 
     def add_snake(self, snake_id: int, is_player: bool) -> None:
         snake_colors = self.snake_color_manager.add_snake(snake_id)
@@ -119,6 +123,8 @@ class SnakeTronWindow(BoxLayout):
         if is_player:
             self.swipe_control_manager.add_player_snake(snake_id, snake_colors)
             self.keyboard_control_manager.add_player_snake(snake_id)
+        else:
+            self.ai_snakes.add(snake_id)
 
     def remove_snake(self, snake_id: int, is_player: bool) -> None:
         self.snake_color_manager.remove_snake(snake_id)
