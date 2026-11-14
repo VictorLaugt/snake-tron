@@ -93,14 +93,15 @@ class SnakeTronWindow(BoxLayout):
             app_background=get_color_from_hex(colors['ui']['background'])
         )
 
-    def toggle_fullspeed(self) -> None:  # TODO: should use events
+    def toggle_fullspeed(self) -> None:
         self.full_speed = not self.full_speed
-        raise NotImplementedError("Fullspeed feature is not implemented")
+        self.time_step = MINIMAL_TIME_STEP if self.full_speed else self.regular_time_step
+        self.event_sender.send(SimulationSpeedUpdateRequest(time_step=self.time_step, pause=None))
 
     def fullspeed_is_enabled(self) -> bool:
         return self.full_speed
 
-    def toggle_pause(self) -> None:  # TODO: should use events
+    def toggle_pause(self) -> None:
         self.paused = not self.paused
         self.event_sender.send(SimulationSpeedUpdateRequest(time_step=None, pause=self.paused))
 
