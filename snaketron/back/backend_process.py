@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import time
 from typing import TYPE_CHECKING
 
@@ -8,8 +9,10 @@ from back.world_factory import SnakeWorldFactory
 from debug_tool import backend_debugspace as dbg
 from events.abstract_pipe import AbstractEventSender
 from events.back2front_protocol import BackendEvent
+from events.front2back_protocol import *
 
 if TYPE_CHECKING:
+    from typing import Optional
     from events.abstract_pipe import AbstractEventReceiver
     from events.front2back_protocol import FrontendEvent
 
@@ -42,48 +45,51 @@ class SnakeTronBackend:
         self.event_sender = TrackedBackendEventSender(event_sender)
         self.event_receiver = event_receiver
 
-    def get_time_step(self) -> float:
-        return self.time_step
+        self.is_running = threading.Event()
+        self.simulation_lock = threading.Lock()
+        self.event_receiver_thread = threading.Thread(target=self.event_receiver_loop, daemon=True)
 
-    def set_time_step(self, new_time_step: float) -> float:
-        self.time_step = new_time_step
+    def _update_simulation_speed(self, pause: Optional[bool], time_step: Optional[float]) -> None:
+        if time_step is not None:
+            with self.simulation_lock:
+                self.time_step = time_step
+
+        if pause is not None:
+            if pause:
+                self.is_running.clear()
+            else:
+                self.is_running.set()
+
+    def _interact_with_world(self, event: FrontendEvent) -> None:
+        with self.simulation_lock:
+            self.world.interact(event)
 
     def run(self) -> None:
-        dbg.dprint("Start the backend process")
-        time.sleep(3)  # FIXME
+        initial_events = self.world.flush_state_updates()
+        self.event_sender.send(initial_events)
+
+        self.event_receiver_thread.start()
+        self.is_running.set()
         while True:
-            # event = self.event_receiver.recv()  # should not block
-            # dbg.dprint(f"handling event: {event}")
-            # self.world.interact(event)
+            self.is_running.wait()
 
-            self.world.simulate()
+            with self.simulation_lock:
+                self.world.simulate()
+                events = self.world.flush_state_updates()
+                time_step = self.time_step
 
-            self.event_sender.send(self.world.flush_state_updates())
-            time.sleep(self.time_step)
-    # TODO: replace with an implementation of the following pseudo-code:
+            self.event_sender.send(events)
+            time.sleep(time_step)
 
-    # def run(self):  # boucle du thread principal
-    #     while True:
-    #         self.running.wait()  # self.running: threading.Event
-    #         with self.simulation_interaction_lock:  # self.simulation_interaction_lock: threading.Lock
-    #             self.world.simulate()
-    #             events = self.world.flush_state_updates()
-
-    #         self.event_sender.send(events)
-
-    #         time.sleep(self.time_step)
-
-    # def event_receiver_loop(self):  # target d'un thread daemon secondaire qui écoute les évènements reçu
-    #     while True:
-    #         for event in self.event_receiver.recv():  # bloquant
-    #             match event:
-    #                 case RequestPause:
-    #                     self.running.set()
-    #                 case RequestResume:
-    #                     self.running.clear()
-    #                 case _:
-    #                     with self.simulation_interaction_lock:
-    #                         self.world.interact(event)
+    def event_receiver_loop(self):
+        while True:
+            event = self.event_receiver.recv()
+            dbg.dprint(f"handling event: {event}")
+            match event:
+                case SimulationSpeedUpdateRequest(pause, time_step):
+                    self._update_simulation_speed(pause, time_step)
+                case _:
+                    self._interact_with_world(event)
 
 
 def run_backend_process(
