@@ -49,7 +49,7 @@ class SnakeTronBackend:
         self.simulation_lock = threading.Lock()
         self.event_receiver_thread = threading.Thread(target=self.event_receiver_loop, daemon=True)
 
-    def _update_simulation_speed(self, pause: Optional[bool], time_step: Optional[float]) -> None:
+    def _update_simulation_speed(self, time_step: Optional[float], pause: Optional[bool]) -> None:
         if time_step is not None:
             with self.simulation_lock:
                 self.time_step = time_step
@@ -86,8 +86,8 @@ class SnakeTronBackend:
             event = self.event_receiver.recv()
             dbg.dprint(f"handling event: {event}")
             match event:
-                case SimulationSpeedUpdateRequest(pause, time_step):
-                    self._update_simulation_speed(pause, time_step)
+                case SimulationSpeedUpdateRequest(time_step, pause):
+                    self._update_simulation_speed(time_step, pause)
                 case _:
                     self._interact_with_world(event)
 

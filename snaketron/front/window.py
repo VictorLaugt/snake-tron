@@ -102,7 +102,7 @@ class SnakeTronWindow(BoxLayout):
 
     def toggle_pause(self) -> None:  # TODO: should use events
         self.paused = not self.paused
-        raise NotImplementedError("Pause feature is not implemented")
+        self.event_sender.send(SimulationSpeedUpdateRequest(time_step=None, pause=self.paused))
 
     def toggle_ai_explanations(self) -> None:  # TODO: should use events
         raise NotImplementedError("Ai explanations feature is not implemented")

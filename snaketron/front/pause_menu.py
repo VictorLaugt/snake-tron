@@ -20,16 +20,11 @@ __all__ = ['PauseMenuInvoker']
 
 
 class PauseMenuInvoker(Widget):
-    main_window: SnakeTronWindow
-    max_seg_sqr_length: float
-    touch_uid: Optional[int]
-    pause_menu: Optional[PauseMenu]
-
     def __init__(self, main_window: SnakeTronWindow, max_seg_length: float, *args, **kwargs) -> None:
         self.main_window = main_window
         self.max_seg_sqr_length = max_seg_length**2
-        self.touch_uid = None
-        self.pause_menu = None
+        self.touch_uid: Optional[int] = None
+        self.pause_menu: Optional[PauseMenu] = None
         super().__init__(*args, **kwargs)
 
     def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
