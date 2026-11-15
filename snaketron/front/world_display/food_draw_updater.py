@@ -23,14 +23,14 @@ __all__ = ['FoodDrawUpdater']
 
 class FoodDrawUpdater:
     def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:
-        self.display = world_display
-
         self.instr = InstructionGroup()
-        self.display.canvas.add(self.instr)
 
         self.pool: Pool[Position, FoodDrawer] = Pool(lambda pool: FoodDrawer(
             pool, world_display, self.instr, colors
         ))
+
+    def get_graphical_elements(self) -> InstructionGroup:
+        return self.instr
 
     def reset(self) -> None:
         for pos, drawer in list(self.pool.iter_workers()):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from kivy.graphics import InstructionGroup
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
@@ -16,14 +17,15 @@ if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
     from back.type_hints import *
-    from events.abstract_pipe import AbstractEventReceiver
-    from events.back2front_protocol import BackendEvent
     from front.score_board import ScoreBoard
     from front.type_hints import *
     from front.window import SnakeTronWindow
 
 __all__ = ['WorldDisplay']
 
+
+def canvas_children_debug_repr(canvas):
+    return "[" + ",\n".join(repr(element) for element in canvas.children) + "]"
 
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
@@ -38,15 +40,23 @@ class WorldDisplay(FloatLayout):
         self.main_window = main_window
         self.score_board = score_board
 
+        # draws graphical elements of the world
         self.arena_drawer = ArenaDrawer(self, world_colors)
         self.food_draw_updater = FoodDrawUpdater(self, world_colors)
         self.snake_draw_updaters: dict[int, SnakeDrawUpdater] = {}
+        self.world_graphical_elements = InstructionGroup()
+        self.world_graphical_elements.add(self.arena_drawer.get_graphical_elements())
+        self.world_graphical_elements.add(self.food_draw_updater.get_graphical_elements())
 
+        # displays or hide the pause menu when requested
         self.pause_invoker = PauseMenuInvoker(
             main_window, pause_command_touch_max_length,
             size_hint=(None, None), size=self.size,
             pos=self.to_window(self.x, self.y)
         )
+
+        # The pause menu is displayed on top of every world graphical element
+        self.canvas.add(self.world_graphical_elements)
         self.add_widget(self.pause_invoker)
 
 
@@ -80,10 +90,14 @@ class WorldDisplay(FloatLayout):
 
     def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
         assert snake_id not in self.snake_draw_updaters.keys()
-        self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(self, colors, n_decay_steps=4)
+        updater = SnakeDrawUpdater(self, colors, n_decay_steps=4)
+        self.snake_draw_updaters[snake_id] = updater
+        self.world_graphical_elements.add(updater.get_graphical_elements())
 
     def remove_snake(self, snake_id: int) -> None:
-        self.snake_draw_updaters.pop(snake_id).erase()
+        updater = self.snake_draw_updaters.pop(snake_id)
+        self.world_graphical_elements.remove(updater.get_graphical_elements())
+        updater.erase()
 
     def get_snake_dir(self, snake_id: int) -> Direction:
         self.snake_draw_updaters[snake_id].get_head_dir()

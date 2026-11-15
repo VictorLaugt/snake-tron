@@ -19,8 +19,10 @@ class ArenaDrawer:
         self.arena_height = 1
 
         self.instr = InstructionGroup()
-        self.display.canvas.add(self.instr)
         self.color_values = colors
+
+    def get_graphical_elements(self) -> InstructionGroup:
+        return self.instr
 
     def get_width(self) -> int:
         return self.arena_width

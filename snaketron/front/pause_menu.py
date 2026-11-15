@@ -76,7 +76,7 @@ class PauseMenuInvoker(Widget):
         self.pause_menu = None
 
 
-class PauseMenu(FloatLayout):  # FIXME: bug: pause menu appears behind instead of forward the snakes
+class PauseMenu(FloatLayout):
     menu_background_color = ListProperty(get_color_from_hex("#000000A0"))
     menu_padding = NumericProperty(15)
 

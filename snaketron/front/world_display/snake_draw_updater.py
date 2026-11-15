@@ -67,7 +67,7 @@ class SnakeDrawUpdater(EventDispatcher):
 
     def __init__(
         self,
-        world_display: WorldDisplay,
+        world_display: WorldDisplay,  # REFACTOR: remove SnakeDrawUpdater dependency on WorldDisplay
         colors: SnakeColors,
         n_decay_steps: int
     ) -> None:
@@ -76,9 +76,10 @@ class SnakeDrawUpdater(EventDispatcher):
         self.layer_back = InstructionGroup()
         self.layer_middle = InstructionGroup()
         self.layer_front = InstructionGroup()
-        self.display.canvas.add(self.layer_back)
-        self.display.canvas.add(self.layer_middle)
-        self.display.canvas.add(self.layer_front)
+        self.graphical_elements = InstructionGroup()
+        self.graphical_elements.add(self.layer_back)
+        self.graphical_elements.add(self.layer_middle)
+        self.graphical_elements.add(self.layer_front)
 
         # back layer: decaying cut cells
         self.tailcut_color: Color = None
@@ -116,6 +117,9 @@ class SnakeDrawUpdater(EventDispatcher):
         self.alive = False
         self.colors = colors
         self.n_decay_steps = n_decay_steps
+
+    def get_graphical_elements(self) -> InstructionGroup:
+        return self.graphical_elements
 
     def get_head_pos(self) -> Position:
         return self.head_pos
