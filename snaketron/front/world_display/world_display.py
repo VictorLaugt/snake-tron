@@ -9,9 +9,9 @@ from kivy.uix.floatlayout import FloatLayout
 from events.back2front_protocol import *
 from front.colors import SnakeColors, WorldColors
 from front.pause_menu import PauseMenuInvoker
-from front.world_display.arena_drawer import ArenaDrawer
-from front.world_display.food_draw_updater import FoodDrawUpdater
-from front.world_display.snake_draw_updater import SnakeDrawUpdater
+from front.world_display.arena_drawer import ArenaDrawer, ArenaDrawerTool
+from front.world_display.food_draw_updater import FoodDrawUpdater, FoodDrawerTool
+from front.world_display.snake_draw_updater import SnakeDrawUpdater, SnakeDrawTool
 
 if TYPE_CHECKING:
     from kivy.uix.widget import Widget
@@ -41,9 +41,24 @@ class WorldDisplay(FloatLayout):
         self.score_board = score_board
 
         # draws graphical elements of the world
-        self.arena_drawer = ArenaDrawer(self, world_colors)
-        self.food_draw_updater = FoodDrawUpdater(self, world_colors)
+        arena_draw_tool = ArenaDrawerTool(
+            get_widget_pos=(lambda: self.pos),
+            get_square_size=(lambda: self.square_size)
+        )
+        self.arena_drawer = ArenaDrawer(arena_draw_tool, world_colors)
+
+        food_draw_tool = FoodDrawerTool(
+            pos_to_coord=self.pos_to_coord,
+            get_square_size=(lambda: self.square_size)
+        )
+        self.food_draw_updater = FoodDrawUpdater(food_draw_tool, world_colors)
+
+        self.snake_draw_tool = SnakeDrawTool(
+            pos_to_coord=self.pos_to_coord,
+            get_square_size=(lambda: self.square_size)
+        )
         self.snake_draw_updaters: dict[int, SnakeDrawUpdater] = {}
+
         self.world_graphical_elements = InstructionGroup()
         self.world_graphical_elements.add(self.arena_drawer.get_graphical_elements())
         self.world_graphical_elements.add(self.food_draw_updater.get_graphical_elements())
@@ -90,7 +105,7 @@ class WorldDisplay(FloatLayout):
 
     def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
         assert snake_id not in self.snake_draw_updaters.keys()
-        updater = SnakeDrawUpdater(self, colors, n_decay_steps=4)
+        updater = SnakeDrawUpdater(self.snake_draw_tool, colors, n_decay_steps=4)
         self.snake_draw_updaters[snake_id] = updater
         self.world_graphical_elements.add(updater.get_graphical_elements())
 

@@ -7,14 +7,26 @@ from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 from front.colors import WorldColors
 
 if TYPE_CHECKING:
+    from typing import Callable
+
     from front.world_display.world_display import WorldDisplay
 
-__all__ = ['ArenaDrawer']
+__all__ = ['ArenaDrawer', 'ArenaDrawerTool']
+
+
+class ArenaDrawerTool:
+    def __init__(
+        self,
+        get_widget_pos: Callable[[], tuple[float, float]],
+        get_square_size: Callable[[], float]
+    ) -> None:
+        self.get_widget_pos = get_widget_pos
+        self.get_square_size = get_square_size
 
 
 class ArenaDrawer:
-    def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:
-        self.display = world_display
+    def __init__(self, draw_tool: ArenaDrawerTool, colors: WorldColors) -> None:
+        self.draw_tool = draw_tool
         self.arena_width = 1
         self.arena_height = 1
 
@@ -38,8 +50,8 @@ class ArenaDrawer:
     def erase_and_draw(self) -> None:
         self.instr.clear()
         h, w = self.arena_height, self.arena_width
-        display_x, display_y = self.display.pos
-        display_s = self.display.square_size
+        display_x, display_y = self.draw_tool.get_widget_pos()
+        display_s = self.draw_tool.get_square_size()
 
         # background
         self.instr.add(Color(*self.color_values.background))

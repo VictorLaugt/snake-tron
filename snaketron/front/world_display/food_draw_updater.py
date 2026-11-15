@@ -18,15 +18,14 @@ if TYPE_CHECKING:
     from front.world_display import *
 
 
-__all__ = ['FoodDrawUpdater']
-
+__all__ = ['FoodDrawUpdater', 'FoodDrawerTool']
 
 class FoodDrawUpdater:
-    def __init__(self, world_display: WorldDisplay, colors: WorldColors) -> None:
+    def __init__(self, draw_tool: FoodDrawerTool, colors: WorldColors) -> None:
         self.instr = InstructionGroup()
 
         self.pool: Pool[Position, FoodDrawer] = Pool(lambda pool: FoodDrawer(
-            pool, world_display, self.instr, colors
+            pool, draw_tool, self.instr, colors
         ))
 
     def get_graphical_elements(self) -> InstructionGroup:
@@ -80,6 +79,16 @@ class Pool[K, W]:
         yield from self.working.items()
 
 
+class FoodDrawerTool:
+    def __init__(
+        self,
+        pos_to_coord: Callable[[Position], Coordinate],
+        get_square_size: Callable[[], float],
+    ) -> None:
+        self.pos_to_coord = pos_to_coord
+        self.get_square_size = get_square_size
+
+
 class FoodDrawer(EventDispatcher):
     invisible: ColorValue = get_color_from_hex('#00000000')
 
@@ -99,13 +108,13 @@ class FoodDrawer(EventDispatcher):
     def __init__(
         self,
         pool: Pool[Position, FoodDrawer],
-        display: WorldDisplay,
+        draw_tool: FoodDrawerTool,
         instr: InstructionGroup,
         color_values: WorldColors
     ) -> None:
         super().__init__()
         self.pool = pool
-        self.display = display
+        self.draw_tool = draw_tool
         self.color_values = color_values
         self.food_pos = None
         self.food_is_consumed = False
@@ -137,8 +146,8 @@ class FoodDrawer(EventDispatcher):
     def redraw(self, food_pos: Position) -> None:
         self.food_pos = food_pos
 
-        x, y = self.display.pos_to_coord(food_pos)
-        s = self.display.square_size
+        x, y = self.draw_tool.pos_to_coord(food_pos)
+        s = self.draw_tool.get_square_size()
         c = self.color_values.food
 
         Animation.cancel_all(self)
@@ -151,8 +160,8 @@ class FoodDrawer(EventDispatcher):
         self.food_is_consumed = False
         self.food_pos = food_pos
 
-        x, y = self.display.pos_to_coord(food_pos)
-        s = self.display.square_size
+        x, y = self.draw_tool.pos_to_coord(food_pos)
+        s = self.draw_tool.get_square_size()
         c = self.color_values.food
 
         # self.animated_size = (0, 0)
@@ -177,7 +186,7 @@ class FoodDrawer(EventDispatcher):
     def eat(self, eater_pos: Position, duration: float) -> None:
         self.food_is_consumed = True
         anim = (
-            Animation(animated_pos=self.display.pos_to_coord(eater_pos), d=duration, t='linear') # &
+            Animation(animated_pos=self.draw_tool.pos_to_coord(eater_pos), d=duration, t='linear') # &
             # Animation(animated_color=self.invisible, d=duration, t='linear')
         )
         anim.bind(on_complete=lambda *_: self.erase())

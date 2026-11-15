@@ -13,16 +13,26 @@ from events.back2front_protocol import SnakeMovementType
 from front.colors import SnakeColors
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional
+    from typing import Callable, Iterable, Optional
 
     from kivy.graphics import Canvas, Instruction
 
     from back.type_hints import *
     from events.back2front_protocol import *
     from front.type_hints import *
-    from front.world_display import WorldDisplay
 
-__all__ = ['SnakeDrawUpdater']
+__all__ = ['SnakeDrawUpdater', 'SnakeDrawTool']
+
+
+class SnakeDrawTool:
+    def __init__(
+        self,
+        pos_to_coord: Callable[[Position], Coordinate],
+        get_square_size: Callable[[], float],
+    ) -> None:
+        self.pos_to_coord = pos_to_coord
+        self.get_square_size = get_square_size
+
 
 class SnakeDrawUpdater(EventDispatcher):
     invisible: ColorValue = get_color_from_hex('#00000000')
@@ -67,12 +77,12 @@ class SnakeDrawUpdater(EventDispatcher):
 
     def __init__(
         self,
-        world_display: WorldDisplay,  # REFACTOR: remove SnakeDrawUpdater dependency on WorldDisplay
+        draw_tool: SnakeDrawTool,
         colors: SnakeColors,
         n_decay_steps: int
     ) -> None:
         super().__init__()
-        self.display = world_display
+        self.draw_tool = draw_tool
         self.layer_back = InstructionGroup()
         self.layer_middle = InstructionGroup()
         self.layer_front = InstructionGroup()
@@ -135,8 +145,8 @@ class SnakeDrawUpdater(EventDispatcher):
 
 
     def _square(self, pos: Position) -> Rectangle:
-        x, y = self.display.pos_to_coord(pos)
-        s = self.display.square_size
+        x, y = self.draw_tool.pos_to_coord(pos)
+        s = self.draw_tool.get_square_size()
         return Rectangle(pos=(x, y), size=(s, s))
 
 
@@ -270,7 +280,7 @@ class SnakeDrawUpdater(EventDispatcher):
 
     def _anim_slide_head(self, time_step: float, dst: Position) -> Animation:
         return Animation(
-            head_cell_pos=self.display.pos_to_coord(dst),
+            head_cell_pos=self.draw_tool.pos_to_coord(dst),
             duration=time_step,
             t='linear'
         )
@@ -285,13 +295,13 @@ class SnakeDrawUpdater(EventDispatcher):
         wrap_in_dst = (wrap_in_src[0]+wrap_dir[0], wrap_in_src[1]+wrap_dir[1])
         wrap_out_src = (wrap_out_dst[0]-wrap_dir[0], wrap_out_dst[1]-wrap_dir[1])
 
-        self.head_cell_pos = self.display.pos_to_coord(wrap_out_src)
+        self.head_cell_pos = self.draw_tool.pos_to_coord(wrap_out_src)
         self._init_wrapping_head(wrap_in_src, self.colors.head)
 
         anim = (
             self._anim_slide_head(time_step, wrap_out_dst) &
             Animation(
-                wrapping_head_cell_pos=self.display.pos_to_coord(wrap_in_dst),
+                wrapping_head_cell_pos=self.draw_tool.pos_to_coord(wrap_in_dst),
                 duration=time_step,
                 t='linear'
             )
@@ -301,7 +311,7 @@ class SnakeDrawUpdater(EventDispatcher):
 
     def _anim_slide_tailend(self, time_step: float, dst: Position) -> Animation:
         x_src, y_src = self.tailend_cell_pos
-        x_dst, y_dst = self.display.pos_to_coord(dst)
+        x_dst, y_dst = self.draw_tool.pos_to_coord(dst)
         dx, dy = x_dst-x_src, y_dst-y_src
 
         return Animation(
@@ -320,13 +330,13 @@ class SnakeDrawUpdater(EventDispatcher):
         wrap_in_dst = (wrap_in_src[0]+wrap_dir[0], wrap_in_src[1]+wrap_dir[1])
         wrap_out_src = (wrap_out_dst[0]-wrap_dir[0], wrap_out_dst[1]-wrap_dir[1])
 
-        self.tailend_cell_pos = self.display.pos_to_coord(wrap_out_src)
+        self.tailend_cell_pos = self.draw_tool.pos_to_coord(wrap_out_src)
         self._init_wrapping_tailend(wrap_in_src, self.colors.tail)
 
         anim = (
             self._anim_slide_tailend(time_step, wrap_out_dst) &
             Animation(
-                wrapping_tailend_cell_pos=self.display.pos_to_coord(wrap_in_dst),
+                wrapping_tailend_cell_pos=self.draw_tool.pos_to_coord(wrap_in_dst),
                 duration=time_step,
                 t='linear'
             )
@@ -345,7 +355,7 @@ class SnakeDrawUpdater(EventDispatcher):
 
         if self.anim_tail is not None:
             self.anim_tail.stop(self)
-        self.tailend_cell_pos = self.display.pos_to_coord(tailend_pos)
+        self.tailend_cell_pos = self.draw_tool.pos_to_coord(tailend_pos)
 
         anim = Animation(
             tailcut_rgba=self.colors.tail_decay_final,

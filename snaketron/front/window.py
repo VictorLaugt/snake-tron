@@ -108,7 +108,7 @@ class SnakeTronWindow(BoxLayout):
         self.paused = not self.paused
         self.event_sender.send(SimulationSpeedUpdateRequest(time_step=None, pause=self.paused))
 
-    def toggle_ai_explanations(self) -> None:  # TODO: should use events
+    def toggle_ai_explanations(self) -> None:
         self.ai_inspection_enabled = not self.ai_inspection_enabled
         for snake_id in self.ai_snakes:
             self.event_sender.send(AiInspectionRequest(snake_id, self.ai_inspection_enabled))
