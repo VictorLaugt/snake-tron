@@ -40,20 +40,25 @@ class SnakeColors:
 class SnakeColorManager:
     def __init__(self, colors: dict) -> None:
         self.colors = colors['snakes']
-        self.head_color_wheel = colors['snakes']['head_color_wheel']
-        self.tail_color_wheel = colors['snakes']['tail_color_wheel']
+        self.head_color_wheel = self.colors['head_color_wheel']
+        self.tail_color_wheel = self.colors['tail_color_wheel']
         self.snake_colors_mapping: dict[int, SnakeColors] = {}
 
     def add_snake(self, snake_id: int) -> SnakeColors:
         assert snake_id not in self.snake_colors_mapping.keys()
+
+        head_color = get_color_from_hex(self.head_color_wheel[snake_id % len(self.head_color_wheel)])
+        tail_color = get_color_from_hex(self.tail_color_wheel[snake_id % len(self.tail_color_wheel)])
+        inspect_color = (tail_color[0], tail_color[1], tail_color[2], 0.3*tail_color[3])
+
         snake_colors = SnakeColors(
-            head=get_color_from_hex(self.head_color_wheel[snake_id % len(self.head_color_wheel)]),
-            tail=get_color_from_hex(self.tail_color_wheel[snake_id % len(self.tail_color_wheel)]),
+            head=head_color,
+            tail=tail_color,
+            inspect=inspect_color,
             head_decay_first=get_color_from_hex(self.colors['head_decay_first']),
             head_decay_final=get_color_from_hex(self.colors['head_decay_final']),
             tail_decay_first=get_color_from_hex(self.colors['tail_decay_first']),
-            tail_decay_final=get_color_from_hex(self.colors['tail_decay_final']),
-            inspect=get_color_from_hex(self.colors['inspect'])
+            tail_decay_final=get_color_from_hex(self.colors['tail_decay_final'])
         )
         self.snake_colors_mapping[snake_id] = snake_colors
         return snake_colors

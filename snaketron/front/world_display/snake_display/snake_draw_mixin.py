@@ -4,37 +4,62 @@ from collections import deque
 from typing import TYPE_CHECKING
 
 from kivy.animation import Animation
-from kivy.event import EventDispatcher
 from kivy.graphics import Color, InstructionGroup, Rectangle
 from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
 from events.back2front_protocol import SnakeMovementType
-from front.colors import SnakeColors
+from front.world_display.snake_display.base_snake_draw_updater import BaseSnakeDrawUpdater
 
 if TYPE_CHECKING:
-    from typing import Callable, Iterable, Optional
+    from typing import Iterable, Optional
 
     from kivy.graphics import Canvas, Instruction
 
-    from back.type_hints import *
-    from events.back2front_protocol import *
-    from front.type_hints import *
+    from back.type_hints import Direction, Position
+    from events.back2front_protocol import SnakeDie, SnakeMovement, SnakeSpawn
+    from front.type_hints import ColorValue
 
-__all__ = ['SnakeDrawUpdater', 'SnakeDrawTool']
-
-
-class SnakeDrawTool:
-    def __init__(
-        self,
-        pos_to_coord: Callable[[Position], Coordinate],
-        get_square_size: Callable[[], float],
-    ) -> None:
-        self.pos_to_coord = pos_to_coord
-        self.get_square_size = get_square_size
+__all__ = ['SnakeDrawMixin']
 
 
-class SnakeDrawUpdater(EventDispatcher):
+class SnakeTailEndClock:
+    def __init__(self):
+        self.countdowns: deque[int] = deque()
+        self.directions: deque[Direction] = deque()
+
+    def reset(self) -> None:
+        self.countdowns.clear()
+        self.directions.clear()
+
+    def new_schedule(self, snake_length: int, head_direction: Direction) -> None:
+        self.countdowns.append(snake_length)
+        self.directions.append(head_direction)
+
+    def update_schedules(self, n_steps: int) -> None:
+        for _ in range(len(self.countdowns)):
+            self.countdowns[0] += n_steps
+            self.countdowns.rotate()
+
+    def next_step(self) -> Optional[Direction]:
+        if len(self.countdowns) > 0 and self.countdowns[0] <= 0:
+            n_remaining_steps = self.countdowns.popleft()
+            direction = self.directions.popleft()
+
+            if n_remaining_steps == 0:
+                return direction
+
+
+class InstructionRemover:
+    def __init__(self, instr: InstructionGroup|Canvas, obj: Instruction) -> None:
+        self.instr = instr
+        self.obj = obj
+
+    def __call__(self, *_):
+        self.instr.remove(self.obj)
+
+
+class SnakeDrawMixin(BaseSnakeDrawUpdater):
     invisible: ColorValue = get_color_from_hex('#00000000')
 
     tail_rgba = ListProperty([0., 0., 0., 0.])
@@ -75,21 +100,22 @@ class SnakeDrawUpdater(EventDispatcher):
     def on_wrapping_tailend_cell_pos(self, _, val): self.wrapping_tailend_cell.pos = val
     def on_wrapping_tailend_rgba(self, _, val): self.wrapping_tailend_color.rgba = val
 
-    def __init__(
-        self,
-        draw_tool: SnakeDrawTool,
-        colors: SnakeColors,
-        n_decay_steps: int
-    ) -> None:
-        super().__init__()
-        self.draw_tool = draw_tool
+    def __init__(self, *, n_decay_steps: int, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+        # constant parameter
+        self.n_decay_steps = n_decay_steps
+
+        # variable parameter
+        self.alive = False
+
+        # graphical layers
         self.layer_back = InstructionGroup()
         self.layer_middle = InstructionGroup()
         self.layer_front = InstructionGroup()
-        self.graphical_elements = InstructionGroup()
-        self.graphical_elements.add(self.layer_back)
-        self.graphical_elements.add(self.layer_middle)
-        self.graphical_elements.add(self.layer_front)
+        self.get_graphical_elements().add(self.layer_back)
+        self.get_graphical_elements().add(self.layer_middle)
+        self.get_graphical_elements().add(self.layer_front)
 
         # back layer: decaying cut cells
         self.tailcut_color: Color = None
@@ -123,33 +149,8 @@ class SnakeDrawUpdater(EventDispatcher):
         self.anim_tail: Optional[Animation] = None
         self.anim_death: Optional[Animation] = None
 
-        # constant parameters
-        self.alive = False
-        self.colors = colors
-        self.n_decay_steps = n_decay_steps
 
-    def get_graphical_elements(self) -> InstructionGroup:
-        return self.graphical_elements
-
-    def get_head_pos(self) -> Position:
-        return self.head_pos
-
-    def get_tailend_pos(self) -> Position:
-        return self.tail_pos[0] if len(self.tail_pos) > 0 else self.head_pos
-
-    def get_head_dir(self) -> Direction:
-        return self.head_dir
-
-    def get_snake_len(self) -> int:
-        return len(self.tail_pos) + 1
-
-
-    def _square(self, pos: Position) -> Rectangle:
-        x, y = self.draw_tool.pos_to_coord(pos)
-        s = self.draw_tool.get_square_size()
-        return Rectangle(pos=(x, y), size=(s, s))
-
-
+    # ---- private methods
     def _stop_animations(self) -> None:
         if self.anim_head is not None:
             self.anim_head.stop(self)
@@ -168,8 +169,9 @@ class SnakeDrawUpdater(EventDispatcher):
         cell_pos: Optional[Iterable[Position]],
         head_dir: Optional[Direction]
     ) -> None:
-        self.tail_color = Color(*self.colors.tail)
-        self.tail_rgba = self.colors.tail
+        colors = self.get_colors()
+        self.tail_color = Color(*colors.tail)
+        self.tail_rgba = colors.tail
         self.layer_middle.add(self.tail_color)
 
         if head_dir is not None:
@@ -186,7 +188,7 @@ class SnakeDrawUpdater(EventDispatcher):
         self.tail_pos.clear()
 
         for pos in cell_pos:
-            sqr = self._square(pos)
+            sqr = self.square(pos)
             self.tail_cells.appendleft(sqr)
             self.tail_pos.appendleft(pos)
             self.layer_middle.add(sqr)
@@ -194,7 +196,7 @@ class SnakeDrawUpdater(EventDispatcher):
     def _init_head(self, pos: Position, rgba: ColorValue) -> None:
         self.head_color = Color(*rgba)
         self.head_rgba = rgba
-        self.head_cell = self._square(pos)
+        self.head_cell = self.square(pos)
         self.head_cell_pos = self.head_cell.pos
 
         self.layer_front.add(self.head_color)
@@ -203,7 +205,7 @@ class SnakeDrawUpdater(EventDispatcher):
     def _init_tailend(self, pos: Position, rgba: ColorValue) -> None:
         self.tailend_color = Color(*rgba)
         self.tailend_rgba = rgba
-        self.tailend_cell = self._square(pos)
+        self.tailend_cell = self.square(pos)
         self.tailend_cell_pos = self.tailend_cell.pos
 
         self.layer_front.add(self.tailend_color)
@@ -212,7 +214,7 @@ class SnakeDrawUpdater(EventDispatcher):
     def _init_wrapping_head(self, pos: Position, rgba: ColorValue) -> None:
         self.wrapping_head_color = Color(*rgba)
         self.wrapping_head_rgba = rgba
-        self.wrapping_head_cell = self._square(pos)
+        self.wrapping_head_cell = self.square(pos)
         self.wrapping_head_cell_pos = self.wrapping_head_cell.pos
 
         self.layer_front.add(self.wrapping_head_color)
@@ -221,29 +223,11 @@ class SnakeDrawUpdater(EventDispatcher):
     def _init_wrapping_tailend(self, pos: Position, rgba: ColorValue) -> None:
         self.wrapping_tailend_color = Color(*rgba)
         self.wrapping_tailend_rgba = rgba
-        self.wrapping_tailend_cell = self._square(pos)
+        self.wrapping_tailend_cell = self.square(pos)
         self.wrapping_tailend_cell_pos = self.wrapping_tailend_cell.pos
 
         self.layer_front.add(self.wrapping_tailend_color)
         self.layer_front.add(self.wrapping_tailend_cell)
-
-
-    def erase(self) -> None:
-        self.tailend_clock.reset()
-        self._stop_animations()
-        self._clear_instruction_groups()
-
-    def reset(
-        self,
-        cell_pos: Optional[Iterable[Position]]=None,
-        head_dir: Optional[Direction]=None
-    ) -> None:
-        self.erase()
-        if self.alive:
-            self._init_tail(cell_pos, head_dir)
-            self._init_tailend(self.get_tailend_pos(), self.colors.tail)
-            self._init_head(self.head_pos, self.colors.head)
-
 
     def _update_body(
         self,
@@ -253,7 +237,7 @@ class SnakeDrawUpdater(EventDispatcher):
     ) -> Optional[list[Position]]:
         # adds a square at the current head position
         self.tail_pos.append(self.head_pos)
-        sqr = self._square(self.head_pos)
+        sqr = self.square(self.head_pos)
         self.tail_cells.append(sqr)
         self.layer_middle.add(sqr)
         self.head_pos = new_head_pos
@@ -273,14 +257,13 @@ class SnakeDrawUpdater(EventDispatcher):
             for _ in range(growth-1):
                 pos = self.tail_pos[0]
                 self.tail_pos.appendleft(pos)
-                sqr = self._square(pos)
+                sqr = self.square(pos)
                 self.tail_cells.appendleft(sqr)
                 self.layer_middle.add(sqr)
 
-
     def _anim_slide_head(self, time_step: float, dst: Position) -> Animation:
         return Animation(
-            head_cell_pos=self.draw_tool.pos_to_coord(dst),
+            head_cell_pos=self.get_draw_tool().pos_to_coord(dst),
             duration=time_step,
             t='linear'
         )
@@ -292,16 +275,18 @@ class SnakeDrawUpdater(EventDispatcher):
         wrap_in_src: Position,
         wrap_out_dst: Position
     ) -> Animation:
+        draw_tool = self.get_draw_tool()
+
         wrap_in_dst = (wrap_in_src[0]+wrap_dir[0], wrap_in_src[1]+wrap_dir[1])
         wrap_out_src = (wrap_out_dst[0]-wrap_dir[0], wrap_out_dst[1]-wrap_dir[1])
 
-        self.head_cell_pos = self.draw_tool.pos_to_coord(wrap_out_src)
-        self._init_wrapping_head(wrap_in_src, self.colors.head)
+        self.head_cell_pos = draw_tool.pos_to_coord(wrap_out_src)
+        self._init_wrapping_head(wrap_in_src, self.get_colors().head)
 
         anim = (
             self._anim_slide_head(time_step, wrap_out_dst) &
             Animation(
-                wrapping_head_cell_pos=self.draw_tool.pos_to_coord(wrap_in_dst),
+                wrapping_head_cell_pos=draw_tool.pos_to_coord(wrap_in_dst),
                 duration=time_step,
                 t='linear'
             )
@@ -311,7 +296,7 @@ class SnakeDrawUpdater(EventDispatcher):
 
     def _anim_slide_tailend(self, time_step: float, dst: Position) -> Animation:
         x_src, y_src = self.tailend_cell_pos
-        x_dst, y_dst = self.draw_tool.pos_to_coord(dst)
+        x_dst, y_dst = self.get_draw_tool().pos_to_coord(dst)
         dx, dy = x_dst-x_src, y_dst-y_src
 
         return Animation(
@@ -327,16 +312,18 @@ class SnakeDrawUpdater(EventDispatcher):
         wrap_in_src: Position,
         wrap_out_dst: Position
     ) -> Animation:
+        draw_tool = self.get_draw_tool()
+
         wrap_in_dst = (wrap_in_src[0]+wrap_dir[0], wrap_in_src[1]+wrap_dir[1])
         wrap_out_src = (wrap_out_dst[0]-wrap_dir[0], wrap_out_dst[1]-wrap_dir[1])
 
-        self.tailend_cell_pos = self.draw_tool.pos_to_coord(wrap_out_src)
-        self._init_wrapping_tailend(wrap_in_src, self.colors.tail)
+        self.tailend_cell_pos = draw_tool.pos_to_coord(wrap_out_src)
+        self._init_wrapping_tailend(wrap_in_src, self.get_colors().tail)
 
         anim = (
             self._anim_slide_tailend(time_step, wrap_out_dst) &
             Animation(
-                wrapping_tailend_cell_pos=self.draw_tool.pos_to_coord(wrap_in_dst),
+                wrapping_tailend_cell_pos=draw_tool.pos_to_coord(wrap_in_dst),
                 duration=time_step,
                 t='linear'
             )
@@ -350,27 +337,27 @@ class SnakeDrawUpdater(EventDispatcher):
         tailend_pos: Position,
         tailcut_pos: Iterable[Position]
     ) -> Animation:
-        self.tailcut_color = Color(*self.colors.tail_decay_first)
-        self.tailcut_rgba = self.colors.tail_decay_first
+        colors = self.get_colors()
+        self.tailcut_color = Color(*colors.tail_decay_first)
+        self.tailcut_rgba = colors.tail_decay_first
 
         if self.anim_tail is not None:
             self.anim_tail.stop(self)
-        self.tailend_cell_pos = self.draw_tool.pos_to_coord(tailend_pos)
+        self.tailend_cell_pos = self.get_draw_tool().pos_to_coord(tailend_pos)
 
         anim = Animation(
-            tailcut_rgba=self.colors.tail_decay_final,
+            tailcut_rgba=colors.tail_decay_final,
             duration=self.n_decay_steps * time_step,
             t='out_circ'
         )
 
         self.layer_back.add(self.tailcut_color)
         for pos in tailcut_pos:
-            sqr = self._square(pos)
+            sqr = self.square(pos)
             self.layer_back.add(sqr)
             anim.bind(on_complete=InstructionRemover(self.layer_back, sqr))
 
         return anim
-
 
     def _animate_snake_movement(self, time_step: float, event: SnakeMovement) -> None:
         init_head_pos = self.head_pos
@@ -399,22 +386,58 @@ class SnakeDrawUpdater(EventDispatcher):
         (self.anim_head & self.anim_tail).start(self)
 
     def _animate_decay(self, time_step: float) -> None:
+        colors = self.get_colors()
+
         # prepare the animation
         d = self.n_decay_steps * time_step
         transition = 'out_circ'
         self.anim_death = Animation(
-            head_rgba=self.colors.head_decay_final, duration=d, t=transition
+            head_rgba=colors.head_decay_final, duration=d, t=transition
         ) & Animation(
-            tail_rgba=self.colors.tail_decay_final, duration=d, t=transition
+            tail_rgba=colors.tail_decay_final, duration=d, t=transition
         )
         self.anim_death.bind(on_complete=(lambda *_: self._clear_instruction_groups()))
 
         # start the animation
-        self.head_rgba = self.colors.head_decay_first
+        self.head_rgba = colors.head_decay_first
         self.tailend_rgba = self.invisible
-        self.tail_rgba = self.colors.tail_decay_first
+        self.tail_rgba = colors.tail_decay_first
         self.anim_death.start(self)
 
+
+    # ---- public methods overloaded from base class
+    def erase(self) -> None:
+        super().erase()
+        self.tailend_clock.reset()
+        self._stop_animations()
+        self._clear_instruction_groups()
+
+    def reset(
+        self,
+        cell_pos: Optional[Iterable[Position]]=None,
+        head_dir: Optional[Direction]=None
+    ) -> None:
+        super().reset(cell_pos, head_dir)
+        self.erase()
+        if self.alive:
+            colors = self.get_colors()
+            self._init_tail(cell_pos, head_dir)
+            self._init_tailend(self.get_tailend_pos(), colors.tail)
+            self._init_head(self.head_pos, colors.head)
+
+
+    # ---- public methods implemented by this mixin
+    def get_head_pos(self) -> Position:
+        return self.head_pos
+
+    def get_tailend_pos(self) -> Position:
+        return self.tail_pos[0] if len(self.tail_pos) > 0 else self.head_pos
+
+    def get_head_dir(self) -> Direction:
+        return self.head_dir
+
+    def get_snake_len(self) -> int:
+        return len(self.tail_pos) + 1
 
     def update_draw_snake_move(self, time_step: float, event: SnakeMovement) -> None:
         self._animate_snake_movement(time_step, event)
@@ -426,39 +449,3 @@ class SnakeDrawUpdater(EventDispatcher):
     def update_draw_snake_die(self, time_step: float, event: SnakeDie) -> None:
         self.alive = False
         self._animate_decay(time_step)
-
-
-class SnakeTailEndClock:
-    def __init__(self):
-        self.countdowns: deque[int] = deque()
-        self.directions: deque[Direction] = deque()
-
-    def reset(self) -> None:
-        self.countdowns.clear()
-        self.directions.clear()
-
-    def new_schedule(self, snake_length: int, head_direction: Direction) -> None:
-        self.countdowns.append(snake_length)
-        self.directions.append(head_direction)
-
-    def update_schedules(self, n_steps: int) -> None:
-        for _ in range(len(self.countdowns)):
-            self.countdowns[0] += n_steps
-            self.countdowns.rotate()
-
-    def next_step(self) -> Optional[Direction]:
-        if len(self.countdowns) > 0 and self.countdowns[0] <= 0:
-            n_remaining_steps = self.countdowns.popleft()
-            direction = self.directions.popleft()
-
-            if n_remaining_steps == 0:
-                return direction
-
-
-class InstructionRemover:
-    def __init__(self, instr: InstructionGroup|Canvas, obj: Instruction) -> None:
-        self.instr = instr
-        self.obj = obj
-
-    def __call__(self, *_):
-        self.instr.remove(self.obj)

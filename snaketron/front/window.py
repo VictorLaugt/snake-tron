@@ -110,8 +110,14 @@ class SnakeTronWindow(BoxLayout):
 
     def toggle_ai_explanations(self) -> None:
         self.ai_inspection_enabled = not self.ai_inspection_enabled
-        for snake_id in self.ai_snakes:
-            self.event_sender.send(AiInspectionRequest(snake_id, self.ai_inspection_enabled))
+        if self.ai_inspection_enabled:
+            for snake_id in self.ai_snakes:
+                self.event_sender.send(AiInspectionRequest(snake_id, True))
+        else:
+            for snake_id in self.ai_snakes:
+                self.event_sender.send(AiInspectionRequest(snake_id, False))
+                cast(WorldDisplay, self.ids.world_display).remove_ai_snake_inspection(snake_id)
+
 
     def ai_explanations_is_enabled(self) -> bool:
         return self.ai_inspection_enabled
@@ -166,6 +172,8 @@ class SnakeTronWindow(BoxLayout):
             case SnakeMovement(snake_id, _, _, new_dir, _):
                 world_display.snake_move(self.time_step, event)
                 self.swipe_control_manager.set_direction(snake_id, new_dir)
-
             case SnakeDash():
                 raise BackEventHandleNotImplemented(event)  # NotImplemented
+
+            case AiSnakeInspection():
+                world_display.ai_snake_inspect(event)

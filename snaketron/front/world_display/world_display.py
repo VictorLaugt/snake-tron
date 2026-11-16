@@ -11,7 +11,7 @@ from front.colors import SnakeColors, WorldColors
 from front.pause_menu import PauseMenuInvoker
 from front.world_display.arena_drawer import ArenaDrawer, ArenaDrawerTool
 from front.world_display.food_draw_updater import FoodDrawUpdater, FoodDrawerTool
-from front.world_display.snake_draw_updater import SnakeDrawUpdater, SnakeDrawTool
+from front.world_display.snake_display.snake_draw_updater import SnakeDrawUpdater, SnakeDrawTool
 
 if TYPE_CHECKING:
     from kivy.uix.widget import Widget
@@ -23,9 +23,6 @@ if TYPE_CHECKING:
 
 __all__ = ['WorldDisplay']
 
-
-def canvas_children_debug_repr(canvas):
-    return "[" + ",\n".join(repr(element) for element in canvas.children) + "]"
 
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
@@ -105,7 +102,11 @@ class WorldDisplay(FloatLayout):
 
     def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
         assert snake_id not in self.snake_draw_updaters.keys()
-        updater = SnakeDrawUpdater(self.snake_draw_tool, colors, n_decay_steps=4)
+        updater = SnakeDrawUpdater(
+            draw_tool=self.snake_draw_tool,
+            colors=colors,
+            n_decay_steps=4
+        )
         self.snake_draw_updaters[snake_id] = updater
         self.world_graphical_elements.add(updater.get_graphical_elements())
 
@@ -144,3 +145,11 @@ class WorldDisplay(FloatLayout):
         updater = self.snake_draw_updaters[event.agent_id]
         updater.update_draw_snake_move(time_step, event)
         self.score_board.update_score(event.agent_id, updater.get_snake_len())
+
+    def ai_snake_inspect(self, event: AiSnakeInspection) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
+        updater.update_draw_ai_inspection(event)
+
+    def remove_ai_snake_inspection(self, snake_id: int) -> None:
+        updater = self.snake_draw_updaters[snake_id]
+        updater.erase_ai_inspection()
