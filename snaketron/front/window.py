@@ -154,18 +154,18 @@ class SnakeTronWindow(BoxLayout):
             case SnakeConnectionUpdate(snake_id, is_player, is_connecting=False):
                 self.remove_snake(snake_id, is_player)
 
-            case SnakeSpawn(snake_id):
-                world_display.snake_spawn(snake_id, self.time_step, event)
+            case SnakeSpawn():
+                world_display.snake_spawn(self.time_step, event)
             case SnakeDie(snake_id):
-                world_display.snake_die(snake_id, self.time_step, event)
+                world_display.snake_die(self.time_step, event)
                 self.swipe_control_manager.set_direction(snake_id, None)
 
             case SnakeMovement(snake_id, SnakeMovementType.TELEPORT, _, new_dir, _):
                 raise BackEventHandleNotImplemented(event)  # NotImplemented
                 self.swipe_control_manager.set_direction(snake_id, new_dir)
             case SnakeMovement(snake_id, _, _, new_dir, _):
-                world_display.snake_move(snake_id, self.time_step, event)
+                world_display.snake_move(self.time_step, event)
                 self.swipe_control_manager.set_direction(snake_id, new_dir)
 
-            case SnakeDash(snake_id):
+            case SnakeDash():
                 raise BackEventHandleNotImplemented(event)  # NotImplemented

@@ -131,15 +131,16 @@ class WorldDisplay(FloatLayout):
     def arena_despawn_food(self, food_pos: Position, time_step: float) -> None:
         self.food_draw_updater.despawn_food(food_pos, time_step)
 
-    def snake_spawn(self, snake_id: int, time_step: float, event: SnakeSpawn) -> None:
-        updater = self.snake_draw_updaters[snake_id]
+    def snake_spawn(self, time_step: float, event: SnakeSpawn) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
         updater.update_draw_snake_spawn(time_step, event)
-        self.score_board.update_score(snake_id, updater.get_snake_len())
+        self.score_board.update_score(event.agent_id, updater.get_snake_len())
 
-    def snake_die(self, snake_id: int, time_step: float, event: SnakeDie) -> None:
-        self.snake_draw_updaters[snake_id].update_draw_snake_die(time_step, event)
+    def snake_die(self, time_step: float, event: SnakeDie) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
+        updater.update_draw_snake_die(time_step, event)
 
-    def snake_move(self, snake_id: int, time_step: float, event: SnakeMovement) -> None:
-        updater = self.snake_draw_updaters[snake_id]
+    def snake_move(self, time_step: float, event: SnakeMovement) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
         updater.update_draw_snake_move(time_step, event)
-        self.score_board.update_score(snake_id, updater.get_snake_len())
+        self.score_board.update_score(event.agent_id, updater.get_snake_len())
