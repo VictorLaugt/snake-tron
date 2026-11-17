@@ -5,15 +5,17 @@ import tkinter as tk
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from back.a_star import shortest_path
-from back.events import build_event_pipe
+from back.grid_graph import EuclidianDistanceHeuristic
 from back.voronoi import furthest_voronoi_vertex
-from back.world import EuclidianDistanceHeuristic, SnakeWorld
+from back.world import SnakeWorld
+from events.abstract_pipe import EventPipe
 
 if TYPE_CHECKING:
     from typing import Optional, TypeAlias
 
-    from back.type_hints import Position
+    from back.type_hints import *
     Coordinate: TypeAlias = tuple[float, float]
 
 
@@ -278,8 +280,8 @@ class VoronoiInteractiveTester(InteractiveGrid):
 
 
 if __name__ == '__main__':
-    event_sender, event_receiver = build_event_pipe()
-    world = SnakeWorld(width=20, height=20, n_food=0, event_sender=event_sender)
+    back2front_pipe = EventPipe()
+    world = SnakeWorld(width=20, height=20, n_food=0, event_sender=back2front_pipe.get_sender())
 
     app = AStarInteractiveTester(
         world,

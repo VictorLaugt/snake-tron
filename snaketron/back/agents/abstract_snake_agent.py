@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator, Optional, Sequence
 
-    from back.type_hints import Direction, Position
+    from back.type_hints import *
     from back.world import SnakeWorld
+
+__all__ = ['AbstractSnakeAgent']
 
 
 class AbstractSnakeAgent(ABC):
@@ -25,6 +27,9 @@ class AbstractSnakeAgent(ABC):
         self.initial_pos = initial_pos
         self.pos = deque(initial_pos)
         self.last_tail_pos = self.pos[0]
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} id={self.agent_id} pos={self.pos}>"
 
     def get_id(self) -> int:
         return self.agent_id

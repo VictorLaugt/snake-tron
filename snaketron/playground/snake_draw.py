@@ -4,9 +4,6 @@ from collections import deque
 from typing import TYPE_CHECKING
 
 import numpy as np
-from back.agents import AbstractSnakeAgent
-from back.direction import DOWN, LEFT, RIGHT, UP
-from back.events import AgentUpdated, FoodConsumed, FoodCreated
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Keyboard, Window, WindowBase
@@ -14,15 +11,21 @@ from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
+from back.agents import AbstractSnakeAgent
+from back.direction import DOWN, LEFT, RIGHT, UP
+from events.back2front_protocol import FoodConsumed, FoodCreated, SnakeMovement
+
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
-    from back.agents import PlayerSnakeAgent
-    from back.events import AgentUpdated, EventReceiver
-    from back.type_hints import Direction, Position
-    from back.world import SnakeWorld
-    from front.type_hints import Coordinate
     from kivy.uix.widget import Widget
+
+    from back.agents import PlayerSnakeAgent
+    from back.type_hints import *
+    from back.world import SnakeWorld
+    from events.abstract_pipe import EventReceiver
+    from events.back2front_protocol import SnakeMovement, BackendEvent
+    from front.type_hints import *
 
 
 class ObstacleAgent(AbstractSnakeAgent):
@@ -39,7 +42,7 @@ class ObstacleAgent(AbstractSnakeAgent):
 class MinimalistSnakeTronApp(App):
     def __init__(
         self,
-        event_receiver: EventReceiver,
+        event_receiver: EventReceiver[BackendEvent],
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float,
@@ -62,10 +65,10 @@ class MinimalistWorldDisplay(FloatLayout):
     square_size = NumericProperty(10.)
 
     instr_arena: InstructionGroup
-    event_receiver: EventReceiver
+    event_receiver: EventReceiver[BackendEvent]
     world: SnakeWorld
     player: PlayerSnakeAgent
-    agents_events: dict[int, AgentUpdated]
+    agents_events: dict[int, SnakeMovement]
     food_drawer: FoodDrawer
     snake_drawer: SnakeDrawer
     time_step: float
@@ -77,7 +80,7 @@ class MinimalistWorldDisplay(FloatLayout):
 
     def init_logic(
         self,
-        event_receiver: EventReceiver,
+        event_receiver: EventReceiver[BackendEvent],
         world: SnakeWorld,
         player: PlayerSnakeAgent,
         time_step: float
@@ -320,7 +323,7 @@ class SnakeDrawer:
         else:
             self.instr.clear()
 
-    def update_draw(self, event: Optional[AgentUpdated]=None) -> None:
+    def update_draw(self, event: Optional[SnakeMovement]=None) -> None:
         if event is None:
             if not self.alive:
                 self._decay()
@@ -338,16 +341,16 @@ class SnakeDrawer:
 
 if __name__ == '__main__':
     from back.agents import PlayerSnakeAgent
-    from back.events import build_event_pipe
     from back.world import SnakeWorld
+    from events.abstract_pipe import EventPipe
 
-    sender, receiver = build_event_pipe()
+    back2front_pipe = EventPipe()
 
     init_pos = [(2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10)]
     init_dir = (0, -1)
 
     w = h = 15
-    world = SnakeWorld(width=w, height=h, n_food=1, respawn_cooldown=6, event_sender=sender)
+    world = SnakeWorld(width=w, height=h, n_food=1, respawn_cooldown=6, event_sender=back2front_pipe.get_sender())
     obstacle_pos = []
     for x in range(0, w):
         obstacle_pos.append((x, 0))
@@ -360,5 +363,5 @@ if __name__ == '__main__':
     player = PlayerSnakeAgent(world, init_pos, init_dir)
     world.attach_agent(player)
 
-    app = MinimalistSnakeTronApp(receiver, world, player, .5)
+    app = MinimalistSnakeTronApp(back2front_pipe.get_receiver(), world, player, .5)
     app.run()

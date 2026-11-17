@@ -3,11 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from back.direction import opposite_dir
+from back.grid_graph import AbstractHeuristic
 
 if TYPE_CHECKING:
-    from back.type_hints import Path, Position
-    from back.world import AbstractGridGraph, AbstractHeuristic
+    from back.grid_graph import AbstractGridGraph
+    from back.type_hints import *
+
+__all__ = ['shortest_path']
 
 
 NO_PATH_FOUND = (None, None)

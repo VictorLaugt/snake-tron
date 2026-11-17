@@ -1,33 +1,46 @@
 from __future__ import annotations
 
 import json
+from threading import Thread
 from typing import TYPE_CHECKING
 
-from front.controls import *
-from front.score_board import *
-from front.window import *
-from front.world_display import *
 from kivy.app import App
+from kivy.clock import mainthread
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.utils import platform
 
+from debug_tool import frontend_debugspace as dbg
+from events.abstract_pipe import AbstractEventSender
+from events.front2back_protocol import FrontendEvent
+from front.controls import *
+from front.score_board import *
+from front.window import SnakeTronWindow
+from front.world_display import *
+
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Sequence
 
-    from back.agents import AbstractAISnakeAgent, PlayerSnakeAgent
-    from back.events import EventReceiver
-    from back.world import SnakeWorld
+    from events.abstract_pipe import AbstractEventReceiver
+    from events.back2front_protocol import BackendEvent
+
+__all__ = ['SnakeTronFrontend']
 
 
-class SnakeTronApp(App):
+class TrackedFrontendEventSender(AbstractEventSender[FrontendEvent]):
+    def __init__(self, event_sender: AbstractEventSender[FrontendEvent]) -> None:
+        self.event_sender = event_sender
+
+    def send(self, event: FrontendEvent) -> None:
+        dbg.dprint(f"sending event: {event}")
+        self.event_sender.send(event)
+
+
+class SnakeTronFrontend(App):
     def __init__(
         self,
-        event_receiver: EventReceiver,
-        world: SnakeWorld,
-        player_agents: Sequence[PlayerSnakeAgent],
-        ai_agents: Sequence[AbstractAISnakeAgent],
+        event_receiver: AbstractEventReceiver[list[BackendEvent]],
+        event_sender: AbstractEventSender[FrontendEvent],
         time_step: float,
         ai_explanations: bool,
         layout_dir: Path,
@@ -37,14 +50,15 @@ class SnakeTronApp(App):
     ) -> None:
         super().__init__(**kwargs)
         self.event_receiver = event_receiver
-        self.world = world
-        self.player_agents = player_agents
-        self.ai_agents = ai_agents
+        self.event_sender = TrackedFrontendEventSender(event_sender)
         self.time_step = time_step
         self.ai_explanations = ai_explanations
         self.layout_dir = layout_dir
         self.color_file = color_file
         self.input_sensitivity = input_sensitivity
+
+        self.main_window: SnakeTronWindow = None
+        self.event_receiver_thread = Thread(target=self.event_receiver_loop, daemon=True)
 
     def build(self) -> SnakeTronWindow:
         for layout_file in self.layout_dir.rglob('*.kv'):
@@ -61,15 +75,25 @@ class SnakeTronApp(App):
                 width, height = int(width * scale), int(height * scale)
             Window.size = (width, height)
 
-        main_window = SnakeTronWindow()
-        main_window.init_logic(
-            self.event_receiver,
-            self.world,
-            self.player_agents,
-            self.ai_agents,
+        self.main_window = SnakeTronWindow()
+        self.main_window.init_logic(
+            self.event_sender,
             self.time_step,
             self.ai_explanations,
             colors,
             self.input_sensitivity
         )
-        return main_window
+        self.event_receiver_thread.start()
+        return self.main_window
+
+    def event_receiver_loop(self) -> None:
+        while True:
+            dbg.dprint("waiting for events ...")
+            events = self.event_receiver.recv()
+            self.process_backend_events(events)
+
+    @mainthread
+    def process_backend_events(self, events: list[BackendEvent]) -> None:
+        for e in events:
+            dbg.dprint(f"handling event: {e}")
+            self.main_window.process_backend_event(e)

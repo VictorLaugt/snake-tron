@@ -270,7 +270,7 @@ class _RaisedException(_ObjRepr) :
 
 
 
-# --- dbg histories # TODO : essayer d'implementer les __slots__ dans les classes _<...>Entry
+# --- dbg histories # todo : essayer d'implementer les __slots__ dans les classes _<...>Entry
 # ------ call entries
 class _CallEntry :
     """Un objet _CallEntry est une entrée qui correspond à l'enregistrement de
@@ -384,7 +384,7 @@ class _ClsCallEntry(_SelfCallEntry) :
 
 
 # ------ generator entries
-class _GeneratorEntry(_CallEntry) : # TODO : dans _GeneratorEntry, faire en sorte que les temps d'executions None ne soient pas stockés en mémoire dans le cas où l'execution n'est pas chronometrée
+class _GeneratorEntry(_CallEntry) : # todo : dans _GeneratorEntry, faire en sorte que les temps d'executions None ne soient pas stockés en mémoire dans le cas où l'execution n'est pas chronometrée
     @property
     def arrow(self) :
         """flèche colorée"""
@@ -1055,6 +1055,7 @@ class DebugSpace :
             _symbol_color(header),
             ('\n'+len(header)*' ').join(lines),
             sep='',
+            flush=True,
             **kwargs
             )
 
@@ -1233,8 +1234,8 @@ class DebugSpace :
             return result
         return decorated
 
-    # TODO : mettre une option break_condition dans les traqueurs
-    # TODO : ameliorer le système de chronometrage dans les cas des appels imbriqués et des mises en pause du script
+    # todo : mettre une option break_condition dans les traqueurs
+    # todo : ameliorer le système de chronometrage dans les cas des appels imbriqués et des mises en pause du script
     def trackfunc(self, *tags:str, hidden_args:Iterable[Union[int, str]]=None,\
                   chrono:bool=False, yieldfunc:bool=False) :
         """On considère que dbg est un espace de debugage.
@@ -1518,6 +1519,9 @@ class DebugSpace :
             hidden_args = {}
         return _FunctionTracker(self, tags, hidden_args, chrono, yieldfunc)
 
+
+frontend_debugspace = DebugSpace(name="Frontend")
+backend_debugspace = DebugSpace(name="Backend")
 
 
 # --- exemples

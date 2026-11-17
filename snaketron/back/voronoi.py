@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     Point: TypeAlias = np.ndarray[tuple[Literal[2]], float]
     PointArray: TypeAlias = np.ndarray[tuple[int, Literal[2]], float]
 
+__all__ = ['furthest_voronoi_vertex']
+
 
 def furthest_voronoi_vertex(points: PointArray, x_lim: float, y_lim: float) -> Optional[Point]:
     if points.shape[0] == 0:

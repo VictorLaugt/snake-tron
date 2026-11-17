@@ -1,136 +1,91 @@
 from __future__ import annotations
 
-import itertools
-from collections import deque
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from back.events import (FoodConsumed, FoodCreated, SnakeMovement,
-                         SnakeMovementType, SnakeSimpleEvent)
-from front.pause_menu import PauseMenuInvoker
-from front.world_display.ai_inspection_drawer import AiInspectionDrawer
-from front.world_display.food_draw_updater import FoodDrawUpdater
-from front.world_display.snake_draw_updater import SnakeDrawUpdater
-from kivy.graphics import Color, InstructionGroup, Line, Rectangle
+from kivy.graphics import InstructionGroup
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-if TYPE_CHECKING:
-    from typing import Sequence
+from events.back2front_protocol import *
+from front.colors import SnakeColors, WorldColors
+from front.pause_menu import PauseMenuInvoker
+from front.world_display.arena_drawer import ArenaDrawer, ArenaDrawerTool
+from front.world_display.food_draw_updater import FoodDrawUpdater, FoodDrawerTool
+from front.world_display.snake_display.snake_draw_updater import SnakeDrawUpdater, SnakeDrawTool
 
-    from back.agents import AbstractAISnakeAgent, AbstractSnakeAgent
-    from back.events import EventReceiver
-    from back.type_hints import Position
-    from back.world import SnakeWorld
-    from front.type_hints import ColorValue, Coordinate
-    from front.window import SnakeTronWindow
-    from kivy.input import MotionEvent
+if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
+    from back.type_hints import *
+    from front.score_board import ScoreBoard
+    from front.type_hints import *
+    from front.window import SnakeTronWindow
 
-
-@dataclass
-class WorldColors:
-    food_outline: ColorValue
-    food: ColorValue
-    background: ColorValue
-    gridline: ColorValue
-    gridborder: ColorValue
-
-
-@dataclass
-class SnakeColors:
-    head: ColorValue
-    tail: ColorValue
-    head_decay_first: ColorValue
-    head_decay_final: ColorValue
-    tail_decay_first: ColorValue
-    tail_decay_final: ColorValue
-    inspect: ColorValue
+__all__ = ['WorldDisplay']
 
 
 class WorldDisplay(FloatLayout):
     square_size = NumericProperty(0.)
 
-    event_receiver: EventReceiver
-    world: SnakeWorld
-    snakes: dict[int, AbstractSnakeAgent]
-    ai_explanations: bool
-
-    arena_drawer: ArenaDrawer
-    ai_inspection_drawers: list[AiInspectionDrawer]
-    food_draw_updater: FoodDrawUpdater
-    snake_draw_updaters: dict[int, SnakeDrawUpdater]
-
-    world_colors: WorldColors
-    snake_colors: SnakeColors
-
-    pause_invoker: PauseMenuInvoker
-
     def init_logic(
         self,
         main_window: SnakeTronWindow,
-        event_receiver: EventReceiver,
-        world: SnakeWorld,
-        ai_snakes: Sequence[AbstractAISnakeAgent],
+        score_board: ScoreBoard,
         world_colors: WorldColors,
-        snake_colors: dict[int, SnakeColors],
         pause_command_touch_max_length: float
     ) -> None:
-        self.event_receiver = event_receiver
-        self.world = world
-        self.ai_explanations = False
+        self.main_window = main_window
+        self.score_board = score_board
 
-        self.arena_drawer = ArenaDrawer(self, world, world_colors)
+        # draws graphical elements of the world
+        arena_draw_tool = ArenaDrawerTool(
+            get_widget_pos=(lambda: self.pos),
+            get_square_size=(lambda: self.square_size)
+        )
+        self.arena_drawer = ArenaDrawer(arena_draw_tool, world_colors)
 
-        self.ai_inspection_drawers = []
-        for snake in ai_snakes:
-            self.ai_inspection_drawers.append(AiInspectionDrawer(
-                self, snake, snake_colors[snake.get_id()]
-            ))
+        food_draw_tool = FoodDrawerTool(
+            pos_to_coord=self.pos_to_coord,
+            get_square_size=(lambda: self.square_size)
+        )
+        self.food_draw_updater = FoodDrawUpdater(food_draw_tool, world_colors)
 
-        self.food_draw_updater = FoodDrawUpdater(self, world_colors)
+        self.snake_draw_tool = SnakeDrawTool(
+            pos_to_coord=self.pos_to_coord,
+            get_square_size=(lambda: self.square_size)
+        )
+        self.snake_draw_updaters: dict[int, SnakeDrawUpdater] = {}
 
-        self.snakes = {}
-        self.snake_draw_updaters = {}
-        for snake in itertools.chain(world.iter_alive_agents(), world.iter_dead_agents()):
-            snake_id = snake.get_id()
-            self.snakes[snake_id] = snake
-            self.snake_draw_updaters[snake_id] = SnakeDrawUpdater(
-                self, snake, snake_colors[snake_id], n_decay_steps=4
-            )
+        self.world_graphical_elements = InstructionGroup()
+        self.world_graphical_elements.add(self.arena_drawer.get_graphical_elements())
+        self.world_graphical_elements.add(self.food_draw_updater.get_graphical_elements())
 
-        self.world_colors = world_colors
-        self.snake_colors = snake_colors
-
+        # displays or hide the pause menu when requested
         self.pause_invoker = PauseMenuInvoker(
             main_window, pause_command_touch_max_length,
             size_hint=(None, None), size=self.size,
             pos=self.to_window(self.x, self.y)
         )
+
+        # The pause menu is displayed on top of every world graphical element
+        self.canvas.add(self.world_graphical_elements)
         self.add_widget(self.pause_invoker)
 
-        self.arena_drawer.erase_and_draw()
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (
             self.x + float(pos[0]) * self.square_size,
-            self.y + (self.world.get_height() - 1 - float(pos[1])) * self.square_size
+            self.y + (self.arena_drawer.get_height() - 1 - float(pos[1])) * self.square_size
         )
 
     def _recompute_square_size(self) -> None:
         self.square_size = min(
-            self.height / self.world.get_height(),
-            self.width / self.world.get_width()
+            self.height / self.arena_drawer.get_height(),
+            self.width / self.arena_drawer.get_width()
         )
 
     def on_square_size(self, instance: Widget, value: float) -> None:
         self.arena_drawer.erase_and_draw()
-
-        if self.ai_explanations:
-            for ai_inspection_drawer in self.ai_inspection_drawers:
-                ai_inspection_drawer.erase_and_draw()
-
         self.food_draw_updater.reset()
         for updater in self.snake_draw_updaters.values():
             updater.reset()
@@ -145,107 +100,56 @@ class WorldDisplay(FloatLayout):
         self._recompute_square_size()
 
 
-    def toggle_ai_explanations(self) -> None:
-        self.ai_explanations = not self.ai_explanations
-        if self.ai_explanations:
-            for drawer in self.ai_inspection_drawers:
-                drawer.erase_and_draw()
+    def add_snake(self, snake_id: int, colors: SnakeColors) -> None:
+        assert snake_id not in self.snake_draw_updaters.keys()
+        updater = SnakeDrawUpdater(
+            draw_tool=self.snake_draw_tool,
+            colors=colors,
+            n_decay_steps=4
+        )
+        self.snake_draw_updaters[snake_id] = updater
+        self.world_graphical_elements.add(updater.get_graphical_elements())
 
-        else:
-            for drawer in self.ai_inspection_drawers:
-                drawer.erase()
+    def remove_snake(self, snake_id: int) -> None:
+        updater = self.snake_draw_updaters.pop(snake_id)
+        self.world_graphical_elements.remove(updater.get_graphical_elements())
+        updater.erase()
 
-    def ai_explanations_is_enabled(self) -> bool:
-        return self.ai_explanations
-
-
-    def _draw_arena_events(self, time_step: float) -> None:
-        for event in self.event_receiver.recv_arena_events():
-            match event:
-                case FoodCreated(pos):
-                    self.food_draw_updater.spawn_food(pos, time_step)
-                case FoodConsumed(pos, by):
-                    self.food_draw_updater.consume_food(pos, self.snakes.get(by), time_step)
-
-    def _draw_agent_events(self, time_step: float) -> None:
-        for snake_id, event in self.event_receiver.recv_agent_events():
-            updater = self.snake_draw_updaters[snake_id]
-            match event:
-                case SnakeMovement(movement_type=SnakeMovementType.COMMON):
-                    updater.update_draw_snake_move(time_step, event)
-                case SnakeMovement(movement_type=SnakeMovementType.WRAP):
-                    updater.update_draw_snake_wrap(time_step, event)
-                case SnakeMovement(movement_type=SnakeMovementType.TELEPORT):
-                    updater.update_draw_snake_teleport(time_step, event)
-
-                case SnakeSimpleEvent.SPAWN:
-                    updater.update_draw_spawn(time_step)
-                case SnakeSimpleEvent.DIE:
-                    updater.update_draw_die(time_step)
-                case SnakeSimpleEvent.DASH:
-                    NotImplemented  # Gameplay feature not implemented yet
-
-    def update_draw(self, time_step: float) -> None:
-        if self.ai_explanations:
-            for ai_inspection_drawer in self.ai_inspection_drawers:
-                ai_inspection_drawer.erase_and_draw()
-
-        self._draw_arena_events(time_step)
-        self._draw_agent_events(time_step)
+    def get_snake_dir(self, snake_id: int) -> Direction:
+        self.snake_draw_updaters[snake_id].get_head_dir()
 
 
-class ArenaDrawer:
-    def __init__(
-        self,
-        world_display: WorldDisplay,
-        world: SnakeWorld,
-        colors: WorldColors
-    ) -> None:
-        self.display = world_display
-        self.world = world
+    def arena_update_size(self, width: int, height: int) -> None:
+        self.arena_drawer.update_size(width, height)
 
-        self.instr = InstructionGroup()
-        self.display.canvas.add(self.instr)
-        self.color_values = colors
+    def arena_spawn_food(self, food_pos: Position, time_step: float) -> None:
+        self.food_draw_updater.spawn_food(food_pos, time_step)
 
-    def erase_and_draw(self) -> None:
-        self.instr.clear()
-        h, w = self.world.get_height(), self.world.get_width()
-        display_x, display_y = self.display.pos
-        display_s = self.display.square_size
+    def arena_eat_food(self, food_pos: Position, by: int, time_step: float) -> None:
+        consumer_head_pos = self.snake_draw_updaters[by].get_head_pos()
+        self.food_draw_updater.eat_food(food_pos, consumer_head_pos, time_step)
 
-        # background
-        self.instr.add(Color(*self.color_values.background))
-        self.instr.add(Rectangle(pos=(display_x, display_y), size=(w*display_s, h*display_s)))
+    def arena_despawn_food(self, food_pos: Position, time_step: float) -> None:
+        self.food_draw_updater.despawn_food(food_pos, time_step)
 
-        # grid lines every 3 cells
-        self.instr.add(Color(*self.color_values.gridline))
-        for u in range(3, w, 3):
-            x = display_x + u*display_s
-            y0 = display_y
-            y1 = display_y + h*display_s
-            self.instr.add(Line(points=(x, y0, x, y1)))
-        for v in range(3, h, 3):
-            y = display_y + (h-v)*display_s
-            x0 = display_x
-            x1 = display_x + w*display_s
-            self.instr.add(Line(points=(x0, y, x1, y)))
+    def snake_spawn(self, time_step: float, event: SnakeSpawn) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
+        updater.update_draw_snake_spawn(time_step, event)
+        self.score_board.update_score(event.agent_id, updater.get_snake_len())
 
-        # grid border
-        self.instr.add(Color(*self.color_values.gridborder))
-        self.instr.add(Line(points=(
-            display_x, display_y,
-            display_x + w*display_s, display_y
-        )))
-        self.instr.add(Line(points=(
-            display_x, display_y + h*display_s,
-            display_x + w*display_s, display_y + h*display_s
-        )))
-        self.instr.add(Line(points=(
-            display_x, display_y,
-            display_x, display_y + h*display_s
-        )))
-        self.instr.add(Line(points=(
-            display_x + w*display_s, display_y,
-            display_x + w*display_s, display_y + h*display_s
-        )))
+    def snake_die(self, time_step: float, event: SnakeDie) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
+        updater.update_draw_snake_die(time_step, event)
+
+    def snake_move(self, time_step: float, event: SnakeMovement) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
+        updater.update_draw_snake_move(time_step, event)
+        self.score_board.update_score(event.agent_id, updater.get_snake_len())
+
+    def ai_snake_inspect(self, event: AiSnakeInspection) -> None:
+        updater = self.snake_draw_updaters[event.agent_id]
+        updater.update_draw_ai_inspection(event)
+
+    def remove_ai_snake_inspection(self, snake_id: int) -> None:
+        updater = self.snake_draw_updaters[snake_id]
+        updater.erase_ai_inspection()

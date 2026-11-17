@@ -1,94 +1,57 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections import deque
 from itertools import chain
 from random import randrange, shuffle
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+from back.agents import PlayerSnakeAgent
+from debug_tool import backend_debugspace as dbg
 from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
-from back.events import (FoodConsumed, FoodCreated, SnakeMovement,
-                         SnakeMovementType, SnakeSimpleEvent)
+from back.grid_graph import AbstractGridGraph
 from back.voronoi import furthest_voronoi_vertex
+from events.back2front_protocol import *
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
-    from back.agents import AbstractSnakeAgent
-    from back.events import EventSender
-    from back.type_hints import Direction, Position
+    from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
+    from back.type_hints import *
 
 
-class AbstractHeuristic(ABC):
-    @abstractmethod
-    def __init__(self, graph: AbstractGridGraph, x_dst: int, y_dst: int) -> None:
-        pass
-
-    @abstractmethod
-    def __call__(self, x: int, y: int) -> int:
-        pass
+__all__ = ['SnakeWorld']
 
 
-class EuclidianDistanceHeuristic(AbstractHeuristic):
-    def __init__(self, graph: AbstractGridGraph, x_dst: int, y_dst: int) -> None:
-        self.x_dst = x_dst
-        self.y_dst = y_dst
-
-    def __call__(self, x: int, y: int) -> int:
-        dx, dy = self.x_dst - x, self.y_dst - y
-        return dx*dx + dy*dy
-
-
-class ManhattanDistanceHeuristic(AbstractHeuristic):
-    def __init__(self, graph: AbstractGridGraph, x_dst: int, y_dst: int) -> None:
-        self.x_dst = x_dst
-        self.y_dst = y_dst
-
-    def __call__(self, x: int, y: int) -> int:
-        return abs(self.x_dst - x) + abs(self.y_dst - y)
-
-
-class EuclidianDistancePeriodicHeuristic(AbstractHeuristic):
-    def __init__(self, graph: AbstractGridGraph, x_dst: int, y_dst: int) -> None:
-        self.h = graph.get_height()
-        self.w = graph.get_width()
-        self.x_dst = x_dst
-        self.y_dst = y_dst
-
-    def __call__(self, x: int, y: int) -> int:
-        dx, dy = abs(self.x_dst - x), abs(self.y_dst - y)
-        dx, dy = min(dx, self.w - dx), min(dy, self.h - dy)
-        return dx*dx + dy*dy
-
-
-class AbstractGridGraph(ABC):
-    @abstractmethod
-    def get_width(self) -> int:
-        pass
-
-    @abstractmethod
-    def get_height(self) -> int:
-        pass
-
-    @abstractmethod
-    def get_neighbor(self, p: Position, d: Direction) -> Position:
-        """Returns the neighbor of position `p` in the direction `d`."""
-
-    @abstractmethod
-    def iter_free_neighbors(self) -> Iterator[tuple[Position, Direction]]:
-        """Iterates over each neighbor of position `p` which does not contains
-        any obstacle.
-        """
+def copy_movement_event(event: SnakeMovement) -> SnakeMovement:
+    return SnakeMovement(
+        event.agent_id,
+        event.movement_type,
+        event.new_head_pos,
+        event.new_dir,
+        event.growth
+    )
 
 
 class SnakeWorld(AbstractGridGraph):
+    """
+    Startup sequence:
+    1) SnakeWorld.__init__
+    --> ArenaUpdateSize
+
+    2) SnakeWorld.attach_agent
+    --> SnakeConnectionUpdate(is_connecting=True)
+    --> SnakeSpawn
+
+    3) SnakeWorld.simulate
+    --> SnakeMovement
+    """
     def __init__(
         self,
         width: int,
         height: int,
         n_food: int,
-        event_sender: EventSender,
         respawn_cooldown: Optional[int]=None
     ) -> None:
         assert width > 0 and height > 0
@@ -102,7 +65,6 @@ class SnakeWorld(AbstractGridGraph):
             self.initial_respawn_cooldown = float('+inf')
         else:
             self.initial_respawn_cooldown = respawn_cooldown
-        self.event_sender = event_sender
 
         # used to describe the world state between simulation steps
         self.obstacle_count = np.zeros((self.width, self.height), dtype=np.int8)
@@ -110,6 +72,8 @@ class SnakeWorld(AbstractGridGraph):
         self.respawn_cooldown = self.initial_respawn_cooldown
         self.alive_agents: list[AbstractSnakeAgent] = []
         self.dead_agents: deque[AbstractSnakeAgent] = deque()
+        self.player_agents: dict[int, PlayerSnakeAgent] = {}
+        self.ai_agents: dict[int, AbstractAISnakeAgent] = {}
 
         # used to update the world state during simulation steps
         self.dir_buffer: list[Direction] = []
@@ -117,15 +81,24 @@ class SnakeWorld(AbstractGridGraph):
         self.deaths: list[AbstractSnakeAgent] = []  # agents which died during the current simulation steps
         self.agent_movement_events: list[SnakeMovement] = []
 
+        # interface to communicate world state changes
+        self.state_updates: list[BackendEvent] = []
+        self.state_updates.append(ArenaUpdateSize(self.width, self.height))
+
     def __repr__(self) -> str:
-        repr_grid = [['  .  '  for x in range(self.width)] for y in range(self.height)]
+        grid_repr_builder = [['  .  '  for x in range(self.width)] for y in range(self.height)]
         for y in range(self.height):
             for x in range(self.width):
-                if self.obstacle_count[x, y] > 0:
-                    repr_grid[y][x] = f" {self.obstacle_count[x, y]:03d} "
+                if self.obstacle_count[x, y] != 0:
+                    grid_repr_builder[y][x] = f" {self.obstacle_count[x, y]:03d} "
                 if (x, y) in self.food_pos:
-                    repr_grid[y][x] = "  *  "
-        return '\n'.join(''.join(row) for row in repr_grid) + '\n'
+                    grid_repr_builder[y][x] = "  *  "
+        grid_repr = '\n'.join(''.join(row) for row in grid_repr_builder) + '\n'
+        return (
+            f"alive agents: {self.alive_agents}\n"
+            f"dead agents:  {self.dead_agents}\n"
+            f"{grid_repr}"
+        )
 
     # ---- private
     def _move_agents(self) -> None:
@@ -157,7 +130,7 @@ class SnakeWorld(AbstractGridGraph):
             head_count = sum((agent.get_head() == p) for agent in self.alive_agents)
             if head_count == 1:
                 self.food_pos.remove(p)
-                self.event_sender.send_arena_event(FoodConsumed(p, agent.get_id()))
+                self.state_updates.append(FoodConsumed(p, agent.get_id()))
                 return 1
         return 0
 
@@ -199,7 +172,7 @@ class SnakeWorld(AbstractGridGraph):
             agent.die()
             self.alive_agents.remove(agent)
             self.dead_agents.append(agent)
-            self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.DIE)
+            self.state_updates.append(SnakeDie(agent.get_id()))
 
     def _find_available_food_pos(self, max_try: int=20) -> Optional[Position]:
         """Tries to find an available position to spawn a new food and returns
@@ -219,7 +192,7 @@ class SnakeWorld(AbstractGridGraph):
             if pos is None:
                 break
             self.food_pos.add(pos)
-            self.event_sender.send_arena_event(FoodCreated(pos))
+            self.state_updates.append(FoodCreated(pos))
 
     def _find_agent_spawn_pos(self) -> Optional[Position]:
         """Tries to find a position to spawn an agent and returns it if found."""
@@ -248,28 +221,27 @@ class SnakeWorld(AbstractGridGraph):
             self.respawn_cooldown -= 1
             return
 
-        spawn_pos = self._find_agent_spawn_pos()
-        if spawn_pos is None:
+        p = self._find_agent_spawn_pos()
+        if p is None:
             return
 
         agent = self.dead_agents.popleft()
         spawn_length = agent.get_initial_length()
-        spawn_dir = toward_center(*spawn_pos, self.width, self.height)
+        spawn_pos = [p] * spawn_length
+        spawn_dir = toward_center(*p, self.width, self.height)
 
-        agent.reset([spawn_pos] * spawn_length, spawn_dir)
+        agent.reset(spawn_pos, spawn_dir)
         self.alive_agents.append(agent)
-        self.obstacle_count[spawn_pos] += spawn_length
+        self.obstacle_count[p] += spawn_length
         self.respawn_cooldown += self.initial_respawn_cooldown
-        self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.SPAWN)
+        self.state_updates.append(SnakeSpawn(agent.get_id(), spawn_pos))
 
     def _send_agent_movement_events(self) -> None:
         for agent in chain(self.deaths, self.alive_agents):
-            agent_id = agent.get_id()
-            movement_event = self.agent_movement_events[agent_id]
-            self.event_sender.send_agent_event(agent_id, movement_event)
+            self.state_updates.append(copy_movement_event(self.agent_movement_events[agent.get_id()]))
 
 
-    # ---- public
+    # ---- public graph interface
     def get_width(self) -> int:
         return self.width
 
@@ -306,6 +278,12 @@ class SnakeWorld(AbstractGridGraph):
         if self.obstacle_count[right_neighbor] == 0:
             yield right_neighbor, RIGHT
 
+    def incr_obstacle_count(self, p: Position, n: int) -> None:
+        """Increments by `n` the obstacle count at position `p`."""
+        self.obstacle_count[p] += n
+
+
+    # ---- public state interface
     def iter_food(self) -> Iterator[Position]:
         """Iterates over each food position of the world."""
         return iter(self.food_pos)
@@ -318,32 +296,48 @@ class SnakeWorld(AbstractGridGraph):
         """Iterates over the agents of the world which are dead."""
         return iter(self.dead_agents)
 
+    def inspect_ai(self, agent_id: int) -> Iterator[Position]:
+        """Iterates over the positions of the path the AI snake is following."""
+        if (ai_agent := self.ai_agents.get(agent_id)) is not None:
+            yield from ai_agent.inspect()
 
-    def incr_obstacle_count(self, p: Position, n: int) -> None:
-        """Increments by `n` the obstacle count at position `p`."""
-        self.obstacle_count[p] += n
+    def add_player_dir_request(self, agent_id: int, request: Direction) -> None:
+        if (player_agent := self.player_agents.get(agent_id)) is not None:
+            player_agent.add_dir_request(request)
 
+
+    # ---- public builder interface
     def attach_agent(self, agent: AbstractSnakeAgent) -> None:
         """Adds a new agent in the world."""
         agent_id = len(self.alive_agents) + len(self.dead_agents)
         agent.set_id(agent_id)
+        agent.reset()
 
-        agent_dir = agent.get_direction()
-        agent_head = agent.get_head()
+        if (is_player := isinstance(agent, PlayerSnakeAgent)):
+            self.player_agents[agent_id] = agent
+        else:
+            self.ai_agents[agent_id] = agent
+        self.state_updates.append(SnakeConnectionUpdate(agent_id, is_player, True))
 
         if agent.is_alive():
             self.alive_agents.append(agent)
+            agent_pos = list(agent.iter_cells())
+            for pos in agent_pos:
+                self.obstacle_count[pos] += 1
+            self.state_updates.append(SnakeSpawn(agent_id, agent_pos))
         else:
             self.dead_agents.append(agent)
 
+        agent_dir = agent.get_direction()
+        agent_head = agent.get_head()
         self.dir_buffer.append(agent_dir)
         self.len_buffer.append(0)
         self.agent_movement_events.append(
-            SnakeMovement(agent_head, agent_dir, 0, SnakeMovementType.COMMON)
+            SnakeMovement(agent_id, SnakeMovementType.COMMON, agent_head, agent_dir, 0)
         )
 
     def reset(self) -> None:
-        """Reset the world and all its agents to make them ready to start a new game."""
+        """Resets the world and all its agents to make them ready to start a new game."""
         self.obstacle_count.fill(0)
 
         self.food_pos.clear()
@@ -356,15 +350,26 @@ class SnakeWorld(AbstractGridGraph):
             agent.reset()
             for pos in agent.iter_cells():
                 self.obstacle_count[pos] += 1
-            self.event_sender.send_agent_event(agent.get_id(), SnakeSimpleEvent.SPAWN)
+            self.state_updates.append(SnakeSpawn(agent.get_id(), list(agent.iter_cells())))
 
-        self.deaths.clear()
 
+    # ---- public event interface
     def simulate(self) -> None:
+        """Evolves the world from one simulation step."""
         self._move_agents()
-        self._grow_agents()
+        self._grow_agents()                 # --> FoodConsumed
         self._resolve_self_collisions()
-        self._resolve_cross_collisions()
-        self._send_agent_movement_events()
-        self._spawn_missing_food()
-        self._respawn_dead_agent()
+        self._resolve_cross_collisions()    # --> SnakeDie
+        self._send_agent_movement_events()  # --> SnakeMovement
+        self._spawn_missing_food()          # --> FoodCreated
+        self._respawn_dead_agent()          # --> SnakeSpawn
+
+        dbg.dprint(f"simulated a step:\n{self}")
+
+    def flush_state_updates(self) -> list[BackendEvent]:
+        """Returns the sequence of events which occured in the world during the
+        simulation steps.
+        """
+        state_updates = self.state_updates
+        self.state_updates = []
+        return state_updates

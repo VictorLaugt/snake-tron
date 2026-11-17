@@ -1,31 +1,22 @@
 #Pydroid should import kivy
 from __future__ import annotations
 
-from itertools import chain
+from multiprocessing import Process
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from back.agents import (OffensiveAISnakeAgent, PassiveAISnakeAgent,
-                         PlayerSnakeAgent)
-from back.direction import DOWN, LEFT, RIGHT, UP
-from back.events import build_event_pipe
-from back.world import (EuclidianDistanceHeuristic,
-                        EuclidianDistancePeriodicHeuristic,
-                        ManhattanDistanceHeuristic, SnakeWorld)
-from front.app import SnakeTronApp
+from back.backend_process import run_backend_process
+from events.multiprocessing_pipe import MultiprocessEventPipe
+from front.app import SnakeTronFrontend
 
 if TYPE_CHECKING:
-    from typing import Sequence
-
-    from back.agents import AbstractAISnakeAgent
-    from back.events import EventSender
+    from events.back2front_protocol import BackendEvent
+    from events.front2back_protocol import FrontendEvent
 
 """
 TODO:
  Priorité 1:
- - découpler le front et le back: le front doit être capable de mettre à jour son affichage uniquement en réceptionnant les évènements envoyés par le back
  - rendre dynamique le nombre d'agents dans le monde pour qu'il soit possible d'ajouter un nouveau joueur à la volée, par un appui fixe prolongé (réglable depuis le menu de pause)
- - créer un nouvel évènement pour prendre en charge les serpents qui traversent un bord de l'arène et réaparraissent de l'autre côté
 
 Priorité 2:
  - essayer de faire des agents qui ignorent la latency pour le calcul de leurs chemins d'attaques, mais qui la respectent pour le calcul des chemins vers la nourriture
@@ -40,132 +31,47 @@ IDÉE DE GAMEPLAY:
 """
 
 
-def define_opponents(
-    player_agents: list[PlayerSnakeAgent],
-    ai_agents: list[OffensiveAISnakeAgent]
-) -> None:
-    if len(player_agents) >= 1:
-        for ai in ai_agents:
-            for player in player_agents:
-                ai.add_opponent(player)
+if __name__ == '__main__':
+    app_dir = Path(__file__).resolve().parent
 
-    else:
-        half = len(ai_agents) // 2
-        for agent in ai_agents[half:]:
-            for opponent in ai_agents[:half]:
-                agent.add_opponent(opponent)
+    # dt = 1.0
+    # dt = 0.15
+    dt = 0.2
+    # dt = 0.25
+    # dt = 0.3
 
+    back2front_pipe: MultiprocessEventPipe[list[BackendEvent]] = MultiprocessEventPipe()  # Communicates events sent from backend to frontend
+    front2back_pipe: MultiprocessEventPipe[FrontendEvent] = MultiprocessEventPipe()  # Communicates events sent from frontend to backend
 
-def build_game(
-    event_sender: EventSender,
-    n_snakes: int,
-    n_players: int,
-    respawn_cooldown: int
-) -> tuple[SnakeWorld, Sequence[PlayerSnakeAgent], Sequence[AbstractAISnakeAgent]]:
-    if not (0 <= n_snakes <= 4):
-        raise ValueError("Too many snakes")
-    if not (0 <= n_players <= n_snakes):
-        raise ValueError("Too many players")
+    backend_process = Process(
+        kwargs=dict(
+            n_snakes=4,
+            n_players=1,
+            respawn_cooldown=15,
 
-    n_food = max(n_snakes - 1, 1)
-    height = width = 3*n_snakes + 9
+            # REFACTOR: remove arg `time_step`: the frontend should send a SimulationSpeedUpdateRequest
+            # event in order to set the initial time_step
+            time_step=dt,
+            event_sender=back2front_pipe.get_sender(),
+            event_receiver=front2back_pipe.get_receiver()
+        ),
+        target=run_backend_process,
+        daemon=True
+    )
 
-    dx = int(0.2 * width)
-    dy = 1
-    init_length = int(0.36 * height)
+    frontend = SnakeTronFrontend(
+        event_receiver=back2front_pipe.get_receiver(),
+        event_sender=front2back_pipe.get_sender(),
 
-    x_left = dx
-    x_right = width - dx - 1
+        time_step=dt,  # FIXME: A partir d'un certain time_step, l'affichage initial de l'arène dans le frontend est extremement zoomé
+        ai_explanations=False,
+        layout_dir=app_dir.joinpath('front', 'kivy_layout', 'mobile'),
+        color_file=app_dir.joinpath('front', 'color_scheme', 'dark.json'),
+        input_sensitivity=1/100
+    )
 
-    blue_init_pos = [(x_left, y) for y in range(init_length-1+dy, -1+dy, -1)]
-    yellow_init_pos = [(x_right, y) for y in range(init_length-1+dy, -1+dy, -1)]
-    purple_init_pos = [(x_left, y) for y in range(height-1-dy, height-1-init_length-dy, -1)]
-    green_init_pos = [(x_right, y) for y in range(height-1-dy, height-1-init_length-dy, -1)]
-
-    blue_init_dir = DOWN
-    yellow_init_dir = DOWN
-    purple_init_dir = DOWN
-    green_init_dir = DOWN
-
-    attack_anticipation = int(0.15*(height + width))
-
-    world = SnakeWorld(width, height, n_food, event_sender, respawn_cooldown)
-    player_agents: list[PlayerSnakeAgent] = []
-    ai_agents: list[OffensiveAISnakeAgent] = []
-
-    if n_players >= 1:
-        player_agents.append(PlayerSnakeAgent(world, blue_init_pos, blue_init_dir))
-    elif n_snakes >= 1:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, blue_init_pos, blue_init_dir,
-            # EuclidianDistancePeriodicHeuristic,
-            EuclidianDistanceHeuristic,
-            latency=3, caution=4, attack_anticipation=attack_anticipation
-        ))
-
-    if n_players >= 2:
-        player_agents.append(PlayerSnakeAgent(world, yellow_init_pos, yellow_init_dir))
-    elif n_snakes >= 2:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, yellow_init_pos, yellow_init_dir,
-            # EuclidianDistancePeriodicHeuristic,
-            EuclidianDistanceHeuristic,
-            latency=3, caution=4, attack_anticipation=attack_anticipation
-        ))
-
-    if n_players >= 3:
-        player_agents.append(PlayerSnakeAgent(world, purple_init_pos, purple_init_dir))
-    elif n_snakes >= 3:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, purple_init_pos, purple_init_dir,
-            EuclidianDistanceHeuristic,
-            latency=3, caution=6, attack_anticipation=attack_anticipation
-        ))
-
-    if n_players >= 4:
-        player_agents.append(PlayerSnakeAgent(world, green_init_pos, green_init_dir))
-    elif n_snakes >= 4:
-        ai_agents.append(OffensiveAISnakeAgent(
-            world, green_init_pos, green_init_dir,
-            ManhattanDistanceHeuristic,
-            latency=3, caution=4, attack_anticipation=attack_anticipation
-        ))
-
-    define_opponents(player_agents, ai_agents)
-
-    for agent in chain(player_agents, ai_agents):
-        world.attach_agent(agent)
-
-    return world, player_agents, ai_agents
-
-
-event_sender, event_receiver = build_event_pipe()
-
-world, player_agents, ai_agents = build_game(
-    event_sender=event_sender,
-
-    n_snakes=4,
-    n_players=1,
-    respawn_cooldown=15
-)
-
-app_dir = Path(__file__).resolve().parent
-app = SnakeTronApp(
-    event_receiver,
-
-    # REFACTOR: supprimer le couplage du front avec le back: le front ne devrait
-    # pas avoir de références aux éléments du back comme le monde et ses agents
-    world, player_agents, ai_agents,
-
-    # time_step=0.15,
-    time_step=0.2,
-    # time_step=0.25,
-    # time_step=0.3,
-
-    ai_explanations=False,
-    layout_dir=app_dir.joinpath('front', 'layout', 'mobile'),
-    color_file=app_dir.joinpath('front', 'colors', 'dark.json'),
-    input_sensitivity=1/100
-)
-
-app.run()
+    backend_process.start()
+    try:
+        frontend.run()
+    finally:
+        backend_process.kill()
