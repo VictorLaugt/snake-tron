@@ -129,7 +129,6 @@ flowchart TD
 
 ## 🤖 AI snake agents
 
-
 The main goal of the project is not just to recreate Snake or Tron, but to experiment with autonomous agents capable of reasoning about their environment.
 
 Two types of AI behaviours are currently implemented, both built around an A* pathfinding algorithm developed from scratch in the backend.
@@ -144,14 +143,6 @@ The passive AI is an agent whose objective is to feed itself and grow as quickly
 * the bodies of other agents, including the player.
 
 However, at each game step, the position of the obstacles in the world changes as all agents move. To adapt to these changes, the passive AI dynamically recomputes its path at every step using the A* algorithm.
-
-
-### ⏱️Making AI beatable (cooldown mechanism)
-
-AI has a tunable "cooldown" mechanism which controls how frequently it can recompute its path. It is used to make the AI less reactive to changes in the game state, giving the player more opportunities to outmaneuver it.
-
-**This cooldown mechanism is implemented in the `CooldownAISnakeMixin`.**
-
 
 ### 🎯 Offensive AI (attack strategy)
 
@@ -178,6 +169,11 @@ Among all those valid attacks, the agent chooses the one that:
 
 **This search algorithm is implemented in the `AttackAISnakeMixin`.**
 
+### ⏱️Making AI beatable (cooldown mechanism)
+
+AI has a tunable "cooldown" mechanism which controls how frequently it can recompute its path. It is used to make the AI less reactive to changes in the game state, giving the player more opportunities to outmaneuver it.
+
+**This cooldown mechanism is implemented in the `CooldownAISnakeMixin`.**
 
 ### 🚧 Making AI more cautious (caution mechanism)
 
