@@ -50,7 +50,8 @@ if __name__ == '__main__':
             respawn_cooldown=15,
 
             # REFACTOR: remove arg `time_step`: the frontend should send a SimulationSpeedUpdateRequest
-            # event in order to set the initial time_step
+            # event in order to set the initial time_step. The event shoud be sent only when the frontend
+            # is ready for display
             time_step=dt,
             event_sender=back2front_pipe.get_sender(),
             event_receiver=front2back_pipe.get_receiver()

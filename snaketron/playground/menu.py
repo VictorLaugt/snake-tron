@@ -13,17 +13,17 @@ KV = """
 <AppWindow>:
     orientation: "vertical"
 
-    SwipeControlZone:
+    ControllerGroup:
         size_hint_y: 0.1
 
     WorldDisplay:
         size_hint_y: 0.5
 
-    SwipeControlZone:
+    ControllerGroup:
         size_hint_y: 0.4
 
 
-<SwipeControlZone>:
+<ControllerGroup>:
     canvas.before:
         Color:
             rgba: 0, 0, 0, 1
@@ -32,7 +32,7 @@ KV = """
             size: self.size
 
     Label:
-        text: "SwipeControlZone"
+        text: "ControllerGroup"
         pos: root.pos
         size: root.size
         halign: "center"
@@ -150,7 +150,7 @@ class PauseMenu(FloatLayout):
         fade_out_anim.start(self)
 
 
-class SwipeControlZone(FloatLayout):
+class ControllerGroup(FloatLayout):
     pass
 
 

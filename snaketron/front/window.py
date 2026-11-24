@@ -8,16 +8,15 @@ from kivy.utils import get_color_from_hex
 
 from events.back2front_protocol import *
 from events.front2back_protocol import *
-from front.colors import *
-from front.controls import *
-from front.score_board import *
-from front.world_display import *
+from front.colors import SnakeColorManager, UIColors, WorldColors
+from front.controls import PlayerControllerGroup, PlayerControllerManager
+from front.score_board import ScoreBoard
+from front.world_display import WorldDisplay
 
 if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
-    from back.world import SnakeWorld
-    from events.abstract_pipe import *
+    from events.abstract_pipe import AbstractEventSender
     from front.type_hints import *
 
 __all__ = ['SnakeTronWindow']
@@ -30,10 +29,10 @@ class SnakeTronWindow(BoxLayout):
     app_background_color = ListProperty(get_color_from_hex('#000000'))
 
     def on_kv_post(self, base_widget: Widget) -> None:
-        self.swipe_zones: list[SwipeControlZone] = []
+        self.controller_groups: list[PlayerControllerGroup] = []
         for child in self.children:
-            if isinstance(child, SwipeControlZone):
-                self.swipe_zones.append(child)
+            if isinstance(child, PlayerControllerGroup):
+                self.controller_groups.append(child)
 
     def init_logic(
         self,
@@ -41,7 +40,7 @@ class SnakeTronWindow(BoxLayout):
         time_step: float,
         ai_explanations: bool,
         colors: dict,
-        input_sensitivity: float,
+        swipe_sensitivity: float,
     ) -> None:
         # link to the backend
         self.event_sender = event_sender
@@ -61,17 +60,17 @@ class SnakeTronWindow(BoxLayout):
         # propagates logic to child widgets
         cast(ScoreBoard, self.ids.score_board).init_logic()
         cast(WorldDisplay, self.ids.world_display).init_logic(
-            self, self.ids.score_board, world_colors, input_sensitivity
+            self, self.ids.score_board, world_colors, swipe_sensitivity
         )
-        self.swipe_control_manager = SwipeControlManager(
-            event_sender, self.swipe_zones, input_sensitivity, ui_colors
-        )
-        self.keyboard_control_manager = KeyBoardControlManager(
-            event_sender, (
+        keyboard_control_sets = (
             ('up', 'left', 'down', 'right'),
             ('z', 'q', 's', 'd'),
             ('i', 'j', 'k',  'l')
-        ))
+        )
+        self.player_controller_manager = PlayerControllerManager(
+            event_sender, self.controller_groups, ui_colors,
+            swipe_sensitivity, keyboard_control_sets
+        )
 
         # ai inspection
         self.ai_inspection_enabled = False
@@ -127,8 +126,7 @@ class SnakeTronWindow(BoxLayout):
         cast(WorldDisplay, self.ids.world_display).add_snake(snake_id, snake_colors)
         cast(ScoreBoard, self.ids.score_board).add_snake(snake_id, snake_colors)
         if is_player:
-            self.swipe_control_manager.add_player_snake(snake_id, snake_colors)
-            self.keyboard_control_manager.add_player_snake(snake_id)
+            self.player_controller_manager.add_player_snake(snake_id, snake_colors)
         else:
             self.ai_snakes.add(snake_id)
 
@@ -137,8 +135,7 @@ class SnakeTronWindow(BoxLayout):
         cast(WorldDisplay, self.ids.world_display).remove_snake(snake_id)
         cast(ScoreBoard, self.ids.score_board).remove_snake(snake_id)
         if is_player:
-            self.swipe_control_manager.remove_player_snake(snake_id)
-            self.keyboard_control_manager.remove_player_snake(snake_id)
+            self.player_controller_manager.remove_player_snake(snake_id)
 
     def process_backend_event(self, event: BackendEvent) -> None:
         world_display = cast(WorldDisplay, self.ids.world_display)
@@ -164,14 +161,13 @@ class SnakeTronWindow(BoxLayout):
                 world_display.snake_spawn(self.time_step, event)
             case SnakeDie(snake_id):
                 world_display.snake_die(self.time_step, event)
-                self.swipe_control_manager.set_direction(snake_id, None)
 
             case SnakeMovement(snake_id, SnakeMovementType.TELEPORT, _, new_dir, _):
                 raise BackEventHandleNotImplemented(event)  # NotImplemented
-                self.swipe_control_manager.set_direction(snake_id, new_dir)
+                self.player_controller_manager.update_real_direction(snake_id, new_dir)
             case SnakeMovement(snake_id, _, _, new_dir, _):
                 world_display.snake_move(self.time_step, event)
-                self.swipe_control_manager.set_direction(snake_id, new_dir)
+                self.player_controller_manager.update_real_direction(snake_id, new_dir)
             case SnakeDash():
                 raise BackEventHandleNotImplemented(event)  # NotImplemented
 

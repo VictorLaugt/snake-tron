@@ -63,8 +63,7 @@ class WorldDisplay(FloatLayout):
         # displays or hide the pause menu when requested
         self.pause_invoker = PauseMenuInvoker(
             main_window, pause_command_touch_max_length,
-            size_hint=(None, None), size=self.size,
-            pos=self.to_window(self.x, self.y)
+            size_hint=(1, 1), pos_hint={'x': 0, 'y': 0},
         )
 
         # The pause menu is displayed on top of every world graphical element
@@ -74,8 +73,8 @@ class WorldDisplay(FloatLayout):
 
     def pos_to_coord(self, pos: Position) -> Coordinate:
         return (
-            self.x + float(pos[0]) * self.square_size,
-            self.y + (self.arena_drawer.get_height() - 1 - float(pos[1])) * self.square_size
+            float(pos[0])*self.square_size + self.x,
+            (self.arena_drawer.get_height()-1-float(pos[1]))*self.square_size + self.y
         )
 
     def _recompute_square_size(self) -> None:
@@ -89,9 +88,6 @@ class WorldDisplay(FloatLayout):
         self.food_draw_updater.reset()
         for updater in self.snake_draw_updaters.values():
             updater.reset()
-
-        self.pause_invoker.size = self.size
-        self.pause_invoker.pos = self.to_window(self.x, self.y)
 
     def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
         self._recompute_square_size()

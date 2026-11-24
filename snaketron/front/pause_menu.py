@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from kivy.animation import Animation
 from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.widget import Widget
 from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
@@ -19,21 +18,13 @@ if TYPE_CHECKING:
 __all__ = ['PauseMenuInvoker']
 
 
-class PauseMenuInvoker(Widget):
+class PauseMenuInvoker(FloatLayout):
     def __init__(self, main_window: SnakeTronWindow, max_seg_length: float, *args, **kwargs) -> None:
         self.main_window = main_window
         self.max_seg_sqr_length = max_seg_length**2
         self.touch_uid: Optional[int] = None
         self.pause_menu: Optional[PauseMenu] = None
         super().__init__(*args, **kwargs)
-
-    def on_pos(self, instance: Widget, value: tuple[float, float]) -> None:
-        if self.pause_menu is not None:
-            self.pause_menu.size = self.size
-
-    def on_size(self, instance: Widget, value: tuple[float, float]) -> None:
-        if self.pause_menu is not None:
-            self.pause_menu.pos = self.to_window(self.x, self.y)
 
     def on_touch_down(self, touch: MotionEvent) -> bool:
         if super().on_touch_down(touch):
@@ -65,8 +56,7 @@ class PauseMenuInvoker(Widget):
         self.pause_menu = PauseMenu(
             self.main_window,
             on_close=self.close_pause_menu,
-            size_hint=(None, None), size=self.size,
-            pos=self.to_window(self.x, self.y)
+            size_hint=(1, 1), pos_hint={'x': 0, 'y': 0},
         )
         self.add_widget(self.pause_menu)
         self.pause_menu.request_pause()
