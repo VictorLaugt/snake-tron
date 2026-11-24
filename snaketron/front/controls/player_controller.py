@@ -111,22 +111,31 @@ class PlayerController(FloatLayout):
         self.arrow_drawer.draw_arrow()
 
     def update_real_direction(self, d: Optional[Direction]) -> None:
+        # despawn
         if d is None:
+            self.last_direction_input = None
+            self.real_direction = (0, 0)
             self.arrow_drawer.erase_all_segments()
             return
 
         self.real_direction = d
         n_segments = self.arrow_drawer.n_segments()
+
+        # first movement after spawn
         if n_segments == 0:
             self.arrow_drawer.add_new_segment(d)
 
+        # no remaining input direction
         elif n_segments == 1 and self.arrow_drawer.get_segment(0) != d:
             self.arrow_drawer.erase_all_segments()
             self.arrow_drawer.add_new_segment(d)
 
         elif n_segments > 1:
+            # snake correctly follows the remaining input directions
             if self.arrow_drawer.get_segment(1) == d:
                 self.arrow_drawer.pop_first_segment()
+
+            # snake does not follows the remaining input directions, they are invalid
             else:
                 self.arrow_drawer.erase_all_segments()
                 self.arrow_drawer.add_new_segment(d)
