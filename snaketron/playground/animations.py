@@ -14,21 +14,21 @@ from kivy.properties import (ListProperty, NumericProperty,
                              ReferenceListProperty)
 from kivy.uix.floatlayout import FloatLayout
 
-from back.agents import AbstractSnakeAgent, PlayerSnakeAgent
-from back.direction import DOWN, LEFT, RIGHT, UP
-from events.back2front_protocol import FoodConsumed, FoodCreated
+from snaketron.back.agents import AbstractSnakeAgent, PlayerSnakeAgent
+from snaketron.back.direction import DOWN, LEFT, RIGHT, UP
+from snaketron.events.back2front_protocol import FoodConsumed, FoodCreated
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
     from kivy.uix.widget import Widget
 
-    from back.agents import AbstractSnakeAgent
-    from back.type_hints import *
-    from back.world import SnakeWorld
-    from events.back2front_protocol import BackendEvent, SnakeMovement
-    from events.abstract_pipe import EventReceiver
-    from front.type_hints import *
+    from snaketron.back.agents import AbstractSnakeAgent
+    from snaketron.back.type_hints import *
+    from snaketron.back.world import SnakeWorld
+    from snaketron.events.back2front_protocol import BackendEvent, SnakeMovement
+    from snaketron.events.abstract_pipe import EventReceiver
+    from snaketron.front.type_hints import *
 
 
 KV = '''
@@ -452,8 +452,8 @@ class SnakeDrawer(EventDispatcher):
 
 
 if __name__ == '__main__':
-    from back.world import SnakeWorld
-    from events.abstract_pipe import EventPipe
+    from snaketron.back.world import SnakeWorld
+    from snaketron.events.abstract_pipe import EventPipe
 
     w = h = 15
     back2front_pipe = EventPipe()

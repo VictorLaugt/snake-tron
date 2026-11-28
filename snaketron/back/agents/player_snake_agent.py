@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
-from back.agents.abstract_snake_agent import AbstractSnakeAgent
+from snaketron.back.agents.abstract_snake_agent import AbstractSnakeAgent
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
-    from back.type_hints import *
-    from back.world import SnakeWorld
+    from snaketron.back.type_hints import *
+    from snaketron.back.world import SnakeWorld
 
 __all__ = ['PlayerSnakeAgent']
 

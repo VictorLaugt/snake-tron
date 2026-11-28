@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 from kivy.core.window import Keyboard, Window
 from kivy.event import EventDispatcher
 
-from back.direction import DOWN, LEFT, RIGHT, UP
+from snaketron.back.direction import DOWN, LEFT, RIGHT, UP
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
     from kivy.core.window import WindowBase
 
-    from front.controls.player_controller import PlayerController
-    from front.type_hints import KeyboardSet
+    from snaketron.front.controls.player_controller import PlayerController
+    from snaketron.front.type_hints import KeyboardSet
 
 __all__ = ['KeyBoardControl']
 

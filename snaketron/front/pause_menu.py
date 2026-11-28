@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from kivy.inputs import MotionEvent
 
-    from front.window import SnakeTronWindow
+    from snaketron.front.window import SnakeTronWindow
 
 
 __all__ = ['PauseMenuInvoker']

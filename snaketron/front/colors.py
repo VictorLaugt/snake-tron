@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from kivy.utils import get_color_from_hex
 
 if TYPE_CHECKING:
-    from front.type_hints import *
+    from snaketron.front.type_hints import *
 
 __all__ = ['UIColors', 'WorldColors', 'SnakeColors', 'SnakeColorManager']
 

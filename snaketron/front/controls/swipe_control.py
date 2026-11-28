@@ -3,15 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from kivy.uix.widget import Widget
-from back.direction import UP, DOWN, RIGHT, LEFT
+from snaketron.back.direction import UP, DOWN, RIGHT, LEFT
 
 if TYPE_CHECKING:
     from typing import Optional
 
     from kivy.input import MotionEvent
 
-    from back.type_hints import Direction
-    from front.controls.keyboard_control import PlayerController
+    from snaketron.back.type_hints import Direction
+    from snaketron.front.controls.keyboard_control import PlayerController
 
 __all__ = ['SwipeControl']
 

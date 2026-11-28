@@ -4,24 +4,26 @@ from collections import deque
 from itertools import chain
 from random import randrange, shuffle
 from typing import TYPE_CHECKING
+import logging
 
 import numpy as np
 
-from back.agents import PlayerSnakeAgent
-from debug_tool import backend_debugspace as dbg
-from back.direction import DOWN, LEFT, RIGHT, UP, toward_center
-from back.grid_graph import AbstractGridGraph
-from back.voronoi import furthest_voronoi_vertex
-from events.back2front_protocol import *
+from snaketron.back.agents import PlayerSnakeAgent
+from snaketron.back.direction import DOWN, LEFT, RIGHT, UP, toward_center
+from snaketron.back.grid_graph import AbstractGridGraph
+from snaketron.back.voronoi import furthest_voronoi_vertex
+from snaketron.events.back2front_protocol import *
 
 if TYPE_CHECKING:
     from typing import Iterator, Optional
 
-    from back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
-    from back.type_hints import *
+    from snaketron.back.agents import AbstractSnakeAgent, AbstractAISnakeAgent
+    from snaketron.back.type_hints import *
 
 
 __all__ = ['SnakeWorld']
+
+logger = logging.getLogger(__name__)
 
 
 def copy_movement_event(event: SnakeMovement) -> SnakeMovement:
@@ -364,7 +366,7 @@ class SnakeWorld(AbstractGridGraph):
         self._spawn_missing_food()          # --> FoodCreated
         self._respawn_dead_agent()          # --> SnakeSpawn
 
-        dbg.dprint(f"simulated a step:\n{self}")
+        logger.debug(f"simulated a step:\n{self}")
 
     def flush_state_updates(self) -> list[BackendEvent]:
         """Returns the sequence of events which occured in the world during the

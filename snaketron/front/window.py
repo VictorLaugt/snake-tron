@@ -6,18 +6,18 @@ from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.utils import get_color_from_hex
 
-from events.back2front_protocol import *
-from events.front2back_protocol import *
-from front.colors import SnakeColorManager, UIColors, WorldColors
-from front.controls import PlayerControllerGroup, PlayerControllerManager
-from front.score_board import ScoreBoard
-from front.world_display import WorldDisplay
+from snaketron.events.back2front_protocol import *
+from snaketron.events.front2back_protocol import *
+from snaketron.front.colors import SnakeColorManager, UIColors, WorldColors
+from snaketron.front.controls import PlayerControllerGroup, PlayerControllerManager
+from snaketron.front.score_board import ScoreBoard
+from snaketron.front.world_display import WorldDisplay
 
 if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
-    from events.abstract_pipe import AbstractEventSender
-    from front.type_hints import *
+    from snaketron.events.abstract_pipe import AbstractEventSender
+    from snaketron.front.type_hints import *
 
 __all__ = ['SnakeTronWindow']
 

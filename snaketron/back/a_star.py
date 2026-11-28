@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from back.direction import opposite_dir
-from back.grid_graph import AbstractHeuristic
+from snaketron.back.direction import opposite_dir
+from snaketron.back.grid_graph import AbstractHeuristic
 
 if TYPE_CHECKING:
-    from back.grid_graph import AbstractGridGraph
-    from back.type_hints import *
+    from snaketron.back.grid_graph import AbstractGridGraph
+    from snaketron.back.type_hints import *
 
 __all__ = ['shortest_path']
 

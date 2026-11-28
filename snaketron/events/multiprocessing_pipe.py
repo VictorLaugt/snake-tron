@@ -4,7 +4,7 @@ from multiprocessing import Queue
 from queue import Empty
 from typing import TYPE_CHECKING
 
-from events.abstract_pipe import AbstractEventPipe, AbstractEventReceiver, AbstractEventSender
+from snaketron.events.abstract_pipe import AbstractEventPipe, AbstractEventReceiver, AbstractEventSender
 
 if TYPE_CHECKING:
     from typing import Iterator

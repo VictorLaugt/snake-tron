@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import threading
+import logging
 import time
 from typing import TYPE_CHECKING
 
-from back.world import SnakeWorld
-from back.world_factory import SnakeWorldFactory
-from debug_tool import backend_debugspace as dbg
-from events.abstract_pipe import AbstractEventSender
-from events.back2front_protocol import *
-from events.front2back_protocol import *
+from snaketron.back.world import SnakeWorld
+from snaketron.back.world_factory import SnakeWorldFactory
+from snaketron.events.abstract_pipe import AbstractEventSender
+from snaketron.events.back2front_protocol import *
+from snaketron.events.front2back_protocol import *
 
 if TYPE_CHECKING:
     from typing import Optional
-    from events.abstract_pipe import AbstractEventReceiver
-    from events.front2back_protocol import FrontendEvent
+    from snaketron.events.abstract_pipe import AbstractEventReceiver
+    from snaketron.events.front2back_protocol import FrontendEvent
 
 __all__ = ['run_backend_process']
+
+logger = logging.getLogger(__name__)
 
 
 class TrackedBackendEventSender(AbstractEventSender[list[BackendEvent]]):
@@ -25,9 +27,9 @@ class TrackedBackendEventSender(AbstractEventSender[list[BackendEvent]]):
 
     def send(self, events: list[BackendEvent]) -> None:
         if len(events) > 0:
-            dbg.dprint(f"sending events:\n" + "\n".join(f"  {e}" for e in events))
+            logger.info(f"sending events:\n" + "\n".join(f"  {e}" for e in events))
         else:
-            dbg.dprint("sending empty event list")
+            logger.info("sending empty event list")
 
         self.event_sender.send(events)
 
@@ -91,7 +93,7 @@ class SnakeTronBackend:
         while True:
             event = self.event_receiver.recv()
             with self.simulation_lock:
-                dbg.dprint(f"handling event: {event}")
+                logger.info(f"handling event: {event}")
                 match event:
                     case SimulationSpeedUpdateRequest(time_step, pause):
                         self._update_simulation_speed(time_step, pause)

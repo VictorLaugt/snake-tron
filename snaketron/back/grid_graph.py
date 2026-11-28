@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
-    from back.type_hints import *
+    from snaketron.back.type_hints import *
 
 __all__ = [
     'AbstractGridGraph', 'AbstractHeuristic', 'EuclidianDistanceHeuristic',

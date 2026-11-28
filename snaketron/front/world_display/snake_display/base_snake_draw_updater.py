@@ -8,9 +8,9 @@ from kivy.graphics import InstructionGroup, Rectangle
 if TYPE_CHECKING:
     from typing import Callable, Iterable, Optional
 
-    from back.type_hints import Direction, Position
-    from front.colors import SnakeColors
-    from front.type_hints import Coordinate
+    from snaketron.back.type_hints import Direction, Position
+    from snaketron.front.colors import SnakeColors
+    from snaketron.front.type_hints import Coordinate
 
 __all__ = ['BaseSnakeDrawUpdater']
 

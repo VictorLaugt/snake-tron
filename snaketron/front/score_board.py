@@ -7,10 +7,10 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.utils import get_color_from_hex
 
-from front.colors import SnakeColors
+from snaketron.front.colors import SnakeColors
 
 if TYPE_CHECKING:
-    from front.world_display import *
+    from snaketron.front.world_display import *
 
 __all__ = ['ScoreBoard']
 

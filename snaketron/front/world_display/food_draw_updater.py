@@ -8,14 +8,14 @@ from kivy.graphics import Color, Ellipse, InstructionGroup
 from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
-from front.colors import WorldColors
+from snaketron.front.colors import WorldColors
 
 if TYPE_CHECKING:
     from typing import Callable, Iterator, Optional, Self
 
-    from back.type_hints import *
-    from front.type_hints import *
-    from front.world_display import *
+    from snaketron.back.type_hints import *
+    from snaketron.front.type_hints import *
+    from snaketron.front.world_display import *
 
 
 __all__ = ['FoodDrawUpdater', 'FoodDrawerTool']

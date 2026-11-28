@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from front.colors import SnakeColors
-from front.world_display.snake_display.ai_inspect_mixin import AiInspectMixin
-from front.world_display.snake_display.snake_draw_mixin import SnakeDrawMixin
+from snaketron.front.colors import SnakeColors
+from snaketron.front.world_display.snake_display.ai_inspect_mixin import AiInspectMixin
+from snaketron.front.world_display.snake_display.snake_draw_mixin import SnakeDrawMixin
 
 if TYPE_CHECKING:
     from typing import Callable
 
-    from back.type_hints import Position
-    from front.type_hints import Coordinate
+    from snaketron.back.type_hints import Position
+    from snaketron.front.type_hints import Coordinate
 
 __all__ = ['SnakeDrawUpdater', 'SnakeDrawTool']
 

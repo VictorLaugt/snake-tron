@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterator, Optional, Sequence
 
-    from back.type_hints import *
-    from back.world import SnakeWorld
+    from snaketron.back.type_hints import *
+    from snaketron.back.world import SnakeWorld
 
 __all__ = ['AbstractSnakeAgent']
 

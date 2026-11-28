@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING
 
 from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 
-from front.colors import WorldColors
+from snaketron.front.colors import WorldColors
 
 if TYPE_CHECKING:
     from typing import Callable
 
-    from front.world_display.world_display import WorldDisplay
+    from snaketron.front.world_display.world_display import WorldDisplay
 
 __all__ = ['ArenaDrawer', 'ArenaDrawerTool']
 

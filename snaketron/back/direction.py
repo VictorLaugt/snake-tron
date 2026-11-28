@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from back.type_hints import *
+from snaketron.back.type_hints import *
 
 if TYPE_CHECKING:
     from typing import TypeAlias
 
-    from back.type_hints import *
+    from snaketron.back.type_hints import *
     Real: TypeAlias = int|float
 
 __all__ = [

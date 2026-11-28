@@ -6,20 +6,20 @@ from kivy.graphics import InstructionGroup
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from events.back2front_protocol import *
-from front.colors import SnakeColors, WorldColors
-from front.pause_menu import PauseMenuInvoker
-from front.world_display.arena_drawer import ArenaDrawer, ArenaDrawerTool
-from front.world_display.food_draw_updater import FoodDrawUpdater, FoodDrawerTool
-from front.world_display.snake_display.snake_draw_updater import SnakeDrawUpdater, SnakeDrawTool
+from snaketron.events.back2front_protocol import *
+from snaketron.front.colors import SnakeColors, WorldColors
+from snaketron.front.pause_menu import PauseMenuInvoker
+from snaketron.front.world_display.arena_drawer import ArenaDrawer, ArenaDrawerTool
+from snaketron.front.world_display.food_draw_updater import FoodDrawUpdater, FoodDrawerTool
+from snaketron.front.world_display.snake_display.snake_draw_updater import SnakeDrawUpdater, SnakeDrawTool
 
 if TYPE_CHECKING:
     from kivy.uix.widget import Widget
 
-    from back.type_hints import *
-    from front.score_board import ScoreBoard
-    from front.type_hints import *
-    from front.window import SnakeTronWindow
+    from snaketron.back.type_hints import *
+    from snaketron.front.score_board import ScoreBoard
+    from snaketron.front.type_hints import *
+    from snaketron.front.window import SnakeTronWindow
 
 __all__ = ['WorldDisplay']
 

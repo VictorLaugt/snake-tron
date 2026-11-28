@@ -7,21 +7,21 @@ from kivy.properties import ListProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.utils import get_color_from_hex
 
-from events.front2back_protocol import PlayerDirRequest
-from front.controls.direction_input_drawer import ArrowDrawer, ArrowDrawerTool
-from front.controls.keyboard_control import KeyBoardControl
-from front.controls.swipe_control import SwipeControl
+from snaketron.events.front2back_protocol import PlayerDirRequest
+from snaketron.front.controls.direction_input_drawer import ArrowDrawer, ArrowDrawerTool
+from snaketron.front.controls.keyboard_control import KeyBoardControl
+from snaketron.front.controls.swipe_control import SwipeControl
 
 if TYPE_CHECKING:
     from typing import Optional
 
     from kivy.uix.widget import Widget
 
-    from back.type_hints import Direction
-    from events.abstract_pipe import AbstractEventSender
-    from events.front2back_protocol import FrontendEvent
-    from front.colors import SnakeColors
-    from front.type_hints import ColorValue, KeyboardSet
+    from snaketron.back.type_hints import Direction
+    from snaketron.events.abstract_pipe import AbstractEventSender
+    from snaketron.events.front2back_protocol import FrontendEvent
+    from snaketron.front.colors import SnakeColors
+    from snaketron.front.type_hints import ColorValue, KeyboardSet
 
 __all__ = ['PlayerController']
 

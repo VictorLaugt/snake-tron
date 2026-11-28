@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from itertools import chain
 
-from back.agents import *
-from back.direction import *
-from back.grid_graph import *
-from back.world import SnakeWorld
+from snaketron.back.agents import *
+from snaketron.back.direction import *
+from snaketron.back.grid_graph import *
+from snaketron.back.world import SnakeWorld
 
 
 class SnakeWorldFactory:

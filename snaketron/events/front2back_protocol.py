@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional
 
-    from back.type_hints import Direction
+    from snaketron.back.type_hints import Direction
 
 __all__ = [
     'FrontendEvent', 'SimulationSpeedUpdateRequest', 'AiInspectionRequest',

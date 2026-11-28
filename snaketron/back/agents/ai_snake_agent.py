@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from back.agents.abstract_ai_snake_agent import *
-from back.agents.ai_snake_mixins import *
+from snaketron.back.agents.abstract_ai_snake_agent import *
+from snaketron.back.agents.ai_snake_mixins import *
 
 if TYPE_CHECKING:
     from typing import Sequence, Type
 
-    from back.grid_graph import AbstractHeuristic
-    from back.type_hints import *
-    from back.world import SnakeWorld
+    from snaketron.back.grid_graph import AbstractHeuristic
+    from snaketron.back.type_hints import *
+    from snaketron.back.world import SnakeWorld
 
 __all__ = ['PassiveAISnakeAgent', 'OffensiveAISnakeAgent']
 

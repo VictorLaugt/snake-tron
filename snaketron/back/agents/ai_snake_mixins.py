@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
+from snaketron.back.agents.abstract_ai_snake_agent import AbstractAISnakeAgent
 
 if TYPE_CHECKING:
     from typing import Iterable, Iterator, Optional, Sequence
 
-    from back.agents.abstract_snake_agent import AbstractSnakeAgent
-    from back.type_hints import *
+    from snaketron.back.agents.abstract_snake_agent import AbstractSnakeAgent
+    from snaketron.back.type_hints import *
 
 __all__ = ['CautionAISnakeMixin', 'AttackAISnakeMixin', 'CooldownAISnakeMixin']
 

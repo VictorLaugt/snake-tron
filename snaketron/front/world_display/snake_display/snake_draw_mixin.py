@@ -8,17 +8,17 @@ from kivy.graphics import Color, InstructionGroup, Rectangle
 from kivy.properties import ListProperty, NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 
-from events.back2front_protocol import SnakeMovementType
-from front.world_display.snake_display.base_snake_draw_updater import BaseSnakeDrawUpdater
+from snaketron.events.back2front_protocol import SnakeMovementType
+from snaketron.front.world_display.snake_display.base_snake_draw_updater import BaseSnakeDrawUpdater
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
 
     from kivy.graphics import Canvas, Instruction
 
-    from back.type_hints import Direction, Position
-    from events.back2front_protocol import SnakeDie, SnakeMovement, SnakeSpawn
-    from front.type_hints import ColorValue
+    from snaketron.back.type_hints import Direction, Position
+    from snaketron.events.back2front_protocol import SnakeDie, SnakeMovement, SnakeSpawn
+    from snaketron.front.type_hints import ColorValue
 
 __all__ = ['SnakeDrawMixin']
 

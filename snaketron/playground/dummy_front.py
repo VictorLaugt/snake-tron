@@ -11,9 +11,9 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 
 if TYPE_CHECKING:
-    from events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
-    from events.back2front_protocol import BackendEvent
-    from events.front2back_protocol import FrontendEvent
+    from snaketron.events.abstract_pipe import AbstractEventReceiver, AbstractEventSender
+    from snaketron.events.back2front_protocol import BackendEvent
+    from snaketron.events.front2back_protocol import FrontendEvent
 
 
 class DummySnakeTronFrontend(App):

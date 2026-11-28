@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 
 from kivy.graphics import Color, InstructionGroup, Rectangle
 
-from events.back2front_protocol import AiSnakeInspection
-from front.world_display.snake_display.base_snake_draw_updater import BaseSnakeDrawUpdater
+from snaketron.events.back2front_protocol import AiSnakeInspection
+from snaketron.front.world_display.snake_display.base_snake_draw_updater import BaseSnakeDrawUpdater
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
 
-    from back.type_hints import Direction, Position
+    from snaketron.back.type_hints import Direction, Position
 
 __all__ = ['AiInspectMixin']
 

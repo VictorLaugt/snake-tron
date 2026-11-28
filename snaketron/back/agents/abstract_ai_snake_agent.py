@@ -4,15 +4,15 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-from back.a_star import shortest_path
-from back.agents.abstract_snake_agent import AbstractSnakeAgent
-from back.grid_graph import AbstractHeuristic
+from snaketron.back.a_star import shortest_path
+from snaketron.back.agents.abstract_snake_agent import AbstractSnakeAgent
+from snaketron.back.grid_graph import AbstractHeuristic
 
 if TYPE_CHECKING:
     from typing import Iterable, Iterator, Optional, Sequence, Type
 
-    from back.type_hints import *
-    from back.world import SnakeWorld
+    from snaketron.back.type_hints import *
+    from snaketron.back.world import SnakeWorld
 
 __all__ = ['AbstractAISnakeAgent']
 

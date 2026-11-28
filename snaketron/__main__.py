@@ -3,15 +3,17 @@ from __future__ import annotations
 
 from multiprocessing import Process
 from pathlib import Path
+import logging
+from logging_config import config_app_logger
 from typing import TYPE_CHECKING
 
-from back.backend_process import run_backend_process
-from events.multiprocessing_pipe import MultiprocessEventPipe
-from front.app import SnakeTronFrontend
+from snaketron.back.backend_process import run_backend_process
+from snaketron.events.multiprocessing_pipe import MultiprocessEventPipe
+from snaketron.front.app import SnakeTronFrontend
 
 if TYPE_CHECKING:
-    from events.back2front_protocol import BackendEvent
-    from events.front2back_protocol import FrontendEvent
+    from snaketron.events.back2front_protocol import BackendEvent
+    from snaketron.events.front2back_protocol import FrontendEvent
 
 """
 TODO:
@@ -31,8 +33,15 @@ IDÉE DE GAMEPLAY:
 """
 
 
-if __name__ == '__main__':
+def main():
     app_dir = Path(__file__).resolve().parent
+
+    config_app_logger(
+        name="snaketron",
+        level=logging.DEBUG,
+        log_directory=app_dir.joinpath("logs"),
+        terminal_logging=True
+    )
 
     # dt = 1.0
     # dt = 0.15
@@ -44,6 +53,7 @@ if __name__ == '__main__':
     front2back_pipe: MultiprocessEventPipe[FrontendEvent] = MultiprocessEventPipe()  # Communicates events sent from frontend to backend
 
     backend_process = Process(
+        name="BackendProcess",
         kwargs=dict(
             n_snakes=4,
             n_players=1,
@@ -54,7 +64,7 @@ if __name__ == '__main__':
             # is ready for display
             time_step=dt,
             event_sender=back2front_pipe.get_sender(),
-            event_receiver=front2back_pipe.get_receiver()
+            event_receiver=front2back_pipe.get_receiver(),
         ),
         target=run_backend_process,
         daemon=True
@@ -76,3 +86,7 @@ if __name__ == '__main__':
         frontend.run()
     finally:
         backend_process.kill()
+
+
+if __name__ == "__main__":
+    main()

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from threading import Thread
 from typing import TYPE_CHECKING
+import logging
 
 from kivy.app import App
 from kivy.clock import mainthread
@@ -10,21 +11,22 @@ from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.utils import platform
 
-from debug_tool import frontend_debugspace as dbg
-from events.abstract_pipe import AbstractEventSender
-from events.front2back_protocol import FrontendEvent
-from front.controls import *
-from front.score_board import *
-from front.window import SnakeTronWindow
-from front.world_display import *
+from snaketron.events.abstract_pipe import AbstractEventSender
+from snaketron.events.front2back_protocol import FrontendEvent
+from snaketron.front.controls import *
+from snaketron.front.score_board import *
+from snaketron.front.window import SnakeTronWindow
+from snaketron.front.world_display import *
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from events.abstract_pipe import AbstractEventReceiver
-    from events.back2front_protocol import BackendEvent
+    from snaketron.events.abstract_pipe import AbstractEventReceiver
+    from snaketron.events.back2front_protocol import BackendEvent
 
 __all__ = ['SnakeTronFrontend']
+
+logger = logging.getLogger(__name__)
 
 
 class TrackedFrontendEventSender(AbstractEventSender[FrontendEvent]):
@@ -32,7 +34,7 @@ class TrackedFrontendEventSender(AbstractEventSender[FrontendEvent]):
         self.event_sender = event_sender
 
     def send(self, event: FrontendEvent) -> None:
-        dbg.dprint(f"sending event: {event}")
+        logger.info(f"sending event: {event}")
         self.event_sender.send(event)
 
 
@@ -88,12 +90,12 @@ class SnakeTronFrontend(App):
 
     def event_receiver_loop(self) -> None:
         while True:
-            dbg.dprint("waiting for events ...")
+            logger.info("waiting for events ...")
             events = self.event_receiver.recv()
             self.process_backend_events(events)
 
     @mainthread
     def process_backend_events(self, events: list[BackendEvent]) -> None:
         for e in events:
-            dbg.dprint(f"handling event: {e}")
+            logger.info(f"handling event: {e}")
             self.main_window.process_backend_event(e)

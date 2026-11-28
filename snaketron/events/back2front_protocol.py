@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
-    from back.type_hints import *
+    from snaketron.back.type_hints import *
 
 
 __all__ = [

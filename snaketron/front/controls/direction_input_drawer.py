@@ -8,8 +8,8 @@ from kivy.graphics import Color, InstructionGroup, Line
 if TYPE_CHECKING:
     from typing import Callable, Sequence
 
-    from back.type_hints import Direction
-    from front.colors import SnakeColors
+    from snaketron.back.type_hints import Direction
+    from snaketron.front.colors import SnakeColors
 
 
 __all__ = ['ArrowDrawerTool', 'ArrowDrawer']

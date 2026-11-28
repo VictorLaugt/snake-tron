@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterable, Optional, Sequence
 
-    from back.type_hints import Direction
-    from events.abstract_pipe import AbstractEventSender
-    from events.front2back_protocol import FrontendEvent
-    from front.colors import SnakeColors, UIColors
-    from front.controls.player_controller_group import PlayerControllerGroup
-    from front.type_hints import KeyboardSet
+    from snaketron.back.type_hints import Direction
+    from snaketron.events.abstract_pipe import AbstractEventSender
+    from snaketron.events.front2back_protocol import FrontendEvent
+    from snaketron.front.colors import SnakeColors, UIColors
+    from snaketron.front.controls.player_controller_group import PlayerControllerGroup
+    from snaketron.front.type_hints import KeyboardSet
 
 __all__ = ['PlayerControllerManager']
 

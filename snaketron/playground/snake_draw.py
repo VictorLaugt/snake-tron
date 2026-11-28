@@ -11,21 +11,21 @@ from kivy.graphics import Color, Ellipse, InstructionGroup, Line, Rectangle
 from kivy.properties import NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from back.agents import AbstractSnakeAgent
-from back.direction import DOWN, LEFT, RIGHT, UP
-from events.back2front_protocol import FoodConsumed, FoodCreated, SnakeMovement
+from snaketron.back.agents import AbstractSnakeAgent
+from snaketron.back.direction import DOWN, LEFT, RIGHT, UP
+from snaketron.events.back2front_protocol import FoodConsumed, FoodCreated, SnakeMovement
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence
 
     from kivy.uix.widget import Widget
 
-    from back.agents import PlayerSnakeAgent
-    from back.type_hints import *
-    from back.world import SnakeWorld
-    from events.abstract_pipe import EventReceiver
-    from events.back2front_protocol import SnakeMovement, BackendEvent
-    from front.type_hints import *
+    from snaketron.back.agents import PlayerSnakeAgent
+    from snaketron.back.type_hints import *
+    from snaketron.back.world import SnakeWorld
+    from snaketron.events.abstract_pipe import EventReceiver
+    from snaketron.events.back2front_protocol import SnakeMovement, BackendEvent
+    from snaketron.front.type_hints import *
 
 
 class ObstacleAgent(AbstractSnakeAgent):
@@ -340,9 +340,9 @@ class SnakeDrawer:
 
 
 if __name__ == '__main__':
-    from back.agents import PlayerSnakeAgent
-    from back.world import SnakeWorld
-    from events.abstract_pipe import EventPipe
+    from snaketron.back.agents import PlayerSnakeAgent
+    from snaketron.back.world import SnakeWorld
+    from snaketron.events.abstract_pipe import EventPipe
 
     back2front_pipe = EventPipe()
 
